@@ -6,16 +6,16 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://satinau.cn/blog.html</loc>
+    <loc>https://satinau.cn/blog</loc>
     <lastmod>2025-09-14</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://satinau.cn/zelynn.html</loc>
+    <loc>https://satinau.cn/zelynn</loc>
     <lastmod>2025-09-13</lastmod>
     <priority>0.8</priority>
   </url>
-    <url>
+  <url>
     <loc>https://www.kdocs.cn/l/cbnmJFr498XG</loc>
     <lastmod>2025-09-14</lastmod>
     <priority>0.6</priority>
@@ -31,5 +31,6 @@
     <priority>0.6</priority>
   </url>
 </urlset>
+
 
 
