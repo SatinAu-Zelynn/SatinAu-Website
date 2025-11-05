@@ -1,2 +1,5 @@
 const SUPABASE_URL = "__SUPABASE_URL__";
 const SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+window.__BUILD_INFO__ = `
+__BUILD_INFO__
+`;
