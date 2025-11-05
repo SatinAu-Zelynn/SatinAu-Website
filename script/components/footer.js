@@ -61,7 +61,7 @@ class SiteFooter extends HTMLElement {
       </footer>
     `;
 
-    const buildInfo = window.__BUILD_INFO__ || "构建信息未注入";
+    const buildInfo = window.BUILD_INFO || "构建信息未注入";
     this.querySelector("#build-info").innerHTML = buildInfo;
   }
 }
