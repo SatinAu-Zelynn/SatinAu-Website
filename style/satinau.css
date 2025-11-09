@@ -757,6 +757,10 @@ body#index-page {
       font-size: 14px;
     }
   }
+
+  .mobile-more-menu {
+    display: none;
+  }
 }
 
 /* 头像基础样式 */
@@ -872,10 +876,8 @@ body#index-page {
   .more-menu-container {
     display: none !important;
   }
-}
 
-/* 移动端导航栏手势提示线 */
-@media (max-width: 767px) {
+  /* 移动端导航栏手势提示线 */
   .bottom-nav {
     padding-top: 24px; /* 为提示线预留空间 */
   }

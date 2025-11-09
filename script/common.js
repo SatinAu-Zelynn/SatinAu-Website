@@ -471,9 +471,6 @@ function consoleBeautify() {
 window.addEventListener('load', consoleBeautify);
 
 document.addEventListener('DOMContentLoaded', function() {
-  // 仅在移动端生效
-  if (window.innerWidth >= 768) return;
-  
   // 获取桌面端原有的菜单选项
   const desktopDropdown = document.querySelector('.more-dropdown');
   if (!desktopDropdown) return;
