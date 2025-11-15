@@ -343,15 +343,13 @@ h1, h2 { text-wrap: balance; }
   opacity: 1;
 }
 
-/* 悬停时：浮起 + 微倾 */
 .contact-card:hover {
-  transform: translateY(-10px) scale(1.03) rotate3d(1,1,0,0.8deg);
   box-shadow: 0 32px 70px rgba(0,0,0,0.2);
   background: light-dark(rgba(255,255,255,0.45), rgba(255,255,255,0.2));
   -webkit-backdrop-filter: blur(28px) saturate(220%);
   backdrop-filter: blur(28px) saturate(220%);
 }
-.contact-card:active { transform: scale(0.96); }
+.contact-card:active { transform: scale(0.98) !important; }
 
 .content-grid {
   display: grid;
