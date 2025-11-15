@@ -474,6 +474,8 @@ function renderPost(post, mdContent) {
         
         postContent.innerHTML = marked.parse(processedMd);
 
+        initImageViewer();
+
         postContent.querySelectorAll('h2').forEach(h2 => {
             h2.classList.add('visible');
         });
@@ -614,6 +616,41 @@ setTimeout(() => {
     URL.revokeObjectURL(url);
     showToast('开始下载文章TXT');
 }, 0);
+}
+
+function initImageViewer() {
+    // 销毁已存在的viewer实例（如果有）
+    if (window.imageViewer) {
+        window.imageViewer.destroy();
+        window.imageViewer = null;
+    }
+    
+    // 选择文章中所有图片
+    const postImages = postContent.querySelectorAll('img');
+    if (postImages.length === 0) return;
+    
+    // 为图片容器初始化查看器
+    window.imageViewer = new Viewer(postContent, {  // 直接使用postContent容器
+        backdrop: true,
+        toolbar: true,
+        navbar: true,
+        title: true,
+        tooltip: true,
+        movable: true,
+        zoomable: true,
+        rotatable: true,
+        scalable: true,
+        transition: true,
+        fullscreen: true,
+        keyboard: true,
+        className: 'viewer-custom',
+        beforeShow: function() {
+            document.body.style.overflow = 'hidden';
+        },
+        hidden: function() {
+            document.body.style.overflow = '';
+        }
+    });
 }
 
 // 初始化博客页面

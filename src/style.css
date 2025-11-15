@@ -1104,7 +1104,15 @@ body#index-page {
   p { margin: 0.8em 0; font-size: clamp(0.95rem, 3vw, 1rem); }
   a { color: var(--primary-color); text-decoration: none; 
     &:hover { text-decoration: underline; }}
-  img { max-width: 100%; height: auto; border-radius:var(--border-radius-md); }
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius:var(--border-radius-md);
+    cursor: zoom-in;
+    &:active {
+      transform: scale(0.98);
+    }
+  }
   code { padding: 0.2em 0.4em; border-radius:var(--border-radius-sm); background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.12)); }
   pre { overflow: auto; padding: 14px; border-radius:var(--border-radius-md); background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.08)); 
     code { background: transparent; padding: 0; }}
