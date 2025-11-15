@@ -44,6 +44,7 @@ class NavigateBar extends HTMLElement {
     // 更多选项菜单数据
     const moreItems = [
       { label: '我的歌单', href: 'playlist' },
+      { label: '友情链接', href: 'friendlink' },
       { label: '网站设置', href: 'settings' }
     ];
 
