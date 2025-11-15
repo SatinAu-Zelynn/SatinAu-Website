@@ -43,7 +43,8 @@ class NavigateBar extends HTMLElement {
 
     // 更多选项菜单数据
     const moreItems = [
-      { label: '网站设置', href: 'settings' },
+      { label: '我的歌单', href: 'playlist' },
+      { label: '网站设置', href: 'settings' }
     ];
 
     // 构建HTML结构
@@ -78,9 +79,6 @@ class NavigateBar extends HTMLElement {
             </svg>
           </button>
           <div class="more-dropdown">
-            <a href="https://i.y.qq.com/n2/m/share/details/taoge.html?id=7652837049&hosteuin=" target="_blank" class="dropdown-item">
-              我的歌单
-            </a>
             ${moreItems.map(item => {
               // 更多菜单项的激活逻辑，获取其基础文件名进行匹配
               const moreItemBaseName = item.href.split('/').pop().replace('.html', '');
@@ -90,7 +88,7 @@ class NavigateBar extends HTMLElement {
               <a 
                 href="/pages/${item.href}.html" 
                 class="dropdown-item ${isActive ? 'active' : ''}"
-                onclick="window.location.href='/pages/settings.html'; return false;"
+                onclick="window.location.href=href; return false;"
                 ${item.target ? `target="${item.target}"` : ''}
               >
                 ${item.label}
