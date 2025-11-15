@@ -630,11 +630,16 @@ function initImageViewer() {
     if (postImages.length === 0) return;
     
     // 为图片容器初始化查看器
-    window.imageViewer = new Viewer(postContent, {  // 直接使用postContent容器
+    window.imageViewer = new Viewer(postContent, {
+        title: function(img) {
+            const articleTitle = postTitle?.textContent;
+            const width = img.naturalWidth;
+            const height = img.naturalHeight;
+            return `${articleTitle} (${width} × ${height})`;
+        },
         backdrop: true,
         toolbar: true,
         navbar: true,
-        title: true,
         tooltip: true,
         movable: true,
         zoomable: true,
