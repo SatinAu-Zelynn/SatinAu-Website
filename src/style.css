@@ -17,7 +17,7 @@
 /* ========== 全局字体设置 ========== */
 @font-face {
   font-family: 'MiSans';
-  src: url('../public/font/MiSans VF.ttf') format('truetype');
+  src: url('/public/font/MiSans VF.ttf') format('truetype');
   font-weight: 100 900; /* 支持可变字重 */
   font-style: normal;
   font-display: swap;
@@ -32,15 +32,13 @@
 /* ========== 全局基础 ========== */
 :root{
   --nav-height: 68px; /* 底栏高度，用于预留滚动空间 */
-  --primary-color: #007aff;
-  --primary-dark: #0a84ff;
-  --bg-light: rgba(255,255,255,0.6);
-  --bg-dark: rgba(40,40,40,0.4);
-  --border-radius-sm: 8px;
-  --border-radius-md: 12px;
+  --primary-color: light-dark(#007aff, #0a84ff); /* 主色调 */
+  --word-color: light-dark(#111, #f5f5f5); /* 文字颜色 */
+  --border-radius-sm: 10px;
+  --border-radius-md: 14px;
   --border-radius-lg: 20px;
-  --transition-standard: 0.3s ease;
-  --custom-cursor: url('../public/image/cursor.Daeq1_K3.cur') 12 4, auto;
+  --border-radius-xl: 22px;
+  --custom-cursor: url('/public/image/cursor.Daeq1_K3.cur') 12 4, auto;
 }
 
 /* 替换手型光标 */
@@ -58,7 +56,7 @@ button,
 body {
   margin: 0;
   padding: 0;
-  color: light-dark(#111, #f5f5f5);
+  color: var(--word-color);
   opacity: 0;
   transition: opacity 0.8s ease;
   overflow-x: hidden; /* 禁止横向滚动 */
@@ -296,7 +294,7 @@ h1, h2 { text-wrap: balance; }
   backdrop-filter: blur(24px) saturate(180%);
   background: light-dark(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1));
   border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
-  border-radius: 18px;
+  border-radius: var(--border-radius-lg);
   box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
   text-decoration: none;
   color: inherit;
@@ -369,7 +367,7 @@ h1, h2 { text-wrap: balance; }
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  border-radius:12px;
+  border-radius:var(--border-radius-sm);
   background:linear-gradient(135deg,#e8f0fe,#f5f5f5);
   box-shadow:inset 0 0 0 1px light-dark(rgba(255,255,255,0.4), rgba(255,255,255,0.1));
   flex-shrink:0;
@@ -380,7 +378,7 @@ h1, h2 { text-wrap: balance; }
 }
 .text{display:flex;flex-direction:column;text-align:left;}
 .label{font-size:12px;color:light-dark(#666, #aaa);}
-.value{font-size:15px;font-weight:600;color:light-dark(#111, #f5f5f5);}
+.value{font-size:15px;font-weight:600;color:var(--word-color);}
 
 /* 渐变 paw */
 .paw-pink   { background: linear-gradient(135deg, #ff9a9e, #fad0c4); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -479,11 +477,11 @@ footer{
   left: 50%;
   transform: translateX(-50%) translateY(20px) scale(0.95);
   padding: 12px 20px;
-  border-radius: 16px;
+  border-radius:var(--border-radius-md);
   font-size: 15px;
   font-weight: 500;
   background: light-dark(rgba(255,255,255,0.25), rgba(30,30,30,0.5));
-  color: light-dark(#111, #f5f5f5);
+  color: var(--word-color);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
   box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
@@ -522,7 +520,7 @@ footer{
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 20px;
+  border-radius:var(--border-radius-lg);
   box-shadow: 0 12px 40px rgba(0,0,0,0.25), inset 0 0 30px rgba(255,255,255,0.12);
   padding: 20px;
   text-align: center;
@@ -530,7 +528,7 @@ footer{
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.22, 1.4, 0.36, 1);
   z-index: 9998;
-  color: light-dark(#111, #f5f5f5);
+  color: var(--word-color);
 
   &.show {
     opacity: 1;
@@ -543,7 +541,7 @@ footer{
 .ios-alert {
   width: 300px;
   overflow: hidden;
-  p { margin: 0 0 14px; font-size: 15px; font-weight: 500; color: light-dark(#111, #f5f5f5); }
+  p { margin: 0 0 14px; font-size: 15px; font-weight: 500; color: var(--word-color); }
 
   /* iOS 弹窗按钮：竖直堆叠 + 胶囊形状 */
   .actions {
@@ -559,13 +557,13 @@ footer{
     font-size: 15px;
     font-weight: 600;
     border: none;
-    border-radius: 14px;
+    border-radius:var(--border-radius-md);
     background: light-dark(rgba(255,255,255,0.6), rgba(40,40,40,0.6));
-    color: light-dark(#007aff, #0a84ff);
+    color: var(--primary-color);
     cursor: pointer;
     transition: transform 0.2s ease, filter 0.2s ease, background 0.3s ease;
     &.cancel { color: light-dark(#ff3b30, #ff453a); }
-    &.confirm { color: #007aff; }
+    &.confirm { color: var(--primary-color); }
     &:hover { background: light-dark(rgba(255,255,255,0.75), rgba(60,60,60,0.75)); }
     &:active { transform: scale(0.96); filter: brightness(0.9); }
   }
@@ -585,7 +583,7 @@ body#index-page {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    border-radius: 12px;
+    border-radius:var(--border-radius-md);
     background: light-dark(rgba(255,255,255,0.35), rgba(30,30,30,0.45));
     -webkit-backdrop-filter: blur(12px) saturate(180%);
     backdrop-filter: blur(12px) saturate(180%);
@@ -629,7 +627,7 @@ body#index-page {
       color: light-dark(#ff3b30, #ff453a);
       background: light-dark(rgba(255,255,255,0.6), rgba(40,40,40,0.6));
       border: none;
-      border-radius: 14px;
+      border-radius:var(--border-radius-md);
       cursor: pointer;
       transition: transform 0.2s ease, filter 0.2s ease, background 0.3s ease;
 
@@ -645,8 +643,8 @@ body#index-page {
 
   /* 微信二维码弹窗 */
   .wechat-qr {
-    img { width: 240px; height: 240px; border-radius: 12px; }
-    p { margin-top: 12px; font-size: 15px; font-weight: 600; color: light-dark(#111, #f5f5f5); }
+    img { width: 240px; height: 240px; border-radius:var(--border-radius-md); }
+    p { margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--word-color); }
   }
 }
 
@@ -662,7 +660,7 @@ body#index-page {
   box-sizing: border-box;
   width: min(90vw, 320px);
   padding: 10px;
-  border-radius: 22px;
+  border-radius:var(--border-radius-xl);
   background: light-dark(rgba(255,255,255,0.28),rgba(30,30,30,0.5));
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
@@ -675,7 +673,7 @@ body#index-page {
   a{
     flex: 1;
     text-align: center;
-    border-radius: 14px;
+    border-radius:var(--border-radius-md);
     font-size: 14px;
     font-weight: 600;
     color: light-dark(#333, #f5f5f5);
@@ -689,7 +687,7 @@ body#index-page {
 
     &.active{
       background: light-dark(rgba(255,255,255,0.6), rgba(255,255,255,0.18));
-      color: light-dark(#007aff, #0a84ff);
+      color: var(--primary-color);
     }
 
     &:hover{
@@ -808,7 +806,7 @@ body#index-page {
   /* 圆形SatinAu Design材质承托 */
   width: 36px;
   height: 36px;
-  color: light-dark(#111, #f5f5f5);
+  color: var(--word-color);
   border-radius: 50%;
   background: light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2)); /* 半透明背景 */
   backdrop-filter: blur(22px) saturate(180%);
@@ -843,7 +841,7 @@ body#index-page {
   margin-top: 24px;
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30));
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
-  border-radius: 16px; /* 与导航栏风格统一的圆角 */
+  border-radius:var(--border-radius-md); /* 与导航栏风格统一的圆角 */
   box-shadow: 0 12px 32px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4));
   padding: 8px 0;
   transform-origin: top right;
@@ -907,7 +905,7 @@ body#index-page {
     -webkit-backdrop-filter: blur(22px) saturate(180%);
     backdrop-filter: blur(22px) saturate(180%);
     border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
-    border-radius: 22px;
+    border-radius:var(--border-radius-xl);
     box-shadow: 0 -18px 40px light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.4)), inset 0 0 30px light-dark(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
     z-index: 5000;
     opacity: 0;
@@ -919,7 +917,7 @@ body#index-page {
       flex: 1;
       text-align: center;
       padding: 12px 0;
-      border-radius: 14px;
+      border-radius:var(--border-radius-md);
       font-size: 14px;
       font-weight: 600;
       color: #333;
@@ -936,7 +934,7 @@ body#index-page {
         transition: all 0.3s ease;
         text-align: center;
         background: rgba(255,255,255,0.6);
-        color: #007aff;
+        color: var(--primary-color);
       }
     }
 
@@ -1085,7 +1083,7 @@ body#index-page {
   svg {
     width: 20px;
     height: 20px;
-    stroke: light-dark(#007aff, #0a84ff);
+    stroke: var(--primary-color);
     stroke-width: 2.2;
     fill: none;
   }
@@ -1106,18 +1104,18 @@ body#index-page {
   h2 { font-size: clamp(1.4rem, 4vw, 1.6rem); }
   h3 { font-size: clamp(1.2rem, 4vw, 1.4rem); }
   p { margin: 0.8em 0; font-size: clamp(0.95rem, 3vw, 1rem); }
-  a { color: #007aff; text-decoration: none; 
+  a { color: var(--primary-color); text-decoration: none; 
     &:hover { text-decoration: underline; }}
-  img { max-width: 100%; height: auto; border-radius: 12px; }
-  code { padding: 0.2em 0.4em; border-radius: 6px; background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.12)); }
-  pre { overflow: auto; padding: 14px; border-radius: 12px; background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.08)); 
+  img { max-width: 100%; height: auto; border-radius:var(--border-radius-md); }
+  code { padding: 0.2em 0.4em; border-radius:var(--border-radius-sm); background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.12)); }
+  pre { overflow: auto; padding: 14px; border-radius:var(--border-radius-md); background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.08)); 
     code { background: transparent; padding: 0; }}
   /* 列表 */
   ul, ol { padding-left: 1.4em; margin: 0.6em 0; }
   /* 引用 */
   blockquote {
     margin: 1em 0; padding: 0.6em 1em; border-left: 3px solid light-dark(#ccc, #666); opacity: 0.9;
-    background: light-dark(rgba(255,255,255,0.5), rgba(40,40,40,0.4)); border-radius: 8px;
+    background: light-dark(rgba(255,255,255,0.5), rgba(40,40,40,0.4)); border-radius:var(--border-radius-sm);
   }
 }
 
@@ -1199,7 +1197,7 @@ body#index-page {
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
-  border-radius: 14px;
+  border-radius:var(--border-radius-md);
   padding: 10px 20px;
   font-size: 15px;
   font-weight: 600;
@@ -1223,7 +1221,7 @@ body#index-page {
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 14px;
+  border-radius:var(--border-radius-md);
   padding: 10px 20px;
   font-size: 15px;
   font-weight: 600;
@@ -1256,7 +1254,7 @@ body#index-page {
   background: light-dark(rgba(255, 255, 255, 0.3), rgba(30, 30, 30, 0.45)); /* 与首页.modal一致 */
   -webkit-backdrop-filter: blur(24px) saturate(180%); /* 统一模糊参数 */
   backdrop-filter: blur(24px) saturate(180%);
-  border-radius: 20px; /* 保持一致的圆角 */
+  border-radius:var(--border-radius-lg); /* 保持一致的圆角 */
   border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.12)); /* 统一边框 */
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); /* 统一阴影 */
   padding: 24px;
@@ -1286,7 +1284,7 @@ body#index-page {
 #closeAuthModal {
   background: rgba(255, 255, 255, 0.6); /* 与iOS弹窗按钮背景一致 */
   border: none;
-  border-radius: 14px; /* 统一圆角 */
+  border-radius:var(--border-radius-md); /* 统一圆角 */
   padding: 12px 0;
   font-size: 15px;
   font-weight: 600;
@@ -1333,7 +1331,7 @@ body#index-page {
   
   #authModal .tab-btn.active {
     background: rgba(60, 60, 60, 0.75); /* 与活跃状态统一 */
-    color: #0a84ff;
+    color: var(--primary-color);
   }
   
   #authModal .tab-btn:hover,
@@ -1355,7 +1353,7 @@ body#index-page {
   margin-bottom: 12px;
   max-width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.3); /* 统一边框 */
-  border-radius: 12px; /* 与其他输入框圆角一致 */
+  border-radius:var(--border-radius-md); /* 与其他输入框圆角一致 */
   background: rgba(255, 255, 255, 0.2); /* 统一背景 */
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -1384,7 +1382,7 @@ body#index-page {
   align-items: center;
   width: auto;
   padding: 0 16px;
-  border-radius: 24px;
+  border-radius:var(--border-radius-xl);
 }
 
 #downloadArticle {
@@ -1404,7 +1402,7 @@ body#index-page {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-radius: var(--border-radius-md, 12px);
+  border-radius: var(--border-radius-md);
   background: light-dark(rgba(255, 255, 255, 0.2), rgba(30, 30, 30, 0.4));
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   backdrop-filter: blur(16px) saturate(180%);
@@ -1450,7 +1448,7 @@ body#index-page {
   bottom: 0;
   background-color: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.15));
   border-radius: 999px; /* Capsule shape */
-  transition: background-color var(--transition-standard, 0.3s ease);
+  transition: background-color 0.3s ease;
 
   /* The thumb (the sliding circle) */
   &::before {
@@ -1460,16 +1458,16 @@ body#index-page {
     width: 24px;
     left: 2px;
     bottom: 2px;
-    background-color: white;
+    background-color: #f5f5f5;
     border-radius: 50%;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform var(--transition-standard, 0.3s cubic-bezier(0.22, 1, 0.36, 1));
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
 /* Styles for the "On" state */
 input:checked + .switch-slider {
-  background-color: light-dark(var(--primary-color, #007aff), var(--primary-dark, #0a84ff));
+  background-color: var(--primary-color);
 
   &::before {
     transform: translateX(22px); /* Sliding distance */
@@ -1502,7 +1500,7 @@ input:checked + .switch-slider {
 
 /* 图片主体 */
 .viewer-image {
-  border-radius: 12px;
+  border-radius:var(--border-radius-md);
   box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 16px rgba(255,255,255,0.1);
   transition: transform 0.35s ease, filter 0.35s ease;
 }
@@ -1522,7 +1520,7 @@ input:checked + .switch-slider {
   background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.5));
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
-  border-radius: 16px;
+  border-radius:var(--border-radius-md);
   padding: 6px 10px;
   box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.12);
   z-index: 2000;
@@ -1541,7 +1539,7 @@ input:checked + .switch-slider {
     width: 100%;
     height: 200px;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius:var(--border-radius-md);
     cursor: pointer;
     transition: transform 0.3s ease;
 
@@ -1576,9 +1574,9 @@ input:checked + .switch-slider {
   left: 50%;
   transform: translateX(-50%) scale(0.9);
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius:var(--border-radius-sm);
   background-color: light-dark(#f5f5f5, #111);
-  color: light-dark(#111, #f5f5f5);
+  color: var(--word-color);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
