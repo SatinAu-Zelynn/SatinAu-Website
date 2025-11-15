@@ -26,14 +26,11 @@
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
   <link rel="canonical" href="https://satinau.cn/pages/settings.html">
-  <link rel="icon" type="image/x-icon" href="../source/image/favicon.ico">
-  <link rel="stylesheet" href="../style/satinau.css">
-  <link rel="stylesheet" href="../style/fluent.css" disabled media="print" onload="this.media='all'; this.disabled=false;">
-  <link rel="stylesheet" href="../style/material.css" disabled media="print" onload="this.media='all'; this.disabled=false;">
-  <link rel="stylesheet" href="../style/components/tooltip.css">
-  <script src="../script/config.js"></script>
-  <script src="../script/common.js" defer></script>
-  <script src="../script/components/CRCMenu.v2.js"></script>
+  <link rel="icon" type="image/x-icon" href="../public/image/favicon.ico">
+  <link rel="stylesheet" href="../src/style.css">
+  <script src="../src/script/config.js"></script>
+  <script src="../src/script/common.js" defer></script>
+  <script src="../src/script/components/CRCMenu.v2.js"></script>
   <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
           c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -57,31 +54,6 @@
     </header>
 
     <section>
-      <h2>主题样式选择</h2>
-      <p>选择您偏好的网站显示样式，不同样式可能影响性能体验</p>
-      
-      <div class="style-switcher">
-        <input type="radio" name="style" id="satinau" value="satinau" checked>
-        <label for="satinau">
-          SatinAu Design
-          <span class="tooltip">推荐，可能造成卡顿</span>
-        </label>
-  
-        <input type="radio" name="style" id="fluent" value="fluent">
-        <label for="fluent">
-          Fluent Design
-          <span class="tooltip">Microsoft推出，较为流畅</span>
-        </label>
-  
-        <input type="radio" name="style" id="material" value="material">
-        <label for="material">
-          Material Design
-          <span class="tooltip">Google推出，较为流畅</span>
-        </label>
-      </div>
-    </section>
-
-    <section>
       <h2>功能开关</h2>
       <p>控制网站的一些额外功能和交互</p>
       <div class="setting-item">
@@ -96,7 +68,7 @@
       </div>
     </section>
 
-    <script src="../script/components/footer.js"></script>
+    <script src="../src/script/components/footer.js"></script>
     <site-footer></site-footer>
   </main>
 
@@ -109,7 +81,7 @@
   <div id="copiedTip" class="copied-tip"></div>
 
   <!-- 导航栏 -->
-  <script src="../script/components/navigate.js"></script>
+  <script src="../src/script/components/navigate.js"></script>
   <navigate-bar></navigate-bar>
 </body>
 </html>

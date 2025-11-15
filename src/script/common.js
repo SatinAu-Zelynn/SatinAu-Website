@@ -363,48 +363,6 @@ document.querySelectorAll(".bottom-nav a").forEach(link => {
   }
 })();
 
-// ---- 样式切换逻辑 ----
-document.addEventListener('DOMContentLoaded', () => {
-  // 初始化样式选项
-  const styleOptions = document.querySelectorAll('input[name="style"]');
-  const savedStyle = localStorage.getItem('preferredStyle') || 'satinau';
-
-  // 设置初始选中状态
-  const savedOption = document.querySelector(`input[name="style"][value="${savedStyle}"]`);
-  if (savedOption) {
-    savedOption.checked = true;
-  }
-
-  // 应用初始样式
-  applyCssVersion(savedStyle);
-
-  // 为每个选项添加change事件监听
-  styleOptions.forEach(option => {
-    option.addEventListener('change', function() {
-      applyCssVersion(this.value);
-      localStorage.setItem('preferredStyle', this.value);
-      let msg = '已切换到SatinAu Design';
-      if (this.value === 'fluent') msg = '已切换到Fluent UI';
-      if (this.value === 'material') msg = '已切换到Material Design';
-      showToast(msg);
-    });
-  });
-});
-
-// 应用CSS版本
-function applyCssVersion(style) {
-  const cssLinks = document.querySelectorAll('link[rel="stylesheet"]');
-  cssLinks.forEach(link => {
-    if (link.href.includes('fluent.css')) {
-      link.disabled = style !== 'fluent';
-    } else if (link.href.includes('material.css')) {
-      link.disabled = style !== 'material';
-    } else if (link.href.includes('satinau.css') && !link.href.includes('fluent.css') && !link.href.includes('material.css')) {
-      link.disabled = style !== 'satinau';
-    }
-  });
-}
-
 // 更多菜单控制
 let moreMenuVisible = false;
 

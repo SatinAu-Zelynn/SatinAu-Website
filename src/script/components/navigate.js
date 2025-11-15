@@ -58,7 +58,7 @@ class NavigateBar extends HTMLElement {
       </style>
       <nav class="bottom-nav">
         <div class="nav-avatar" onclick="window.location.href='/'">
-          <img src="/source/image/favicon.ico" alt="Avatar">
+          <img src="/public/image/favicon.ico" alt="Avatar">
         </div>
         ${navItems.map(item => `
           <a 

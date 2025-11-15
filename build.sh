@@ -14,6 +14,6 @@ sed -e "s|__SUPABASE_URL__|$SUPABASE_URL|g" \
     -e "/__BUILD_INFO__/{
         r /dev/stdin
         d
-    }" script/config.template.js > script/config.js
+    }" src/script/config.template.js > src/script/config.js
 
 echo "[BUILD] 配置文件生成成功"
