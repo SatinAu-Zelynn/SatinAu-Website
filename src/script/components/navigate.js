@@ -78,7 +78,7 @@ class NavigateBar extends HTMLElement {
             </svg>
           </button>
           <div class="more-dropdown">
-            <a href="https://c6.y.qq.com/base/fcgi-bin/u?__=Fy3CGi4gRscv" target="_blank" class="dropdown-item">
+            <a href="https://i.y.qq.com/n2/m/share/details/taoge.html?id=7652837049&hosteuin=" target="_blank" class="dropdown-item">
               我的歌单
             </a>
             ${moreItems.map(item => {
