@@ -45,7 +45,7 @@ class NavigateBar extends HTMLElement {
     const moreItems = [
       { label: '关于我', href: 'aboutme' },
       { label: '友情链接', href: 'friendlink' },
-      { label: '我的歌单', href: 'playlist' },
+      { label: '歌单分享', href: 'playlist' },
       { label: '网站设置', href: 'settings' }
     ];
 
