@@ -767,7 +767,7 @@ body#index-page {
 @media (min-width: 768px) {
   .nav-avatar {
     display: block;
-    margin-right: 12px; /* 与导航项保持间距 */
+    margin: 0 8px -3px 0;
   
     img {
       width: 36px;
@@ -816,7 +816,7 @@ body#index-page {
   align-items: center;
   justify-content: center;
   padding: 0;
-  margin: 2px 0 0 12px; /* 靠右对齐 */
+  margin: 0 0 -3px 8px;
   transition: background 0.2s ease;
 
   &:hover {
