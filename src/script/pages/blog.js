@@ -159,8 +159,9 @@ function initBlog() {
         // 登录成功，显示用户信息
         showUserInfo(session.user);
         // 关闭登录弹窗（如果打开）
-        authModal.style.display = 'none';
-        // 可以在这里添加登录成功后的其他操作（如刷新文章列表等）
+        authOverlay.style.display = 'none';
+        authOverlay.classList.remove('show');
+        authModal.classList.remove('show');
         showToast('登录成功');
         } else if (event === 'SIGNED_OUT') {
         // 登出成功
@@ -174,9 +175,9 @@ function initBlog() {
     function setupAuthEventListeners() {
     // 登录按钮
     loginBtn.addEventListener('click', () => {
-        authModal.style.display = 'block';
+        authOverlay.style.display = 'block';
+        authOverlay.classList.add('show');
         authModal.classList.add('show');
-        const modalContent = authModal.querySelector('.modal');
         if (modalContent) {
         modalContent.classList.add('show');
         }
@@ -184,9 +185,9 @@ function initBlog() {
 
     // 关闭弹窗
     closeAuthModal.addEventListener('click', () => {
-        authModal.style.display = 'none';
-        authModal.classList.remove('show')
-        const modalContent = authModal.querySelector('.modal');
+        authOverlay.style.display = 'none';
+        authOverlay.classList.remove('show');
+        authModal.classList.remove('show');
         if (modalContent) {
         modalContent.classList.remove('show');
         }
@@ -218,7 +219,9 @@ function initBlog() {
         authError.textContent = error.message;
         } else {
         showUserInfo(data.user);
-        authModal.style.display = 'none';
+        authOverlay.style.display = 'none';
+        authOverlay.classList.remove('show');
+        authModal.classList.remove('show');
         }
     });
 

@@ -1247,110 +1247,48 @@ body#index-page {
   }
 }
 
-/* 登录弹窗 - SatinAu Design 风格 */
-#authModal.overlay {
-  /* 保持现有遮罩样式，与.overlay类一致 */
-  background: rgba(0, 0, 0, 0.35);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-#authModal .modal {
-  /* 统一背景和模糊效果 */
-  background: light-dark(rgba(255, 255, 255, 0.3), rgba(30, 30, 30, 0.45)); /* 与首页.modal一致 */
-  -webkit-backdrop-filter: blur(24px) saturate(180%); /* 统一模糊参数 */
-  backdrop-filter: blur(24px) saturate(180%);
-  border-radius:var(--border-radius-lg); /* 保持一致的圆角 */
-  border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.12)); /* 统一边框 */
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); /* 统一阴影 */
-  padding: 24px;
-  min-width: 300px;
-  max-width: 500px;
-  /* 统一动画过渡 */
-  transition: all 0.4s cubic-bezier(0.22, 1.4, 0.36, 1); /* 与首页弹窗动画曲线一致 */
-  /* 初始状态与其他弹窗一致 */
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.9); /* 初始缩放 */
-}
-
-#authModal .modal.show {
-  /* 显示状态与其他弹窗一致 */
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, -50%) scale(1); /* 显示时的缩放 */
-}
-
-/* 弹窗内按钮样式统一 */
+/* 登录弹窗内按钮样式 */
 #authModal .tab-btn,
 #emailLoginBtn,
 #signupBtn,
 #githubLoginBtn,
 #googleLoginBtn,
 #closeAuthModal {
-  background: rgba(255, 255, 255, 0.6); /* 与iOS弹窗按钮背景一致 */
+  background: light-dark(rgba(255, 255, 255, 0.6), rgba(40, 40, 40, 0.6));
   border: none;
-  border-radius:var(--border-radius-md); /* 统一圆角 */
+  border-radius:var(--border-radius-md);
   padding: 12px 0;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  /* 统一过渡动画 */
+  /* 过渡动画 */
   transition: transform 0.2s ease, filter 0.2s ease, background 0.3s ease;
   width: 100%;
   margin-bottom: 10px;
 }
 
-/* 统一hover效果 */
+/* hover效果 */
 #authModal .tab-btn:hover,
 #emailLoginBtn:hover,
 #signupBtn:hover,
 #githubLoginBtn:hover,
 #googleLoginBtn:hover,
 #closeAuthModal:hover {
-  background: rgba(255, 255, 255, 0.75); /* 与iOS弹窗按钮hover一致 */
+  background: light-dark(rgba(255, 255, 255, 0.75), rgba(60, 60, 60, 0.75));
 }
 
-/* 统一点击效果 */
+/* 点击效果 */
 #authModal .tab-btn:active,
 #emailLoginBtn:active,
 #signupBtn:active,
 #githubLoginBtn:active,
 #googleLoginBtn:active,
 #closeAuthModal:active {
-  transform: scale(0.95); /* 与iOS弹窗按钮点击缩放一致 */
+  transform: scale(0.95);
   filter: brightness(0.9);
 }
 
-/* 深色模式下弹窗样式统一 */
-@media (prefers-color-scheme: dark) {
-  /* 弹窗内按钮深色模式样式统一 */
-  #authModal .tab-btn,
-  #emailLoginBtn,
-  #signupBtn,
-  #githubLoginBtn,
-  #googleLoginBtn,
-  #closeAuthModal {
-    background: rgba(40, 40, 40, 0.6); /* 与iOS弹窗按钮深色模式一致 */
-    color: #f5f5f5;
-  }
-  
-  #authModal .tab-btn.active {
-    background: rgba(60, 60, 60, 0.75); /* 与活跃状态统一 */
-    color: var(--primary-color);
-  }
-  
-  #authModal .tab-btn:hover,
-  #emailLoginBtn:hover,
-  #signupBtn:hover,
-  #githubLoginBtn:hover,
-  #googleLoginBtn:hover,
-  #closeAuthModal:hover {
-    background: rgba(60, 60, 60, 0.75); /* 与hover状态统一 */
-  }
-}
-
-/* 输入框样式与首页弹窗统一 */
+/* 输入框样式 */
 #authModal input[type="email"],
 #authModal input[type="password"] {
   width: 100%;
@@ -1358,22 +1296,13 @@ body#index-page {
   padding: 12px 16px;
   margin-bottom: 12px;
   max-width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.3); /* 统一边框 */
-  border-radius:var(--border-radius-md); /* 与其他输入框圆角一致 */
-  background: rgba(255, 255, 255, 0.2); /* 统一背景 */
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));
+  border-radius:var(--border-radius-md);
+  background: light-dark(rgba(255, 255, 255, 0.2), rgba(40, 40, 40, 0.5));
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   font-size: 15px;
   color: light-dark(#333, #f5f5f5);
-}
-
-/* 深色模式输入框统一 */
-@media (prefers-color-scheme: dark) {
-  #authModal input[type="email"],
-  #authModal input[type="password"] {
-    background: rgba(40, 40, 40, 0.5); /* 与深色模式下其他输入框一致 */
-    border-color: rgba(255, 255, 255, 0.15);
-  }
 }
 
 .post-actions {
