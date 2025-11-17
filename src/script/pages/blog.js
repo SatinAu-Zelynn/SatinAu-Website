@@ -104,6 +104,8 @@ function initBlog() {
         loadPost(post);
         }
     } else {
+        // 恢复默认页面 title
+        document.title = "博客Blog - 缎金SatinAu";
         // 显示头部和列表区域
         const header = document.querySelector('header');
         const sectionTitle = document.querySelector('section h2');
@@ -291,6 +293,8 @@ function initBlog() {
 
     // 返回列表按钮事件
     backToList.addEventListener("click", () => {
+        // 恢复默认页面 title
+        document.title = "博客Blog - 缎金SatinAu";
         // 显示头部和列表区域
         const header = document.querySelector('header');
         const sectionTitle = document.querySelector('section h2');
@@ -444,6 +448,7 @@ fetch(`https://blog.satinau.cn/${post.file}`)
 
 // 渲染文章内容
 function renderPost(post, mdContent) {
+    document.title = `${post.title} - 缎金SatinAu`;
     // 隐藏"最新文章"及其上方所有元素
     const header = document.querySelector('header');
     const sectionTitle = document.querySelector('section h2'); // 最新文章标题
@@ -549,6 +554,8 @@ function initBlogButtons() {
 const backToListBtn = document.getElementById('backToListBtn');
 if (backToListBtn) {
     backToListBtn.addEventListener('click', () => {
+    // 恢复默认页面 title
+    document.title = "博客Blog - 缎金SatinAu";
     // 显示头部和列表区域
     const header = document.querySelector('header');
     const sectionTitle = document.querySelector('section h2');
