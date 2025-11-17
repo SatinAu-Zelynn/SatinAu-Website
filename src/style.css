@@ -371,8 +371,8 @@ h1, h2 { text-wrap: balance; }
   flex-shrink:0;
   transition: transform 0.4s ease, background 0.5s ease;
   scrollbar-gutter: stable both-edges;
-  svg{width:22px;height:rgb(230, 227, 227);}
-  img{width:22px;height:22px;}
+  svg{width:22px;height:22px;}
+  img{width:30px;height:30px;border-radius:8px;}
 }
 .text{display:flex;flex-direction:column;text-align:left;}
 .label{font-size:12px;color:light-dark(#666, #aaa);}
