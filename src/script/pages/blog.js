@@ -178,9 +178,6 @@ function initBlog() {
         authOverlay.style.display = 'block';
         authOverlay.classList.add('show');
         authModal.classList.add('show');
-        if (modalContent) {
-        modalContent.classList.add('show');
-        }
     });
 
     // 关闭弹窗
@@ -188,9 +185,6 @@ function initBlog() {
         authOverlay.style.display = 'none';
         authOverlay.classList.remove('show');
         authModal.classList.remove('show');
-        if (modalContent) {
-        modalContent.classList.remove('show');
-        }
         authError.textContent = '';
     });
 
