@@ -15,8 +15,11 @@ function initFriendLinks() {
       list.forEach((item, index) => {
         const a = document.createElement("a");
         a.className = "contact-card";
-        a.href = item.link;
-        a.target = "_blank";
+        a.href = "javascript:void(0);";
+        a.setAttribute(
+          "onclick",
+          `showIosAlert('${item.link}', '是否跳转到 ${item.name}？')`
+        );
 
         a.innerHTML = `
           <div class="icon">
