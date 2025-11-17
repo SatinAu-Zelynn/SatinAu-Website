@@ -28,7 +28,6 @@ class SiteFooter extends HTMLElement {
           vertical-align: middle;
           margin-top: -2px;
           fill: currentColor;
-          stroke: currentColor;
         }
         .footer-icon-a {
           width: 1em;
