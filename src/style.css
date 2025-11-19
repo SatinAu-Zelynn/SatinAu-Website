@@ -16,7 +16,7 @@
 
 /* ========== 全局字体设置 ========== */
 * {
-  font-family: 'MiSans', sans-serif !important;
+  font-family: MiSans,serif;
   font-size-adjust: 0.54;
 }
 
