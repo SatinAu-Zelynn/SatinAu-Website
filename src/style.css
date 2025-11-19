@@ -926,7 +926,7 @@ body#index-page {
         display: block;
         transition: all 0.3s ease;
         text-align: center;
-        background: rgba(255,255,255,0.6);
+        background: light-dark(rgba(255,255,255,0.6), rgba(255,255,255,0.18));
         color: var(--primary-color);
       }
     }
