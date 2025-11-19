@@ -15,18 +15,13 @@
 */
 
 /* ========== 全局字体设置 ========== */
-@font-face {
-  font-family: 'MiSans';
-  src: url('/public/font/MiSans VF.ttf') format('truetype');
-  font-weight: 100 900; /* 支持可变字重 */
-  font-style: normal;
-  font-display: swap;
-}
-
-/* 强制全站使用 MiSans */
 * {
   font-family: 'MiSans', sans-serif !important;
   font-size-adjust: 0.54;
+}
+
+html {
+  font-weight: 450;
 }
 
 /* ========== 全局基础 ========== */
@@ -193,12 +188,6 @@ body#index-page header {
   gap: 6px;
   margin-top: 30px;
 
-  h1 {
-    margin: 0;
-    font-size: 2.4rem;
-    font-weight: 700;
-  }
-
   img {
     max-height: 90px;
     width: auto;
@@ -227,6 +216,7 @@ section {
 
 /* 为四行文字设置递增延迟，在标题动画后依次出现 */
 body#index-page section p {
+  font-weight: 500;
   &:nth-of-type(1) { animation-delay: 2s; }     /* 标题动画结束后立即 */
   &:nth-of-type(2) { animation-delay: 2.3s; }   /* 延迟0.3s */
   &:nth-of-type(3) { animation-delay: 2.6s; }   /* 延迟0.6s */
@@ -248,6 +238,11 @@ body#index-page section p {
 
 body#index-page section:nth-of-type(2) h2 {
   margin-top: 100px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.4rem;
 }
 
 h2 { 
@@ -1067,6 +1062,7 @@ body#index-page {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-weight: 500;
   width: 44px;
   height: 44px;
   border-radius: 50%;
