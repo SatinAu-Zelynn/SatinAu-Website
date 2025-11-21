@@ -33,7 +33,7 @@ html {
   --border-radius-md: 14px;
   --border-radius-lg: 20px;
   --border-radius-xl: 22px;
-  --custom-cursor: url('/public/image/cursor.Daeq1_K3.cur') 12 4, auto;
+  --custom-cursor: url('/public/cursor.Daeq1_K3.cur') 12 4, auto;
 }
 
 /* 替换手型光标 */
