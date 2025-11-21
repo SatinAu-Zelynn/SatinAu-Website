@@ -55,7 +55,7 @@
 
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/SatinAu-Zelynn/SatinAu-Website-Classic.git
+   git clone https://github.com/SatinAu-Zelynn/SatinAu-Website.git
    ```
 
 2. 进入项目目录，使用Live Server或其他本地服务器软件运行
