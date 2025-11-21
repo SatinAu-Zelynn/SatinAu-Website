@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="" src="public\image\缎金SatinAu_logo_v3.5.png"  width=120 height=120  align="center">
+<img width="" src="public\缎金SatinAu_logo_v3.5.png"  width=120 height=120  align="center">
 
 # 缎金SatinAu 个人网站
 
