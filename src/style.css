@@ -208,6 +208,9 @@ section {
     font-size: 1.1rem; 
     line-height: 1.6; 
     margin: 8px 0; 
+  }
+
+  p, pre, .setting-item, .image-gallery {
     opacity: 0; 
     animation: blurFadeUp 1.2s ease forwards;
     animation-delay: 0.3s;
