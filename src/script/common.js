@@ -488,9 +488,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const diff = moveY - startY;
     const touchDuration = Date.now() - touchStartTime; // 计算触摸时长
     
-    // 增加触发条件：上滑距离>80px，且不是点击导航按钮，且触摸时长>150ms
+    // 触发条件：上滑距离>80px，且不是点击导航按钮，且触摸时长>150ms
     if (diff < -80 && !isMenuOpen && !isNavLinkTouched && touchDuration > 150) {
       mobileMenu.classList.add('show');
+      bottomNav.classList.add('menu-open');
       isMenuOpen = true;
       document.body.style.overflow = 'hidden';
     }
@@ -508,6 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('click', function(e) {
     if (isMenuOpen && !mobileMenu.contains(e.target) && !bottomNav.contains(e.target)) {
       mobileMenu.classList.remove('show');
+      bottomNav.classList.remove('menu-open');
       isMenuOpen = false;
       document.body.style.overflow = '';
     }
@@ -527,6 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       mobileMenu.classList.remove('show');
+      bottomNav.classList.remove('menu-open');
       isMenuOpen = false;
       document.body.style.overflow = '';
     });

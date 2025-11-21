@@ -878,18 +878,38 @@ body#index-page {
     position: absolute;
     top: 8px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) rotate(0deg); /* 初始化旋转 */
     width: 36px;
     height: 4px;
     border-radius: 2px;
     background: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+    /* 添加弹性过渡动画，与菜单弹出节奏一致 */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-sizing: border-box; /* 确保边框计算在内 */
+    border-top: 0 solid transparent;
+    border-left: 0 solid transparent;
+  }
+
+  /* 当菜单打开时，提示线变形为向上箭头 */
+  .bottom-nav.menu-open::before {
+    width: 12px;
+    height: 12px;
+    background: transparent; /* 背景透明 */
+    
+    /* 利用边框绘制箭头形状 */
+    border-top: 3px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+    border-left: 3px solid light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+    border-radius: 2px;
+    
+    /* 旋转45度构成向上箭头 */
+    transform: translateX(-50%) translateY(-20px) rotate(45deg);
   }
 
   /* 移动端专用更多菜单 */
   .mobile-more-menu {
     position: fixed;
     left: 50%;
-    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 40px);
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 45px);
     transform: translateX(-50%) translateY(20px) scale(0.95);
     width: min(90vw, 320px);
     max-height: 0;
