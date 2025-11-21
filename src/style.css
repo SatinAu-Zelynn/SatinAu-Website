@@ -869,7 +869,7 @@ body#index-page {
 
   /* 移动端导航栏手势提示线 */
   .bottom-nav {
-    padding-top: 24px; /* 为提示线预留空间 */
+    padding-top: 20px; /* 为提示线预留空间 */
   }
   
   /* 手势提示线样式 */
@@ -909,7 +909,7 @@ body#index-page {
   .mobile-more-menu {
     position: fixed;
     left: 50%;
-    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 45px);
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 40px);
     transform: translateX(-50%) translateY(20px) scale(0.95);
     width: min(90vw, 320px);
     max-height: 0;
