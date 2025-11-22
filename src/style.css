@@ -19,7 +19,6 @@
 
 * {
   font-family: "Google Sans Flex", MiSans, sans-serif;
-  font-size-adjust: 0.54;
 }
 
 /* ========== 全局基础 ========== */
@@ -697,7 +696,6 @@ body#index-page {
   /* === 底部导航栏（中英文分两行显示） === */
   .nav-cn {
     font-size: 15px;
-    font-weight: 600;
   }
 
   .nav-en {
@@ -739,13 +737,9 @@ body#index-page {
       display: inline-block;
     }
     
-    /* 调整字体大小以适应横向布局 */
-    .nav-cn {
-      font-size: 16px;
-    }
-    
+    /* 调整英文字体大小以适应横向布局 */
     .nav-en {
-      font-size: 14px;
+      font-size: 13px;
     }
   }
 
