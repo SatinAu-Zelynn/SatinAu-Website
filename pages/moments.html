@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>动态Moments - 缎金SatinAu</title>
+  <meta name="description" content="缎金SatinAu的日常动态与碎碎念">
+  <meta name="author" content="缎金SatinAu">
+  <meta name="color-scheme" content="light dark">
+  <link rel="canonical" href="https://satinau.cn/pages/moments">
+  <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="preload" href="https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <script src="/src/script/config.js"></script>
+  <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/CRCMenu.v2.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/viewerjs@1.11.6/dist/viewer.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/viewerjs@1.11.6/dist/viewer.min.js"></script>
+
+  <style>
+    /* 动态卡片容器 */
+    .moments-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-top: 30px;
+      text-align: left; /* 动态内容左对齐更易阅读 */
+    }
+
+    /* 单个动态卡片 - 复用 .contact-card 的核心玻璃质感 */
+    .moment-card {
+      padding: 24px;
+      border-radius: var(--border-radius-lg);
+      background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.2));
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08), inset 0 0 20px rgba(255,255,255,0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      opacity: 0; /* 初始隐藏，用于JS做入场动画 */
+      transform: translateY(20px);
+    }
+
+    .moment-card:hover {
+      box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+      background: light-dark(rgba(255, 255, 255, 0.35), rgba(30, 30, 30, 0.3));
+    }
+
+    /* 头部：头像与信息 */
+    .moment-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .moment-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .moment-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .moment-author {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--word-color);
+    }
+
+    .moment-date {
+      font-size: 13px;
+      color: light-dark(#666, #aaa);
+      margin-top: 2px;
+    }
+
+    /* 正文 */
+    .moment-content {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--word-color);
+      white-space: pre-wrap; /* 保留换行 */
+      margin-bottom: 16px;
+    }
+
+    /* 图片网格系统 */
+    .moment-gallery {
+      display: grid;
+      gap: 8px;
+      border-radius: var(--border-radius-md);
+      overflow: hidden;
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    /* 根据图片数量动态调整 Grid */
+    .moment-gallery[data-count="1"] { grid-template-columns: 1fr; }
+    .moment-gallery[data-count="2"] { grid-template-columns: 1fr 1fr; }
+    .moment-gallery[data-count="3"] { grid-template-columns: 1fr 1fr 1fr; }
+    .moment-gallery[data-count="4"] { grid-template-columns: 1fr 1fr; }
+    .moment-gallery[data-count="default"] { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+
+    .moment-gallery img {
+      width: 100%;
+      height: 100%;
+      max-height: 400px; /* 单图最大高度 */
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: zoom-in;
+      transition: filter 0.3s ease;
+      background: rgba(0,0,0,0.05);
+    }
+
+    .moment-gallery img:hover {
+      filter: brightness(0.9);
+    }
+    
+    /* 移动端优化 */
+    @media (max-width: 768px) {
+      .moment-card { padding: 18px; }
+      .moment-gallery[data-count="3"] { grid-template-columns: 1fr 1fr; } /* 移动端3图变2列 */
+    }
+  </style>
+</head>
+
+<body id="moments-page">
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+
+  <main class="page">
+    <header>
+      <div class="title-row">
+        <h1>动态 Moments</h1>
+      </div>
+      <div class="greeting" id="greeting"></div>
+    </header>
+
+    <section>
+      <div id="momentsList" class="moments-timeline">
+        </div>
+      
+      <div id="statusMsg" style="margin-top: 40px; color: #888; font-size: 14px;">
+        加载动态中...
+      </div>
+    </section>
+
+    <script src="../src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+
+  <div id="loadingOverlay" class="loading-overlay show">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="../src/script/components/navigate.js"></script>
+  <navigate-bar></navigate-bar>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 修改为 moments.json
+      const MOMENTS_API = 'https://blog.satinau.cn/data/moments.json';
+      const momentsList = document.getElementById('momentsList');
+      const statusMsg = document.getElementById('statusMsg');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+
+      // 获取数据
+      fetch(MOMENTS_API)
+        .then(response => {
+          if (!response.ok) throw new Error('网络响应异常');
+          return response.json();
+        })
+        .then(data => {
+          // 隐藏全屏加载动画
+          loadingOverlay.classList.remove('show');
+          
+          if (!data || data.length === 0) {
+            statusMsg.textContent = "暂时没有动态哦~";
+            return;
+          }
+
+          statusMsg.style.display = 'none';
+          renderMoments(data);
+        })
+        .catch(err => {
+          console.error('加载动态失败:', err);
+          loadingOverlay.classList.remove('show');
+          statusMsg.innerHTML = `加载失败，请<a href="javascript:location.reload()" style="color:var(--primary-color)">刷新</a>重试`;
+        });
+
+      // 渲染函数
+      function renderMoments(moments) {
+        // 按日期倒序排列
+        moments.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        moments.forEach((item, index) => {
+          const card = document.createElement('div');
+          card.className = 'moment-card';
+          // 设置动画延迟，形成阶梯出现效果
+          card.style.animation = `blurFadeUp 0.8s ease forwards ${index * 0.15}s`;
+
+          // 处理图片 HTML
+          let imagesHtml = '';
+          if (item.images && item.images.length > 0) {
+            const count = item.images.length;
+            // 根据数量设置 data-count 用于 CSS Grid 布局
+            const gridClass = count <= 4 ? count : 'default';
+            
+            imagesHtml = `<div class="moment-gallery" data-count="${gridClass}">`;
+            item.images.forEach(src => {
+              // 懒加载 loading="lazy"
+              imagesHtml += `<img src="${src}" alt="动态图片" loading="lazy">`;
+            });
+            imagesHtml += `</div>`;
+          }
+
+          // 构建卡片 HTML
+          card.innerHTML = `
+            <div class="moment-header">
+              <img src="/public/favicon.ico" class="moment-avatar" alt="Avatar">
+              <div class="moment-info">
+                <span class="moment-author">缎金SatinAu</span>
+                <span class="moment-date">${formatDate(item.date)}</span>
+              </div>
+            </div>
+            <div class="moment-content">${linkify(item.content)}</div>
+            ${imagesHtml}
+          `;
+
+          momentsList.appendChild(card);
+        });
+
+        // 初始化图片查看器
+        initViewer();
+      }
+
+      // 日期格式化 (YYYY年MM月DD日 HH:mm)
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const formatConfig = date.getFullYear() === now.getFullYear() 
+          ? { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
+          : { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+        return date.toLocaleString('zh-CN', formatConfig).replace(/\//g, '-');
+      }
+
+      // 将文本中的 URL 转换为链接
+      function linkify(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, function(url) {
+          return `<a href="${url}" target="_blank" style="color:var(--primary-color);text-decoration:none;">${url}</a>`;
+        });
+      }
+
+      // 初始化 Viewer.js
+      function initViewer() {
+        const galleries = document.querySelectorAll('.moment-gallery');
+        galleries.forEach(gallery => {
+          new Viewer(gallery, {
+            toolbar: {
+              zoomIn: 1,
+              zoomOut: 1,
+              oneToOne: 1,
+              reset: 1,
+              prev: 1,
+              play: 1,
+              next: 1,
+              rotateLeft: 1,
+              rotateRight: 1,
+              flipHorizontal: 1,
+              flipVertical: 1,
+            },
+            navbar: true,
+            title: false,
+            transition: true
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

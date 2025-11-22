@@ -1008,6 +1008,12 @@ body#index-page {
       &:nth-child(4) {
         transition-delay: 0.4s;
       }
+      &:nth-child(5) {
+        transition-delay: 0.5s;
+      }
+      &:nth-child(6) {
+        transition-delay: 0.6s;
+      }
     }
 
     /* 添加背景遮罩，增强悬浮感 */
