@@ -14,6 +14,7 @@
   <script src="/src/script/config.js"></script>
   <script src="/src/script/common.js" defer></script>
   <script src="/src/script/components/CRCMenu.v2.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/viewerjs@1.11.6/dist/viewer.min.css">
   <script src="https://cdn.jsdelivr.net/npm/viewerjs@1.11.6/dist/viewer.min.js"></script>
 
@@ -84,8 +85,25 @@
       font-size: 16px;
       line-height: 1.7;
       color: var(--word-color);
-      white-space: pre-wrap; /* 保留换行 */
       margin-bottom: 16px;
+    }
+
+    /* Markdown 生成的 p 标签边距 */
+    .moment-content p {
+      margin: 0 0 8px 0;
+    }
+    .moment-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 自定义链接样式 */
+    .moment-content a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .moment-content a:hover {
+      text-decoration: underline;
     }
 
     /* 图片网格系统 */
@@ -151,7 +169,7 @@
       </div>
     </section>
 
-    <script src="../src/script/components/footer.js"></script>
+    <script src="/src/script/components/footer.js"></script>
     <site-footer></site-footer>
   </main>
 
@@ -159,7 +177,7 @@
     <div class="spinner"></div>
   </div>
 
-  <script src="../src/script/components/navigate.js"></script>
+  <script src="/src/script/components/navigate.js"></script>
   <navigate-bar></navigate-bar>
 
   <script>
@@ -229,7 +247,7 @@
                 <span class="moment-date">${formatDate(item.date)}</span>
               </div>
             </div>
-            <div class="moment-content">${linkify(item.content)}</div>
+            <div class="moment-content">${marked.parse(item.content).replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')}</div>
             ${imagesHtml}
           `;
 
@@ -248,14 +266,6 @@
           ? { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
           : { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
         return date.toLocaleString('zh-CN', formatConfig).replace(/\//g, '-');
-      }
-
-      // 将文本中的 URL 转换为链接
-      function linkify(text) {
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        return text.replace(urlRegex, function(url) {
-          return `<a href="${url}" target="_blank" style="color:var(--primary-color);text-decoration:none;">${url}</a>`;
-        });
       }
 
       // 初始化 Viewer.js
