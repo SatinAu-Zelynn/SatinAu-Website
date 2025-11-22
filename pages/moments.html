@@ -98,44 +98,47 @@
 
     /* 自定义链接样式 */
     .moment-content a {
-      color: var(--primary-color);
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .moment-content a:hover {
-      text-decoration: underline;
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        &:hover {
+        text-decoration: underline;
+        }
     }
 
     /* 图片网格系统 */
     .moment-gallery {
-      display: grid;
-      gap: 8px;
-      border-radius: var(--border-radius-md);
-      overflow: hidden;
-      width: fit-content;
-      max-width: 100%;
-    }
+        display: grid;
+        gap: 8px;
+        border-radius: var(--border-radius-md);
+        overflow: hidden;
+        width: fit-content;
+        max-width: 100%;
 
-    /* 根据图片数量动态调整 Grid */
-    .moment-gallery[data-count="1"] { grid-template-columns: 1fr; }
-    .moment-gallery[data-count="2"] { grid-template-columns: 1fr 1fr; }
-    .moment-gallery[data-count="3"] { grid-template-columns: 1fr 1fr 1fr; }
-    .moment-gallery[data-count="4"] { grid-template-columns: 1fr 1fr; }
-    .moment-gallery[data-count="default"] { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+        /* 根据图片数量动态调整 Grid */
+        &[data-count="1"] { grid-template-columns: 1fr; }
+        &[data-count="2"] { grid-template-columns: 1fr 1fr; }
+        &[data-count="3"] { grid-template-columns: 1fr 1fr 1fr; }
+        &[data-count="4"] { grid-template-columns: 1fr 1fr; }
+        &[data-count="default"] { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 
-    .moment-gallery img {
-      width: 100%;
-      height: 100%;
-      max-height: 400px; /* 单图最大高度 */
-      object-fit: cover;
-      border-radius: 8px;
-      cursor: zoom-in;
-      transition: filter 0.3s ease;
-      background: rgba(0,0,0,0.05);
-    }
+        img {
+            width: 100%;
+            height: 100%;
+            max-height: 400px; /* 单图最大高度 */
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: zoom-in;
+            transition: filter 0.3s ease;
+            background: rgba(0,0,0,0.05);
 
-    .moment-gallery img:hover {
-      filter: brightness(0.9);
+            &:hover {
+            filter: brightness(0.9);
+            }
+            &:active {
+                transform: scale(0.98);
+            }
+        }
     }
     
     /* 移动端优化 */
