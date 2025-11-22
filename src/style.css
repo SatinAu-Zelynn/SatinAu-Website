@@ -15,13 +15,11 @@
 */
 
 /* ========== 全局字体设置 ========== */
-* {
-  font-family: MiSans,sans-serif;
-  font-size-adjust: 0.54;
-}
+@import url('https://cdn.jsdelivr.net/gh/mortezaom/google-sans-cdn@master/fonts.css');
 
-html {
-  font-weight: 450;
+* {
+  font-family: "Google Sans", MiSans, sans-serif;
+  font-size-adjust: 0.53;
 }
 
 /* ========== 全局基础 ========== */
@@ -219,6 +217,7 @@ section {
 
 /* 为四行文字设置递增延迟，在标题动画后依次出现 */
 body#index-page section p {
+  font-family: MiSans, sans-serif;
   font-weight: 500;
   &:nth-of-type(1) { animation-delay: 2s; }     /* 标题动画结束后立即 */
   &:nth-of-type(2) { animation-delay: 2.3s; }   /* 延迟0.3s */
@@ -245,6 +244,7 @@ body#index-page section:nth-of-type(2) h2 {
 
 h1 {
   margin: 0;
+  font-family: MiSans, sans-serif;
   font-size: 2.4rem;
 }
 
@@ -727,7 +727,7 @@ body#index-page {
       gap: 8px;
       padding: 8px 16px;
       justify-content: center; /* 水平居中 */
-      align-items: center;     /* 垂直居中 */
+      align-items: baseline;   /* 垂直居中 */
       text-align: center;
 
       &.dropdown-item:hover {

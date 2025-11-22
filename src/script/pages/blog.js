@@ -110,9 +110,11 @@ function initBlog() {
         const header = document.querySelector('header');
         const sectionTitle = document.querySelector('section h2');
         const blogList = document.getElementById('blogList');
+        const momentsCard = document.getElementById('momentsCard');
         if (header) header.style.display = '';
         if (sectionTitle) sectionTitle.style.display = '';
         if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
+        if (momentsCard) momentsCard.style.display = '';
         postView.style.display = "none";
         listEl.style.display = "grid";
     }
@@ -296,9 +298,11 @@ function initBlog() {
         const header = document.querySelector('header');
         const sectionTitle = document.querySelector('section h2');
         const blogList = document.getElementById('blogList');
+        const momentsCard = document.getElementById('momentsCard');
         if (header) header.style.display = '';
         if (sectionTitle) sectionTitle.style.display = '';
         if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
+        if (momentsCard) momentsCard.style.display = '';
         postView.style.display = "none";
         listEl.style.display = "grid";
         history.pushState({}, "博客列表", "blog.html");
@@ -452,11 +456,13 @@ function renderPost(post, mdContent) {
     const blogList = document.getElementById('blogList');
     const emptyState = document.getElementById('emptyState');
     const errorState = document.getElementById('errorState');
+    const momentsCard = document.getElementById('momentsCard');
     
     // 隐藏头部和列表区域
     if (header) header.style.display = 'none';
     if (sectionTitle) sectionTitle.style.display = 'none';
     if (blogList) blogList.style.display = 'none';
+    if (momentsCard) momentsCard.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
 
@@ -557,9 +563,11 @@ if (backToListBtn) {
     const header = document.querySelector('header');
     const sectionTitle = document.querySelector('section h2');
     const blogList = document.getElementById('blogList');
+    const momentsCard = document.getElementById('momentsCard');
     if (header) header.style.display = '';
     if (sectionTitle) sectionTitle.style.display = '';
     if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
+    if (momentsCard) momentsCard.style.display = '';
     postView.style.display = 'none';
     listEl.style.display = 'grid';
     history.pushState({}, "博客列表", "blog.html");
