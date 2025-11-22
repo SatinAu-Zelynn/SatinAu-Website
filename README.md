@@ -13,6 +13,7 @@
 <p align="center">
 <a href="#️-技术栈">技术栈</a> &nbsp;&bull;&nbsp;
 <a href="#-兼容性">兼容性</a> &nbsp;&bull;&nbsp;
+<a href="#-环境变量配置">环境变量配置</a> &nbsp;&bull;&nbsp;
 <a href="#-本地运行">本地运行</a>
 </p>
 
@@ -49,6 +50,17 @@
 
 > [!TIP]
 > 注：项目通过渐进式增强策略确保在旧浏览器中仍能正常运行核心功能，高级视觉效果会根据浏览器支持情况自动降级。
+
+
+## 🔧 环境变量配置
+
+本项目构建过程中需要以下环境变量，请确保在构建前正确设置：
+
+| 环境变量名 | 说明 | 示例 |
+|------------|------|------|
+| `SUPABASE_URL` | Supabase 项目的基础 URL | `https://abcdefghijklmnopqrst.supabase.co` |
+| `SUPABASE_ANON_KEY` | Supabase 项目的匿名访问密钥 | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
+| `BUILD_INFO` | 构建信息，将注入到前端页面中 | `Cloudflare提供静态托管和CDN服务` |
 
 
 ## 🚀 本地运行
