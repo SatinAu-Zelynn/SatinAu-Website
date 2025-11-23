@@ -676,6 +676,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+/* ========== 字体切换逻辑 ========== */
+const FONT_KEY = 'setting_font_mode';
+
+// 1. 初始化逻辑 (页面加载时执行)
+document.addEventListener('DOMContentLoaded', () => {
+  const wrapper = document.getElementById('fontSelectComponent');
+  if (!wrapper) {
+    // 如果不在设置页，仅应用字体
+    const savedMode = localStorage.getItem(FONT_KEY) || 'sans';
+    applyFontMode(savedMode);
+    return;
+  }
+
+  // 初始化设置页 UI
+  initCustomSelect(wrapper);
+});
+
+// 2. 初始化自定义组件
+function initCustomSelect(wrapper) {
+  const trigger = wrapper.querySelector('.custom-select-trigger');
+  const triggerText = wrapper.querySelector('.selected-value');
+  const options = wrapper.querySelectorAll('.custom-option');
+  
+  // 读取当前设置
+  const savedMode = localStorage.getItem(FONT_KEY) || 'sans';
+  applyFontMode(savedMode); // 确保 CSS 变量生效
+
+  // 更新 UI 显示状态
+  options.forEach(opt => {
+    if (opt.dataset.value === savedMode) {
+      opt.classList.add('selected');
+      triggerText.textContent = opt.textContent;
+    } else {
+      opt.classList.remove('selected');
+    }
+  });
+
+  // 点击触发器：切换开关
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation(); // 防止冒泡触发 document 的关闭事件
+    wrapper.classList.toggle('open');
+  });
+
+  // 点击选项
+  options.forEach(option => {
+    option.addEventListener('click', (e) => {
+      e.stopPropagation();
+      
+      // 1. 移除其他选项的 selected 类
+      options.forEach(o => o.classList.remove('selected'));
+      // 2. 给当前选项添加 selected 类
+      option.classList.add('selected');
+      // 3. 更新触发器文字
+      triggerText.textContent = option.textContent;
+      // 4. 关闭菜单
+      wrapper.classList.remove('open');
+      
+      // 5. 执行实际功能
+      const mode = option.dataset.value;
+      localStorage.setItem(FONT_KEY, mode);
+      applyFontMode(mode);
+      
+      showToast(`字体已切换为：${option.textContent.trim()}`);
+    });
+  });
+
+  // 点击页面空白处关闭菜单
+  document.addEventListener('click', () => {
+    wrapper.classList.remove('open');
+  });
+}
+
+// 3. 核心功能：应用字体变量
+function applyFontMode(mode) {
+  const root = document.documentElement;
+  if (mode === 'serif') {
+    root.style.setProperty('--global-font', 'var(--font-serif)');
+  } else {
+    root.style.setProperty('--global-font', 'var(--font-sans)');
+  }
+}
+
 // 游戏控制器适配逻辑
 class GamepadHandler {
   constructor() {

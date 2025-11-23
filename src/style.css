@@ -14,12 +14,8 @@
   limitations under the License.
 */
 
-/* ========== 全局字体设置 ========== */
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
-
-* {
-  font-family: "Google Sans Flex", MiSans, sans-serif;
-}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&display=swap');
 
 /* ========== 全局基础 ========== */
 :root{
@@ -32,6 +28,14 @@
   --border-radius-lg: 20px;
   --border-radius-xl: 22px;
   --custom-cursor: url('/public/cursor.Daeq1_K3.cur') 12 4, auto;
+  --font-sans: "Google Sans Flex", MiSans, sans-serif; /* 默认无衬线 */
+  --font-serif: "Noto Serif SC", serif; /* 衬线体 */
+  --global-font: var(--font-sans); /* 当前应用字体 */
+}
+
+/* ========== 全局字体设置 ========== */
+* {
+  font-family: var(--global-font);
 }
 
 /* 替换手型光标 */
@@ -1345,7 +1349,7 @@ body#index-page {
   box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
   width: 100%;
   max-width: 400px;
-  margin: 0 auto;
+  margin: 20px auto;
   box-sizing: border-box;
 }
 
@@ -1545,4 +1549,125 @@ input:checked + .switch-slider {
     opacity: 1;
     transform: translateX(-50%) scale(1);
   }
+}
+
+/* ========== 下拉菜单 ========== */
+.setting-item:has(.custom-select-wrapper.open) {
+  z-index: 100;
+  position: relative; /* 确保 z-index 生效 */
+}
+/* 容器定位 */
+.custom-select-wrapper {
+  position: relative;
+  user-select: none;
+  width: 160px; /* 控制宽度 */
+}
+
+/* 1. 触发器 (模拟原本的 Select 框) */
+.custom-select-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--word-color);
+  line-height: 1.3;
+  
+  background: light-dark(rgba(255, 255, 255, 0.28), rgba(40, 40, 40, 0.6));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  
+  cursor: var(--custom-cursor, pointer);
+  transition: all 0.2s ease;
+}
+
+/* 触发器悬停 */
+.custom-select-trigger:hover {
+  background: light-dark(rgba(255, 255, 255, 0.4), rgba(60, 60, 60, 0.75));
+}
+
+/* 箭头图标 (CSS绘制) */
+.custom-select-trigger .arrow {
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid var(--word-color);
+  border-right: 2px solid var(--word-color);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.3s ease;
+  margin-left: 12px;
+  opacity: 0.7;
+}
+
+/* 菜单展开时箭头旋转 */
+.custom-select-wrapper.open .custom-select-trigger .arrow {
+  transform: rotate(225deg) translateY(-2px);
+}
+
+/* 2. 选项列表容器 (默认隐藏) */
+.custom-options {
+  position: absolute;
+  top: calc(100% + 8px); /* 下方留出间距 */
+  left: 0;
+  right: 0;
+  z-index: 3000;
+  
+  background: light-dark(rgba(255, 255, 255), rgba(40, 40, 40));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  
+  /* 动画初始状态 */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px) scale(0.96);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden; /* 圆角裁切 */
+}
+
+/* 列表展开状态 */
+.custom-select-wrapper.open .custom-options {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+/* 3. 单个选项 */
+.custom-option {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--word-color);
+  cursor: var(--custom-cursor, pointer);
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 选项悬停 */
+.custom-option:hover {
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.1));
+  color: var(--primary-color);
+}
+
+/* 选中状态 */
+.custom-option.selected {
+  background: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.05));
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* 选中的选项后面加个小对勾 */
+.custom-option.selected::after {
+  content: '';
+  width: 6px;
+  height: 10px;
+  border-bottom: 2px solid var(--primary-color);
+  border-right: 2px solid var(--primary-color);
+  transform: rotate(45deg);
+  margin-left: 8px;
 }

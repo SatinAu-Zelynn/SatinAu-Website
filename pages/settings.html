@@ -57,6 +57,26 @@
     <section>
       <h2>外观样式</h2>
       <p>调整网站的视觉效果</p>
+
+      <div class="setting-item">
+        <label>
+          字体风格
+          <span class="tooltip">无衬线体为 MiSans + Google Sans ，衬线体为 Noto Serif</span>
+        </label>
+        
+        <div class="custom-select-wrapper" id="fontSelectComponent">
+          <div class="custom-select-trigger" tabindex="0">
+            <span class="selected-value">无衬线 (默认)</span>
+            <div class="arrow"></div>
+          </div>
+          
+          <div class="custom-options">
+            <div class="custom-option selected" data-value="sans">无衬线 (默认)</div>
+            <div class="custom-option" data-value="serif">衬线体</div>
+          </div>
+        </div>
+      </div>
+
       <div class="setting-item">
         <label for="performanceModeToggle">
           性能模式
