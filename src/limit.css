@@ -14,6 +14,10 @@
   limitations under the License.
 */
 
+:root{
+  --filter-blur:blur(0px) !important; /* 禁用模糊 */
+}
+
 .color-bg {
   filter: blur(40px) !important; /* 减弱模糊 */
   opacity: 0.2 !important; /* 降低不透明度 */

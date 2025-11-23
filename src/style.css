@@ -26,6 +26,7 @@
   --nav-height: 68px; /* 底栏高度，用于预留滚动空间 */
   --primary-color: light-dark(#007aff, #0a84ff); /* 主色调 */
   --word-color: light-dark(#111, #f5f5f5); /* 文字颜色 */
+  --filter-blur:blur(22px) saturate(180%); /* 背景模糊 */
   --border-radius-sm: 10px;
   --border-radius-md: 14px;
   --border-radius-lg: 20px;
@@ -655,8 +656,8 @@ body#index-page {
   padding: 10px;
   border-radius:var(--border-radius-xl);
   background: light-dark(rgba(255,255,255,0.28),rgba(30,30,30,0.5));
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255,255,255,0.35),rgba(255,255,255,0.12));
   box-shadow: 0 18px 40px rgba(0,0,0,0.25), inset 0 0 30px rgba(255,255,255,0.12);
   z-index: 2001;
@@ -797,8 +798,8 @@ body#index-page {
   color: var(--word-color);
   border-radius: 50%;
   background: light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2)); /* 半透明背景 */
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: var(--filter-blur);
+  -webkit-backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
   box-shadow: none;
   cursor: pointer;
@@ -910,8 +911,8 @@ body#index-page {
     max-height: 0;
     overflow: hidden;
     background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.5));
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
-    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: var(--filter-blur);
+    backdrop-filter: var(--filter-blur);
     border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
     border-radius:var(--border-radius-xl);
     box-shadow: 0 0 40px light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.4)), inset 0 0 30px light-dark(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
@@ -1199,8 +1200,8 @@ body#index-page {
 /* 登录按钮 - SatinAu Design 风格 */
 #loginBtn {
   background: light-dark(rgba(255, 255, 255, 0.28), rgba(40, 40, 40, 0.6));
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
   border-radius:var(--border-radius-md);
   padding: 10px 20px;
@@ -1223,8 +1224,8 @@ body#index-page {
 
 #logoutBtn {
   background: light-dark(rgba(255, 255, 255, 0.28), rgba(40, 40, 40, 0.6));
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius:var(--border-radius-md);
   padding: 10px 20px;
