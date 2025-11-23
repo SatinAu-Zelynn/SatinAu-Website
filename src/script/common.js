@@ -621,6 +621,61 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+/* ========== 性能模式 ========== */
+const PERFORMANCE_KEY = 'setting_performance_mode_enabled';
+const LIMIT_CSS_ID = 'limitCSS';
+
+function isPerformanceMode() {
+    const setting = localStorage.getItem(PERFORMANCE_KEY);
+    return setting === 'true'; // 默认 false
+}
+
+// 挂载 limit.css
+function enablePerformanceCss() {
+    if (document.getElementById(LIMIT_CSS_ID)) return;
+
+    const link = document.createElement('link');
+    link.id = LIMIT_CSS_ID;
+    link.rel = 'stylesheet';
+    link.href = '/src/limit.css';
+    document.head.appendChild(link);
+}
+
+// 移除 limit.css
+function disablePerformanceCss() {
+    const el = document.getElementById(LIMIT_CSS_ID);
+    if (el) el.remove();
+}
+
+// 切换开关（供 settings.html 调用）
+window.togglePerformanceMode = function () {
+    const checkbox = document.getElementById('performanceModeToggle');
+    const enabled = checkbox.checked;
+
+    localStorage.setItem(PERFORMANCE_KEY, enabled);
+
+    if (enabled) {
+        enablePerformanceCss();
+        showToast("性能模式：已启用");
+    } else {
+        disablePerformanceCss();
+        showToast("性能模式：已禁用");
+    }
+};
+
+// 页面加载时自动应用
+document.addEventListener('DOMContentLoaded', () => {
+    const settingsToggle = document.getElementById('performanceModeToggle');
+
+    if (settingsToggle) {
+        settingsToggle.checked = isPerformanceMode();
+    }
+
+    if (isPerformanceMode()) {
+        enablePerformanceCss();
+    }
+});
+
 // 游戏控制器适配逻辑
 class GamepadHandler {
   constructor() {

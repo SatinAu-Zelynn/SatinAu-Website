@@ -55,12 +55,27 @@
     </header>
 
     <section>
+      <h2>外观样式</h2>
+      <p>调整网站的视觉效果</p>
+      <div class="setting-item">
+        <label for="performanceModeToggle">
+          性能模式
+          <span class="tooltip">启用后，限制部分模糊和动画以提升流畅度（默认禁用）</span>
+        </label>
+        <div class="toggle-switch">
+          <input type="checkbox" id="performanceModeToggle" onchange="togglePerformanceMode()">
+          <label for="performanceModeToggle" class="switch-slider"></label>
+        </div>
+      </div>
+    </section>
+
+    <section>
       <h2>功能开关</h2>
       <p>控制网站的一些额外功能和交互</p>
       <div class="setting-item">
         <label for="customRightClickMenuToggle">
           替换默认右键菜单
-          <span class="tooltip">启用后，将使用自带右键菜单替换浏览器默认菜单</span>
+          <span class="tooltip">启用后，将使用自带右键菜单替换浏览器默认菜单（默认启用）</span>
         </label>
         <div class="toggle-switch">
           <input type="checkbox" id="customRightClickMenuToggle" onchange="toggleCustomRightClickMenu()">
