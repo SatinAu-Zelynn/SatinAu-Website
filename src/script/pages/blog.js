@@ -467,7 +467,9 @@ function renderPost(post, mdContent) {
     if (errorState) errorState.style.display = 'none';
 
     postTitle.textContent = post.title;
-    postDate.textContent = post.date;
+    // 字数统计 & 阅读时间
+    const stats = calculateReadingStats(mdContent);
+    postDate.textContent = `${post.date} · ${stats}`;
 
     // 优化Markdown渲染
     try {
@@ -672,3 +674,18 @@ function initImageViewer() {
 
 // 初始化博客页面
 document.addEventListener('DOMContentLoaded', initBlog);
+
+function calculateReadingStats(mdText) {
+  const chineseCount = (mdText.match(/[\u4e00-\u9fa5]/g) || []).length;
+  const englishCount = (mdText.match(/[a-zA-Z]+/g) || []).length;
+
+  const totalCount = chineseCount + englishCount;
+
+  // 阅读时长中文按 300字/分钟 英文按 200词/分钟
+  const readingMinutes = Math.max(
+    Math.ceil(chineseCount / 300),
+    Math.ceil(englishCount / 200)
+  );
+
+  return `字数：${totalCount} · 阅读时间：${readingMinutes} 分钟`;
+}
