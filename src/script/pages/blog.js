@@ -687,5 +687,5 @@ function calculateReadingStats(mdText) {
     Math.ceil(englishCount / 200)
   );
 
-  return `字数：${totalCount} · 阅读时间：${readingMinutes} 分钟`;
+  return `${totalCount} 字 · 约 ${readingMinutes} 分钟`;
 }
