@@ -183,7 +183,6 @@ body#index-page header {
   }
 }
 
-/* 标题和 Logo 一行显示 */
 .title-row {
   display: inline-flex;
   align-items: center;
@@ -191,11 +190,10 @@ body#index-page header {
   margin-top: 30px;
 
   img {
-    max-height: 80px;
+    max-height: 100px;
     width: auto;
   }
 }
-
 
 /* ========== 首屏全屏居中容器 ========== */
 .intro-screen {
@@ -203,11 +201,10 @@ body#index-page header {
   flex-direction: column;
   justify-content: center; /* 垂直居中 */
   align-items: center;     /* 水平居中 */
-  
   width: 100%;
   height: 100vh;
   height: 100dvh;
-  min-height: 500px;
+  min-height: 300px;
   padding: 0;
   margin: 0;
   box-sizing: border-box;
@@ -216,17 +213,16 @@ body#index-page header {
 .intro-screen header {
   padding: 0; 
   margin: 0;
-  margin-bottom: 60px; 
+  margin-bottom: min(60px, 10vh); 
   flex: 0 0 auto;
   width: 100%;
   max-width: 100%;
 }
 
 .intro-screen section {
-  margin: 0 !important; 
-  padding: 0 !important;
-  flex: 0 0 auto !important;
-  width: 100%;
+  margin: 0; 
+  padding: 0 30px;
+  flex: 0 0 auto;
 }
 
 /* ========== Section 通用 ========== */
@@ -289,12 +285,11 @@ h2 {
 
 @media (max-width: 768px) {
   header {
-    padding: 120px 20px 30px;
+    padding: 120px 20px 70px;
   }
   
-  section:first-of-type {
-    margin-top: 40px;
-    padding-bottom: 60px;
+  .title-row img {
+    max-height: 80px;
   }
 }
 
