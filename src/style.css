@@ -191,12 +191,42 @@ body#index-page header {
   margin-top: 30px;
 
   img {
-    max-height: 90px;
+    max-height: 80px;
     width: auto;
-    margin: 0;
-    margin-top: 5px;
-    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.15));
   }
+}
+
+
+/* ========== 首屏全屏居中容器 ========== */
+.intro-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 垂直居中 */
+  align-items: center;     /* 水平居中 */
+  
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 500px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.intro-screen header {
+  padding: 0; 
+  margin: 0;
+  margin-bottom: 60px; 
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+.intro-screen section {
+  margin: 0 !important; 
+  padding: 0 !important;
+  flex: 0 0 auto !important;
+  width: 100%;
 }
 
 /* ========== Section 通用 ========== */
@@ -242,10 +272,6 @@ body#index-page section p {
   }
 }
 
-body#index-page section:nth-of-type(2) h2 {
-  margin-top: 100px;
-}
-
 h1 {
   margin: 0;
   font-size: 2.4rem;
@@ -269,10 +295,6 @@ h2 {
   section:first-of-type {
     margin-top: 40px;
     padding-bottom: 60px;
-  }
-  
-  body#index-page section:nth-of-type(2) h2 {
-    margin-top: 120px;
   }
 }
 
@@ -395,7 +417,7 @@ h1, h2 { text-wrap: balance; }
 }
 
 @media (max-width: 768px) {
-  body#index-page section:nth-of-type(3) {
+  body#index-page section:nth-of-type(2) {
     .contact-wrapper {
       grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
       gap: 12px;
