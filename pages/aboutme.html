@@ -269,6 +269,15 @@
     </div>
 
     <div class="intro-scene" id="scene-3">
+      <img src="https://blog.satinau.cn/image/zelynn/4.webp" class="scene-bg bg-cover" alt="Zelynn">
+      <div class="scene-content">
+        <p class="anim-line">自设是一只雪狐</p>
+        <p class="anim-line" style="font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 600;">泽凌 Zelynn</p>
+        <p class="anim-line">设定信息可前往对应页面查看</p>
+      </div>
+    </div>
+
+    <div class="intro-scene" id="scene-4">
       <img src="/public/location.png" class="scene-bg earth-anim" alt="Shanghai Location">
       <div class="scene-content">
         <p class="anim-line">坐标魔都</p>
@@ -280,7 +289,7 @@
       </div>
     </div>
 
-    <div class="intro-scene" id="scene-4">
+    <div class="intro-scene" id="scene-5">
       <img src="/public/gaming.png" class="scene-bg bg-cover" alt="Gaming">
       <div class="scene-content">
         <p class="anim-line">玩的游戏的话在小黑盒上应该可以看到</p>
@@ -290,7 +299,7 @@
       </div>
     </div>
 
-    <div class="intro-scene" id="scene-5">
+    <div class="intro-scene" id="scene-6">
       <img src="/public/web.png" class="scene-bg bg-cover" alt="Web Development">
       <div class="scene-content">
         <p class="anim-line">网站是AI辅助下纯手搓的</p>
@@ -354,20 +363,12 @@
       };
 
       try {
-        // Scene 1: 自我介绍 (较短)
-        await playScene('scene-1', 2500);
-        
-        // Scene 2: 理想
+        await playScene('scene-1', 3000);
         if(!isSkipped) await playScene('scene-2', 4000);
-        
-        // Scene 3: 坐标 (配合地球动画，时间稍长)
-        if(!isSkipped) await playScene('scene-3', 4500);
-        
-        // Scene 4: 游戏
-        if(!isSkipped) await playScene('scene-4', 3500);
-        
-        // Scene 5: 开发
-        if(!isSkipped) await playScene('scene-5', 5000);
+        if(!isSkipped) await playScene('scene-3', 4000);
+        if(!isSkipped) await playScene('scene-4', 5000);
+        if(!isSkipped) await playScene('scene-5', 4000);
+        if(!isSkipped) await playScene('scene-6', 5000);
 
         finishIntro();
       } catch (e) {
