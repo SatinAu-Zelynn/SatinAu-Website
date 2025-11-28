@@ -1,19 +1,3 @@
-<!--
-  Copyright 2025 缎金SatinAu
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
 <!DOCTYPE html>
 <html lang="zh">
 <head>
@@ -43,13 +27,355 @@
           y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
       })(window, document, "clarity", "script", "trwlkhxzch");
   </script>
+
+  <style>
+    /* 开场动画容器 */
+    #intro-sequence {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--word-color); /* 初始背景防止闪烁 */
+      background: light-dark(#f8f9fa, #050505);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      font-family: var(--font-sans);
+    }
+
+    /* 场景通用样式 */
+    .intro-scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+
+    .intro-scene.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 背景图片层通用样式 */
+    .scene-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: -1;
+      opacity: 0;
+      transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+      filter: blur(16px) saturate(80%);
+    }
+
+    /* Scene 1: Logo 专用样式 (保持居中，不全屏) */
+    .bg-logo {
+      width: min(80vw, 1000px);
+      height: auto;
+      object-fit: contain;
+    }
+    .bg-logo img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Scene 2, 4, 5: 全屏背景图样式 */
+    .bg-cover {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* 关键：确保铺满屏幕 */
+    }
+
+    /* Scene 3: Location 动画专用样式 (初始全屏) */
+    .earth-anim {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* 初始全屏 */
+    }
+
+    /* 激活状态通用：透明度与模糊度还原 */
+    .intro-scene.active .scene-bg {
+      opacity: 0.25; 
+      filter: blur(0px) saturate(110%);
+    }
+
+    /* 激活状态：Logo 的呼吸效果 */
+    .intro-scene.active .bg-logo {
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    /* 激活状态：全屏背景图的视差效果 */
+    .intro-scene.active .bg-cover {
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    /* 针对深色模式微调图片亮度 */
+    @media (prefers-color-scheme: dark) {
+      .scene-bg {
+        filter: blur(16px) brightness(0.8);
+      }
+      .intro-scene.active .scene-bg {
+        filter: blur(0px) brightness(0.9);
+        opacity: 0.2; 
+      }
+    }
+
+    /* 内容层 */
+    .scene-content {
+      z-index: 2;
+      max-width: 800px;
+      text-shadow: 0 2px 10px light-dark(rgba(255,255,255,0.5), rgba(0,0,0,0.5));
+    }
+
+    .scene-content h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      margin-bottom: 1rem;
+      color: light-dark(#111, #fff);
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+
+    .scene-content p {
+      font-size: clamp(1.1rem, 3vw, 1.5rem);
+      line-height: 1.6;
+      color: light-dark(#333, #ddd);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    /* 文本行逐个显示动画 */
+    .anim-line {
+      display: block;
+      opacity: 0;
+      transform: translateY(20px);
+      filter: blur(10px);
+      transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    
+    .active .anim-line.visible {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+
+    /* 场景 3 特效：地球旋转放大 (全屏 -> 放大) */
+    .active .earth-anim {
+      opacity: 0.3 !important; 
+      animation: earthImageZoom 5s cubic-bezier(0.6, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes earthImageZoom {
+      0% { 
+        /* 初始状态：全屏，无旋转 */
+        transform: translate(-50%, -50%) scale(1) rotate(0deg); 
+      }
+      100% { 
+        /* 结束状态：大幅放大 */
+        transform: translate(-50%, -50%) scale(4) rotate(10deg); 
+        opacity: 0; 
+      } 
+    }
+
+    /* 跳过按钮 */
+    #skip-intro {
+      position: absolute;
+      bottom: 40px;
+      right: 30px;
+      z-index: 10000;
+      padding: 10px 24px;
+      border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.2));
+      background: light-dark(rgba(255,255,255,0.5), rgba(0,0,0,0.5));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      color: light-dark(#333, #fff);
+      font-weight: 600;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      font-family: var(--font-sans);
+    }
+
+    #skip-intro.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #skip-intro:hover {
+      background: light-dark(rgba(255,255,255,0.8), rgba(60,60,60,0.8));
+    }
+
+    /* 动画结束后隐藏 */
+    #intro-sequence.finished {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease;
+    }
+  </style>
 </head>
 <body>
-  <!-- 背景色块 -->
   <div class="color-bg color-bg-1"></div>
   <div class="color-bg color-bg-2"></div>
   <div class="color-bg color-bg-3"></div>
   <div class="color-bg color-bg-4"></div>
+
+  <div id="intro-sequence">
+    <button id="skip-intro">跳过</button>
+
+    <div class="intro-scene" id="scene-1">
+      <picture class="scene-bg bg-logo" alt="SatinAu Logo">
+        <source srcset="/public/logo_white.webp" media="(prefers-color-scheme: dark)">
+        <img src="/public/logo_black.webp" alt="SatinAu Logo">
+      </picture>
+      <div class="scene-content">
+        <h1 class="anim-line">嗨，我是缎金SatinAu</h1>
+        <p class="anim-line" style="animation-delay: 0.2s; font-size: 1.2rem; opacity: 0.8;">男生，学生，ISTJ，就这样</p>
+      </div>
+    </div>
+
+    <div class="intro-scene" id="scene-2">
+      <img src="/public/un.png" class="scene-bg bg-cover" alt="Idealism">
+      <div class="scene-content">
+        <p class="anim-line">喜欢Furry、科技和外交这方面</p>
+        <p class="anim-line">是介于现实主义和空想主义中间的理想主义者</p>
+        <p class="anim-line" style="margin-top:20px; font-weight: 600;">理想是在有生之年直接参与并完成</p>
+        <p class="anim-line">SDGs十七个目标中的一个大目标</p>
+      </div>
+    </div>
+
+    <div class="intro-scene" id="scene-3">
+      <img src="/public/location.png" class="scene-bg earth-anim" alt="Shanghai Location">
+      <div class="scene-content">
+        <p class="anim-line">坐标魔都</p>
+        <p class="anim-line">现在被流放郊区上学了</p>
+        <div style="height: 30px;"></div>
+        <p class="anim-line">欢迎扩列，直接加QQ就行，没啥限制</p>
+        <p class="anim-line">微信的话也行吧</p>
+        <p class="anim-line" style="font-size: 0.9rem; opacity: 0.7; margin-top: 10px;">邮箱最好用第一个，第二个是备用的</p>
+      </div>
+    </div>
+
+    <div class="intro-scene" id="scene-4">
+      <img src="/public/gaming.png" class="scene-bg bg-cover" alt="Gaming">
+      <div class="scene-content">
+        <p class="anim-line">玩的游戏的话在小黑盒上应该可以看到</p>
+        <p class="anim-line">我属于是不太爱玩游戏的</p>
+        <p class="anim-line">玩也是基本上一个人玩</p>
+        <p class="anim-line">不玩啥联机的游戏</p>
+      </div>
+    </div>
+
+    <div class="intro-scene" id="scene-5">
+      <img src="/public/web.png" class="scene-bg bg-cover" alt="Web Development">
+      <div class="scene-content">
+        <p class="anim-line">网站是AI辅助下纯手搓的</p>
+        <p class="anim-line">我前端0基础学一点做一点</p>
+        <p class="anim-line" style="color: var(--primary-color); font-weight:600;">有Bug请直接拍我脸上谢谢！</p>
+        <p class="anim-line" style="font-size: 0.9rem; opacity: 0.6;">（虽然我也是直接甩给AI？）</p>
+        <div style="height: 20px;"></div>
+        <p class="anim-line">没有使用博客框架是因为</p>
+        <p class="anim-line">我想实现更独特并完全符合我想法的设计和交互</p>
+        <p class="anim-line">但距离还是有点遥远，慢慢来吧</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const container = document.getElementById('intro-sequence');
+      const skipBtn = document.getElementById('skip-intro');
+      let isSkipped = false;
+
+      // 强制让Body立即显示（覆盖 style.css 中的 opacity:0），避免动画期间背景全白
+      document.body.style.opacity = '1';
+
+      // 延迟显示跳过按钮
+      setTimeout(() => skipBtn.classList.add('visible'), 1500);
+
+      skipBtn.addEventListener('click', () => {
+        isSkipped = true;
+        finishIntro();
+      });
+
+      // 动画控制函数
+      const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      
+      const playScene = async (id, duration = 4000) => {
+        if (isSkipped) return;
+        
+        // 隐藏所有其他场景
+        document.querySelectorAll('.intro-scene').forEach(el => {
+          if(el.id !== id) el.classList.remove('active');
+        });
+
+        const scene = document.getElementById(id);
+        scene.classList.add('active');
+
+        // 逐行显示文本
+        const lines = scene.querySelectorAll('.anim-line');
+        for (let i = 0; i < lines.length; i++) {
+          if (isSkipped) return;
+          lines[i].classList.add('visible');
+          await wait(300); // 行间距
+        }
+
+        await wait(duration);
+        
+        // 场景结束处理 (淡出文本)
+        if (!isSkipped) {
+           lines.forEach(l => l.classList.remove('visible')); // 提前让字淡出
+           await wait(500);
+        }
+      };
+
+      try {
+        // Scene 1: 自我介绍 (较短)
+        await playScene('scene-1', 2500);
+        
+        // Scene 2: 理想
+        if(!isSkipped) await playScene('scene-2', 4000);
+        
+        // Scene 3: 坐标 (配合地球动画，时间稍长)
+        if(!isSkipped) await playScene('scene-3', 4500);
+        
+        // Scene 4: 游戏
+        if(!isSkipped) await playScene('scene-4', 3500);
+        
+        // Scene 5: 开发
+        if(!isSkipped) await playScene('scene-5', 5000);
+
+        finishIntro();
+      } catch (e) {
+        console.error("Animation Error", e);
+        finishIntro();
+      }
+
+      function finishIntro() {
+        container.classList.add('finished');
+        // 销毁DOM以释放资源
+        setTimeout(() => {
+          container.remove();
+        }, 1200);
+        
+        // 触发原页面的入场动画逻辑 (如果需要重新触发 header 动画等)
+        const header = document.querySelector('header');
+        if(header) {
+            header.style.animation = 'none';
+            header.offsetHeight; /* trigger reflow */
+            header.style.animation = null; 
+        }
+      }
+    });
+  </script>
 
   <main class="page">
     <header>
