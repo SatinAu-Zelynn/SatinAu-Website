@@ -894,3 +894,63 @@ class GamepadHandler {
 document.addEventListener('DOMContentLoaded', () => {
   new GamepadHandler();
 });
+
+/* ========== 浏览器兼容性检测逻辑 ========== */
+
+(function initCompatibilityCheck() {
+  const CHECK_KEY = 'has_compatibility_checked';
+  
+  // 简易的核心特性检测函数 (与 compatibility.html 保持一致的标准)
+  function checkCoreFeatures() {
+    // 检查核心特性：CSS变量, CSS Grid, 基础ES6
+    const supportVar = window.CSS && CSS.supports && CSS.supports('color', 'var(--c)');
+    const supportGrid = window.CSS && CSS.supports && CSS.supports('display', 'grid');
+    // 检查 module 支持 (通过 noModule 属性推断)
+    const supportModule = 'noModule' in document.createElement('script');
+    
+    // 如果任意核心特性不支持，视为不兼容
+    if (!supportVar || !supportGrid || !supportModule) return false;
+    
+    // 检查高级特性 (Baseline 2025: Nesting, :has)
+    // 如果支持 CSS Nesting，则认为是现代浏览器 (2023+)
+    // CSS.supports('selector(&)')
+    const supportNesting = window.CSS && CSS.supports && CSS.supports('selector(&)');
+    
+    // 如果核心支持但高级不支持，视为"部分兼容"，但也需要弹窗提示吗？
+    // 根据需求："只要不是可正常显示全部内容的内核都自动...打开"
+    // 所以，如果不支持 Nesting，也应该弹。
+    return supportNesting; 
+  }
+
+  const isFullySupported = checkCoreFeatures();
+  const hasChecked = localStorage.getItem(CHECK_KEY);
+
+  // 如果是从 compatibility.html 关闭回来的，不要再弹
+  if (document.referrer.includes('compatibility.html')) {
+     localStorage.setItem(CHECK_KEY, 'true');
+     return;
+  }
+
+  // 触发条件：未检测过 && 不是完美支持
+  if (!hasChecked && !isFullySupported) {
+    // 标记已检测，避免死循环
+    localStorage.setItem(CHECK_KEY, 'true');
+    
+    console.warn('Browser compatibility check failed. Redirecting to report...');
+    
+    // 尝试在新标签页打开
+    const targetUrl = '/pages/compatibility.html';
+    
+    // 注意：非用户触发的 window.open 可能会被拦截
+    const newWin = window.open(targetUrl, '_blank');
+    
+    if (!newWin || newWin.closed || typeof newWin.closed == 'undefined') {
+        // 如果被拦截，降级为 Toast 提示，引导用户手动点击
+        // 由于此时页面可能因为不兼容已经乱了，尽量用原生 alert 或 confirm
+        const userGo = confirm("检测到您的浏览器可能无法完美显示本网站内容（如样式错乱）。\n是否查看兼容性报告？");
+        if (userGo) {
+            window.location.href = targetUrl;
+        }
+    }
+  }
+})();

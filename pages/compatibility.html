@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器兼容性检测 - 缎金SatinAu</title>
+    <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
+    <style>
+        /* 使用基础CSS，确保IE等旧浏览器也能渲染布局 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { margin-top: 0; font-size: 24px; }
+        .browser-info {
+            background: #eef2f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007aff;
+        }
+        .status-header {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #fff;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status-ok { background-color: #34c759; }
+        .status-warn { background-color: #ff9500; }
+        .status-error { background-color: #ff3b30; }
+        .status-unknown { background-color: #8e8e93; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background-color: #f9f9f9; }
+        .pass { color: #34c759; font-weight: bold; }
+        .fail { color: #ff3b30; font-weight: bold; }
+        .btn {
+            display: inline-block;
+            background-color: #007aff;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover { background-color: #0056b3; }
+        .details-box {
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="statusHeader" class="status-header status-unknown">
+        正在检测...
+    </div>
+
+    <h1>浏览器兼容性报告</h1>
+
+    <div class="browser-info">
+        <strong>当前环境：</strong> <span id="browserName">检测中...</span>
+    </div>
+
+    <p>缎金SatinAu 网站使用了最新的 Web 技术以提供最佳视觉体验。以下是您的浏览器对关键特性的支持情况：</p>
+
+    <table id="featureTable">
+        <thead>
+            <tr>
+                <th>检测项目</th>
+                <th>重要性</th>
+                <th>状态</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 表格内容将由 JS 填充 -->
+        </tbody>
+    </table>
+
+    <div class="details-box">
+        <p>※ 核心功能缺失可能导致网站无法布局或交互。<br>※ 视觉特效缺失不影响功能，但会降级显示效果。</p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <button onclick="window.close()" class="btn">关闭页面 / 继续浏览</button>
+    </div>
+</div>
+
+<script>
+    // 基础功能检测逻辑 - 不使用 ES6 模块语法
+    (function() {
+        var features = [
+            { name: "CSS 变量 (Custom Properties)", type: "css", prop: "color", val: "var(--c)", level: "core" },
+            { name: "CSS Grid 布局", type: "css", prop: "display", val: "grid", level: "core" },
+            { name: "ES6 模块 (type=\"module\")", type: "js-module", level: "core" },
+            { name: "CSS 嵌套 (Nesting)", type: "css-selector", selector: "&", level: "visual" },
+            { name: "CSS :has() 伪类", type: "css-selector", selector: ":has(*)", level: "visual" },
+            { name: "backdrop-filter (毛玻璃)", type: "css", prop: "backdrop-filter", val: "blur(10px)", level: "visual" },
+            { name: "light-dark() 颜色函数", type: "css", prop: "color", val: "light-dark(black, white)", level: "visual" },
+            { name: "CSS @container 容器查询", type: "css-at", rule: "@container (min-width: 1px)", level: "visual" }
+        ];
+
+        var results = {
+            core: { total: 0, passed: 0 },
+            visual: { total: 0, passed: 0 }
+        };
+
+        // 1. 获取浏览器信息
+        function getBrowserInfo() {
+            var ua = navigator.userAgent;
+            var tem, M = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+            if(/trident/i.test(M[1])){
+                tem = /\brv[ :]+(\d+)/g.exec(ua) || [];
+                return 'IE '+(tem[1] || '');
+            }
+            if(M[1]=== 'Chrome'){
+                tem = ua.match(/\b(OPR|Edge)\/(\d+)/);
+                if(tem!= null) return tem.slice(1).join(' ').replace('OPR', 'Opera');
+            }
+            M = M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+            if((tem= ua.match(/version\/(\d+)/i))!= null) M.splice(1, 1, tem[1]);
+            return M.join(' ');
+        }
+        document.getElementById('browserName').textContent = getBrowserInfo();
+
+        // 2. 特性检测辅助函数
+        function supportsCSS(prop, value) {
+            if (window.CSS && window.CSS.supports) {
+                return window.CSS.supports(prop, value);
+            }
+            return false;
+        }
+
+        function supportsSelector(selector) {
+            if (window.CSS && window.CSS.supports) {
+                return window.CSS.supports('selector(' + selector + ')');
+            }
+            return false;
+        }
+
+        function supportsAtRule(rule) {
+             // 简单的 @support 检测无法直接检测 @rule，这里通过 CSS.supports 变通或 assume false for very old browsers
+             if (window.CSS && window.CSS.supports) {
+                 // 大多数现代浏览器支持 CSS.supports(conditionText)
+                 try {
+                    return window.CSS.supports('(container-type: size)'); // container query proxy check
+                 } catch(e) { return false; }
+             }
+             return false;
+        }
+
+        // 检测 JS Module (尝试创建一个 script module)
+        var jsModuleSupported = false;
+        // 这是一个同步检测的 hack
+        var script = document.createElement('script');
+        if ('noModule' in script) { jsModuleSupported = true; }
+
+        // 3. 执行检测并渲染表格
+        var tbody = document.querySelector('#featureTable tbody');
+        
+        for (var i = 0; i < features.length; i++) {
+            var f = features[i];
+            var isSupported = false;
+
+            if (f.type === 'css') {
+                isSupported = supportsCSS(f.prop, f.val);
+            } else if (f.type === 'css-selector') {
+                isSupported = supportsSelector(f.selector);
+            } else if (f.type === 'css-at') {
+                isSupported = supportsAtRule(f.rule);
+            } else if (f.type === 'js-module') {
+                isSupported = jsModuleSupported;
+            }
+
+            // 统计
+            results[f.level].total++;
+            if (isSupported) results[f.level].passed++;
+
+            // 渲染行
+            var tr = document.createElement('tr');
+            tr.innerHTML = 
+                '<td>' + f.name + '</td>' +
+                '<td>' + (f.level === 'core' ? '核心' : '视觉') + '</td>' +
+                '<td class="' + (isSupported ? 'pass' : 'fail') + '">' + (isSupported ? '支持' : '不支持') + '</td>';
+            tbody.appendChild(tr);
+        }
+
+        // 4. 判定最终结果
+        var header = document.getElementById('statusHeader');
+        var mainTitle = document.querySelector('h1');
+        
+        if (results.core.passed < results.core.total) {
+            // 核心功能挂了
+            header.className = 'status-header status-error';
+            header.textContent = '❌ 严重不兼容';
+            mainTitle.textContent = '抱歉，您的浏览器无法正常浏览该网站';
+        } else if (results.visual.passed < results.visual.total) {
+            // 核心过了，视觉挂了
+            header.className = 'status-header status-warn';
+            header.textContent = '⚠️ 部分兼容';
+            mainTitle.textContent = '您的浏览器部分内容可能显示出错';
+        } else {
+            // 全过
+            header.className = 'status-header status-ok';
+            header.textContent = '✅ 完美兼容';
+            mainTitle.textContent = '您的浏览器可正常显示全部内容';
+        }
+
+    })();
+</script>
+
+</body>
+</html>
