@@ -1,19 +1,3 @@
-<!--
-  Copyright 2025 缎金SatinAu
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -21,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>歌单分享 - 缎金SatinAu</title>
   <meta name="description" content="缎金SatinAu的音乐歌单">
-  <meta name="keywords" content="缎金,SatinAu,歌单,音乐,Spotify,播放列表">
+  <meta name="keywords" content="缎金,SatinAu,歌单,音乐,Spotify,Bilibili,播放列表">
   <meta name="author" content="缎金SatinAu">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
@@ -32,6 +16,73 @@
   <script src="/src/script/config.js"></script>
   <script src="/src/script/common.js" defer></script>
   <script src="/src/script/components/CRCMenu.v2.js"></script>
+  
+  <style>
+    /* === 专为视频列表定制的样式，不复用 contact-card === */
+
+    /* 1. 网格容器：模仿 content-grid 的响应式布局 */
+    .video-grid {
+      display: grid;
+      gap: 24px; /* 视频间距稍微大一点 */
+      margin-top: 30px;
+      /* 自动填充，最小宽度300px，确保移动端显示正常 */
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* 2. 单个视频的外层容器：负责 16:9 比例和外观风格 */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      /* 16:9 宽高比黑魔法：高度设为0，通过 padding-bottom 撑开 */
+      padding-bottom: 56.25%; 
+      height: 0;
+      
+      /* 继承站点的玻璃质感风格 */
+      border-radius: var(--border-radius-lg);
+      background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.3));
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+      
+      overflow: hidden; /* 必须有，否则 iframe 直角会遮住圆角 */
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* 悬停效果：轻微上浮 */
+    .video-wrapper:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.2);
+    }
+
+    /* 3. iframe 绝对定位填满容器 */
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Spotify 容器样式 */
+    .spotify-container {
+      width: 100%;
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+      transition: transform 0.3s ease;
+      /* 给 Spotify 也加个底色防止加载慢时透明 */
+      background: light-dark(rgba(255, 255, 255, 0.5), rgba(0,0,0,0.3));
+    }
+    .spotify-container:hover {
+      transform: scale(1.01);
+    }
+  </style>
+
   <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
           c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -39,68 +90,103 @@
           y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
       })(window, document, "clarity", "script", "trwlkhxzch");
   </script>
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-    }
-
-    iframe {
-      width: 90%;
-      height: 90%;
-      margin-top: 16vh;
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-      background: #fff;
-      transition: all 0.4s ease;
-    }
-
-    @media (max-width: 768px) {
-      body {
-        align-items: flex-end;
-      }
-
-      iframe {
-        margin-bottom: 4vh;
-      }
-    }
-  </style>
 </head>
-<body>
-  <!-- 背景色块 -->
+<body id="playlist-page">
   <div class="color-bg color-bg-1"></div>
   <div class="color-bg color-bg-2"></div>
   <div class="color-bg color-bg-3"></div>
   <div class="color-bg color-bg-4"></div>
 
-  <iframe 
-    data-testid="embed-iframe" 
-    style="border-radius:12px" 
-    src="https://open.spotify.com/embed/playlist/0W3c4YHSKyx9b4IEx0mdjE?utm_source=generator" 
-    width="100%" 
-    height="352" 
-    frameBorder="0" 
-    allowfullscreen="" 
-    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-    loading="lazy"
-    title="我的歌单 / My Playlist"
-  ></iframe>
+  <main class="page">
+    <header>
+      <div class="title-row">
+        <h1>歌单分享</h1>
+      </div>
+    </header>
 
-  <!-- 加载动画 -->
+    <section>
+      <h2>Spotify</h2>
+      <p>国内大概率访问不上</p>
+      <div class="spotify-container">
+        <iframe 
+          style="border-radius:12px" 
+          src="https://open.spotify.com/embed/playlist/0W3c4YHSKyx9b4IEx0mdjE?utm_source=generator" 
+          width="100%" 
+          height="352" 
+          frameBorder="0" 
+          allowfullscreen="" 
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+          loading="lazy"
+          title="Spotify Playlist"
+        ></iframe>
+      </div>
+    </section>
+
+    <section>
+      <h2>哔哩哔哩 / Bilibili</h2>
+      <div id="bilibili-list" class="video-grid">
+        <p style="grid-column: 1/-1; opacity: 0.6;">正在加载视频列表...</p>
+      </div>
+    </section>
+
+    <script src="/src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+
   <div id="loadingOverlay" class="loading-overlay">
     <div class="spinner"></div>
   </div>
 
-  <!-- Toast -->
   <div id="copiedTip" class="copied-tip"></div>
 
-  <!-- 导航栏 -->
   <script src="/src/script/components/navigate.js"></script>
   <navigate-bar></navigate-bar>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const container = document.getElementById('bilibili-list');
+      // 请确保此路径与您实际创建 json 的位置一致
+      const jsonUrl = 'https://blog.satinau.cn/data/playlist.json'; 
+
+      fetch(jsonUrl)
+        .then(response => {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.json();
+        })
+        .then(data => {
+          container.innerHTML = ''; // 清空加载提示
+
+          if (!data || data.length === 0) {
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">暂无视频</p>';
+            return;
+          }
+
+          data.forEach(item => {
+            // 1. 创建外层容器 (video-wrapper)
+            const wrapper = document.createElement('div');
+            wrapper.className = 'video-wrapper';
+            
+            // 2. 构造 iframe (添加了 high_quality=1 提高画质)
+            const iframe = document.createElement('iframe');
+            iframe.src = `//player.bilibili.com/player.html?isOutside=true&aid=${item.aid}&bvid=${item.bvid}&cid=${item.cid}&p=1&autoplay=0&high_quality=1`;
+            iframe.scrolling = "no";
+            iframe.border = "0";
+            iframe.frameBorder = "0";
+            iframe.setAttribute('framespacing', '0');
+            iframe.allowFullscreen = true;
+            iframe.sandbox = "allow-top-navigation allow-same-origin allow-forms allow-scripts";
+            iframe.title = item.title || 'Bilibili Video';
+
+            // 3. 组装
+            wrapper.appendChild(iframe);
+            container.appendChild(wrapper);
+          });
+        })
+        .catch(error => {
+          console.error('Fetch playlist error:', error);
+          container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: var(--word-color);">加载歌单失败</p>';
+        });
+    });
+  </script>
 </body>
 </html>
