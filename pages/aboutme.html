@@ -236,6 +236,12 @@
       pointer-events: none;
       transition: opacity 1s ease;
     }
+
+    /* 阻止 Body 滚动 */
+    .no-scroll {
+      overflow: hidden !important; /* 强制隐藏滚动条 */
+      height: 100vh !important; /* 确保高度固定，防止内容溢出产生滚动 */
+    }
   </style>
 </head>
 <body>
@@ -322,6 +328,7 @@
 
       // 强制让Body立即显示（覆盖 style.css 中的 opacity:0），避免动画期间背景全白
       document.body.style.opacity = '1';
+      document.body.classList.add('no-scroll'); // 阻止滚动
 
       // 延迟显示跳过按钮
       setTimeout(() => skipBtn.classList.add('visible'), 1500);
@@ -377,6 +384,7 @@
       }
 
       function finishIntro() {
+        document.body.classList.remove('no-scroll'); // 恢复滚动
         container.classList.add('finished');
         // 销毁DOM以释放资源
         setTimeout(() => {
