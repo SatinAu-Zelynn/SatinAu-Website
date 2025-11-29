@@ -18,8 +18,6 @@
   <script src="/src/script/components/CRCMenu.v2.js"></script>
   
   <style>
-    /* === 专为视频列表定制的样式，不复用 contact-card === */
-
     /* 1. 网格容器：模仿 content-grid 的响应式布局 */
     .video-grid {
       display: grid;
@@ -102,6 +100,7 @@
       <div class="title-row">
         <h1>歌单分享</h1>
       </div>
+      <div class="greeting" id="greeting"></div>
     </header>
 
     <section>
@@ -166,7 +165,7 @@
             const wrapper = document.createElement('div');
             wrapper.className = 'video-wrapper';
             
-            // 2. 构造 iframe (添加了 high_quality=1 提高画质)
+            // 2. 构造 iframe
             const iframe = document.createElement('iframe');
             iframe.src = `//player.bilibili.com/player.html?isOutside=true&aid=${item.aid}&bvid=${item.bvid}&cid=${item.cid}&p=1&autoplay=0&high_quality=1`;
             iframe.scrolling = "no";
