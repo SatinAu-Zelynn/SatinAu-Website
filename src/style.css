@@ -1781,12 +1781,13 @@ input:checked + .switch-slider {
   background: light-dark(rgba(255, 255, 255, 0.4), rgba(30, 30, 30, 0.3));
   border-radius: var(--border-radius-lg);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 }
 
 .comment-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
   object-fit: cover;
   background: #ddd;
   flex-shrink: 0;
@@ -1828,3 +1829,85 @@ input:checked + .switch-slider {
   opacity: 0.7;
 }
 .comment-delete:hover { opacity: 1; }
+
+/* ========== 楼中楼样式 ========== */
+
+/* 子评论容器：左侧缩进 */
+.comment-children {
+  margin-left: 48px; /* 缩进距离 */
+  margin-top: 10px;
+  border-left: 2px solid light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.05)); /* 左侧连接线 */
+  padding-left: 12px;
+}
+
+/* 移动端缩进减小 */
+@media (max-width: 768px) {
+  .comment-children {
+    margin-left: 20px;
+    padding-left: 8px;
+  }
+}
+
+/* 操作栏（回复按钮等） */
+.comment-actions-bar {
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.comment-reply-btn {
+  color: var(--primary-color);
+  cursor: pointer;
+  opacity: 0.8;
+  font-weight: 500;
+}
+.comment-reply-btn:hover { opacity: 1; text-decoration: none; }
+
+/* 内嵌回复框容器 */
+.reply-form-wrapper {
+  margin-top: 12px;
+  padding: 12px;
+  background: light-dark(rgba(0,0,0,0.03), rgba(255,255,255,0.05));
+  border-radius: var(--border-radius-md);
+  animation: blurFadeUp 0.3s ease;
+}
+
+.reply-form-wrapper textarea {
+  width: 100%;
+  min-height: 60px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+  background: light-dark(rgba(255,255,255,0.5), rgba(0,0,0,0.2));
+  color: var(--word-color);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.reply-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.reply-cancel-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.2));
+  background: transparent;
+  color: var(--word-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+}
+
+.reply-submit-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+}

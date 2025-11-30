@@ -10,6 +10,9 @@ class CommentSystem {
     this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     this.user = null;
     
+    // 绑定全局方法供HTML内联调用
+    window.commentSystemInstance = this;
+    
     if (!this.container) return;
     
     this.init();
@@ -21,10 +24,9 @@ class CommentSystem {
     this.renderInputArea();
     this.fetchComments();
     
-    // 监听 auth 变化 (如果在其他标签页登录了)
     this.supabase.auth.onAuthStateChange((event, session) => {
       this.user = session?.user || null;
-      this.renderInputArea(); // 重新渲染输入框状态
+      this.renderInputArea();
     });
   }
 
@@ -33,12 +35,18 @@ class CommentSystem {
     this.user = session?.user || null;
   }
 
-  // 渲染基础结构
+  getUserName() {
+    if (!this.user) return '匿名用户';
+    const meta = this.user.user_metadata || {};
+    return meta.name || meta.user_name || meta.preferred_username || this.user.email;
+  }
+
+  // 1. 渲染基础框架
   renderSkeleton() {
     this.container.innerHTML = `
       <div class="comments-section">
         <h3 class="comments-title">评论</h3>
-        <div id="comment-input-container"></div>
+        <div id="main-input-container"></div>
         <div id="comment-list" class="comment-list">
           <p style="text-align:center; opacity:0.6;">加载评论中...</p>
         </div>
@@ -46,24 +54,21 @@ class CommentSystem {
     `;
   }
 
-  // 渲染输入区域 (根据登录状态变化)
+  // 2. 渲染顶部主输入框
   renderInputArea() {
-    const inputContainer = this.container.querySelector('#comment-input-container');
+    const inputContainer = this.container.querySelector('#main-input-container');
     if (!inputContainer) return;
 
     if (this.user) {
       inputContainer.innerHTML = `
         <div class="comment-input-wrapper">
-          <textarea id="comment-text" class="comment-textarea" placeholder="写下你的评论..."></textarea>
+          <textarea id="main-comment-text" class="comment-textarea" placeholder="写下你的评论..."></textarea>
           <div class="comment-actions">
             <span class="comment-tip">已登录为: ${this.getUserName()}</span>
-            <button id="submit-comment" class="comment-submit-btn">发送</button>
+            <button onclick="window.commentSystemInstance.submitComment()" class="comment-submit-btn">发送</button>
           </div>
         </div>
       `;
-      
-      const btn = inputContainer.querySelector('#submit-comment');
-      btn.onclick = () => this.submitComment();
     } else {
       inputContainer.innerHTML = `
         <div class="comment-input-wrapper" style="text-align:center; padding:30px;">
@@ -76,24 +81,19 @@ class CommentSystem {
     }
   }
 
-  getUserName() {
-    const meta = this.user.user_metadata || {};
-    return meta.name || meta.user_name || meta.preferred_username || this.user.email;
-  }
-
-  // 获取评论
+  // 3. 获取并处理评论数据
   async fetchComments() {
     const listContainer = this.container.querySelector('#comment-list');
     
-    // 关联查询 profiles 表获取头像和昵称
+    // 获取所有评论 (包括 parent_id)
     const { data, error } = await this.supabase
       .from('comments')
       .select(`
-        id, content, created_at, user_id,
+        id, content, created_at, user_id, parent_id,
         profiles (username, avatar_url)
       `)
       .eq('page_id', this.pageId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true }); // 按时间正序，方便盖楼
 
     if (error) {
       console.error('Fetch comments error:', error);
@@ -106,69 +106,191 @@ class CommentSystem {
       return;
     }
 
-    this.renderList(data);
+    // 将扁平数组转为树形结构
+    const commentTree = this.buildCommentTree(data);
+    // 渲染树
+    this.renderTree(commentTree);
   }
 
-  // 渲染列表
-  renderList(comments) {
-    const listContainer = this.container.querySelector('#comment-list');
-    listContainer.innerHTML = comments.map(item => {
-      const profile = item.profiles || {};
-      const name = profile.username || '匿名用户';
-      const avatar = profile.avatar_url || 'https://satinau.cn/public/favicon.ico'; // 默认头像
-      const date = new Date(item.created_at).toLocaleString();
-      const isMyComment = this.user && this.user.id === item.user_id;
+  // 辅助：构建树形结构
+  buildCommentTree(comments) {
+    const map = {};
+    const roots = [];
 
-      return `
-        <div class="comment-item" id="comment-${item.id}">
-          <img src="${avatar}" class="comment-avatar" alt="${name}" onerror="this.src='https://satinau.cn/public/favicon.ico'">
-          <div class="comment-body">
-            <div class="comment-header">
-              <span class="comment-user">${name}</span>
-              <div>
-                <span class="comment-date">${date}</span>
-                ${isMyComment ? `<span class="comment-delete" onclick="window.deleteComment('${item.id}')">删除</span>` : ''}
-              </div>
-            </div>
-            <div class="comment-content">${this.escapeHtml(item.content)}</div>
+    // 初始化映射
+    comments.forEach(c => {
+      c.children = [];
+      map[c.id] = c;
+    });
+
+    // 组装树
+    comments.forEach(c => {
+      if (c.parent_id && map[c.parent_id]) {
+        map[c.parent_id].children.push(c);
+      } else {
+        roots.push(c);
+      }
+    });
+
+    // 根节点按时间倒序（最新的在最上面），子回复按时间正序（楼层效果）
+    return roots.reverse();
+  }
+
+  // 4. 渲染评论树
+  renderTree(treeData) {
+    const listContainer = this.container.querySelector('#comment-list');
+    listContainer.innerHTML = '';
+    
+    treeData.forEach(node => {
+      listContainer.appendChild(this.createCommentNode(node));
+    });
+  }
+
+  // 递归创建评论节点 DOM
+  createCommentNode(item) {
+    const profile = item.profiles || {};
+    const name = profile.username || '匿名用户';
+    const avatar = profile.avatar_url || 'https://satinau.cn/public/favicon.ico';
+    const date = new Date(item.created_at).toLocaleString();
+    const isMyComment = this.user && this.user.id === item.user_id;
+
+    // 创建 DOM 元素
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    div.id = `comment-${item.id}`;
+
+    // 基础 HTML
+    div.innerHTML = `
+      <img src="${avatar}" class="comment-avatar" alt="${name}" onerror="this.src='https://satinau.cn/public/favicon.ico'">
+      <div class="comment-body">
+        <div class="comment-header">
+          <span class="comment-user">${name}</span>
+          <div>
+            <span class="comment-date">${date}</span>
           </div>
         </div>
-      `;
-    }).join('');
+        <div class="comment-content">${this.escapeHtml(item.content)}</div>
+        
+        <div class="comment-actions-bar">
+          <span class="comment-reply-btn" onclick="window.commentSystemInstance.openReplyBox('${item.id}', '${name}')">回复</span>
+          ${isMyComment ? `<span class="comment-delete" onclick="window.commentSystemInstance.deleteComment('${item.id}')">删除</span>` : ''}
+        </div>
 
-    // 绑定删除方法到全局，以便 onclick 调用
-    window.deleteComment = (id) => this.deleteComment(id);
+        <!-- 动态插入回复框的容器 -->
+        <div id="reply-box-${item.id}"></div>
+
+        <!-- 子评论容器 -->
+        <div class="comment-children" id="children-${item.id}"></div>
+      </div>
+    `;
+
+    // 递归渲染子评论
+    if (item.children && item.children.length > 0) {
+      const childrenContainer = div.querySelector(`#children-${item.id}`);
+      item.children.forEach(child => {
+        childrenContainer.appendChild(this.createCommentNode(child));
+      });
+    }
+
+    return div;
   }
 
-  async submitComment() {
-    const textarea = this.container.querySelector('#comment-text');
-    const content = textarea.value.trim();
+  // 5. 打开回复框
+  openReplyBox(parentId, replyToName) {
+    if (!this.user) {
+      document.getElementById('loginBtn')?.click();
+      alert('请先登录后再回复');
+      return;
+    }
+
+    // 移除页面上其他已打开的回复框（一次只显示一个）
+    const existingForms = this.container.querySelectorAll('.reply-form-wrapper');
+    existingForms.forEach(el => el.remove());
+
+    const container = document.getElementById(`reply-box-${parentId}`);
+    if (!container) return;
+
+    const formHtml = `
+      <div class="reply-form-wrapper">
+        <textarea id="reply-text-${parentId}" placeholder="回复 @${replyToName}..."></textarea>
+        <div class="reply-form-actions">
+          <button class="reply-cancel-btn" onclick="this.closest('.reply-form-wrapper').remove()">取消</button>
+          <button class="reply-submit-btn" onclick="window.commentSystemInstance.submitComment('${parentId}')">发送</button>
+        </div>
+      </div>
+    `;
+    
+    container.innerHTML = formHtml;
+    // 自动聚焦
+    setTimeout(() => {
+        const textarea = document.getElementById(`reply-text-${parentId}`);
+        if(textarea) textarea.focus();
+    }, 100);
+  }
+
+  // 6. 提交评论 (支持主评论和回复)
+  async submitComment(parentId = null) {
+    let content = '';
+    let textarea = null;
+    let btn = null;
+
+    if (parentId) {
+      // 回复模式
+      textarea = document.getElementById(`reply-text-${parentId}`);
+      if (textarea) {
+        content = textarea.value.trim();
+        // 查找按钮：textarea 的父级(wrapper) -> 找 .reply-form-actions -> 找按钮
+        btn = textarea.closest('.reply-form-wrapper').querySelector('.reply-submit-btn');
+      }
+    } else {
+      // 主评论模式
+      textarea = document.getElementById('main-comment-text');
+      if (textarea) {
+        content = textarea.value.trim();
+        // 查找按钮：textarea 的父级 -> 找 .comment-actions -> 找 button
+        btn = textarea.parentNode.querySelector('button'); 
+      }
+    }
+
     if (!content) return;
 
-    const btn = this.container.querySelector('#submit-comment');
-    btn.disabled = true;
-    btn.textContent = '发送中...';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '发送中...'; // 稍微改一下文字提示，更直观
+    }
+
+    const payload = {
+      page_id: this.pageId,
+      user_id: this.user.id,
+      content: content,
+      parent_id: parentId // 关键：带上父ID
+    };
 
     const { error } = await this.supabase
       .from('comments')
-      .insert({
-        page_id: this.pageId,
-        user_id: this.user.id,
-        content: content
-      });
+      .insert(payload);
 
     if (error) {
       alert('发送失败: ' + error.message);
-      btn.disabled = false;
-      btn.textContent = '发送';
+      // 失败时恢复按钮
+      if (btn) {
+          btn.disabled = false;
+          btn.textContent = '发送';
+      }
     } else {
-      textarea.value = '';
-      btn.disabled = false;
-      btn.textContent = '发送';
-      this.fetchComments(); // 刷新列表
+      // 成功
+      if (textarea) textarea.value = '';
+      
+      if (btn) {
+          btn.disabled = false;
+          btn.textContent = '发送';
+      }
+
+      this.fetchComments(); // 重新加载列表（这会关闭回复框，但主输入框还在，所以必须恢复按钮）
     }
   }
 
+  // 7. 删除评论
   async deleteComment(commentId) {
     if (!confirm('确定删除这条评论吗？')) return;
 
