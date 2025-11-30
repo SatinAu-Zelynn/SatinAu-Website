@@ -1,0 +1,192 @@
+<!--
+  Copyright 2025 缎金SatinAu
+  
+  pages/agreement.html - 用户协议与隐私政策
+-->
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>用户协议与隐私说明 - 缎金SatinAu</title>
+  <meta name="description" content="缎金SatinAu个人网站的用户协议、隐私政策及开源致谢">
+  <meta name="author" content="缎金SatinAu">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="preload" href="https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <script src="/src/script/config.js"></script>
+  <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/CRCMenu.v2.js"></script>
+  
+  <style>
+    /* 协议页面特有样式，继承自 md-body 但做微调 */
+    .agreement-content {
+      text-align: left;
+      background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.2));
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+      border-radius: var(--border-radius-lg);
+      padding: 30px;
+      margin-top: 20px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+      animation: blurFadeUp 0.8s ease forwards;
+    }
+
+    .agreement-content h2 {
+      border-bottom: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+      padding-bottom: 10px;
+      margin-top: 40px;
+      opacity: 1 !important; /* 覆盖默认动画逻辑，防止闪烁 */
+      animation: none !important;
+    }
+    
+    .agreement-content h2:first-child {
+      margin-top: 0;
+    }
+
+    .agreement-content h3 {
+      font-size: 1.1rem;
+      margin-top: 20px;
+      color: var(--primary-color);
+    }
+
+    .agreement-content p, .agreement-content li {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--word-color);
+      opacity: 0.9;
+    }
+    
+    .agreement-content ul {
+      padding-left: 20px;
+    }
+    
+    .agreement-content a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .agreement-content a:hover {
+      text-decoration: underline;
+    }
+
+    .tech-stack-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      margin: 4px 4px 4px 0;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+      color: var(--word-color);
+      border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+    }
+  </style>
+
+  <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "trwlkhxzch");
+  </script>
+</head>
+<body>
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+
+  <main class="page">
+    <header>
+      <div class="title-row">
+        <h1>用户协议与隐私说明</h1>
+      </div>
+      <div class="greeting">Agreement & Privacy Policy</div>
+    </header>
+
+    <section>
+      <div class="agreement-content md-body">
+        <h2>1. 服务架构与数据跨境传输声明</h2>
+        <p><strong>特别提示：</strong>本站基于全球化的技术架构构建。在您浏览、注册或互动时，您的相关数据将不可避免地发生跨境传输。继续使用本站服务，即视为您已充分知悉并同意以下数据处理方式：</p>
+        
+        <h3>1.1 网络加速与分发 (Cloudflare)</h3>
+        <p>本站使用 <strong>Cloudflare</strong> 提供的全球内容分发网络（CDN）及安全防护服务。
+        <br><strong>跨境传输说明：</strong>为了优化连接速度并抵御网络攻击，您的访问流量、IP 地址及必要的请求元数据可能会被路由至 Cloudflare 位于全球各地的边缘节点（包含中国大陆以外的节点）进行处理。</p>
+        
+        <h3>1.2 核心数据存储 (Supabase / AWS)</h3>
+        <p>本站的用户账户信息、评论内容及动态数据托管于 <strong>Supabase</strong> 平台。
+        <br><strong>跨境传输说明：</strong>Supabase 的数据库服务器部署于 <strong>AWS（亚马逊云科技）东南亚-新加坡（Southeast Asia, Singapore）</strong> 区域。因此，您提交的所有个人信息（如邮箱、昵称）和生成的内容（如评论）将被传输至新加坡进行存储和处理。</p>
+
+        <h3>1.3 访问体验分析 (Microsoft Clarity)</h3>
+        <p>为了持续改进网站体验，本站集成了 <strong>Microsoft Clarity</strong> 分析工具。
+        <br><strong>跨境传输说明：</strong>该工具可能会收集匿名的点击、滚动及页面浏览行为数据。这些去标识化的统计数据将被传输至 Microsoft 的全球服务器进行分析。</p>
+
+        <h2>2. 第三方链接与责任边界</h2>
+        <p>本站（包括“关于我”及首页）提供的社交平台链接（如 QQ、微信、微博、小红书、抖音、酷安等）仅旨在方便您与站长建立联系或查看更多动态。</p>
+        <p>当您点击这些链接跳转至第三方平台时，您将受该平台的用户协议与隐私政策约束。本站无法控制第三方平台的数据收集行为，亦不对您在第三方平台上的活动及产生的个人信息安全负责。</p>
+
+        <h2>3. 嵌入式内容声明</h2>
+        <p>为了丰富内容展示，本站的部分页面（如“歌单分享”、“博客文章”）可能嵌入了来自 <strong>哔哩哔哩 (Bilibili)</strong> 或 <strong>Spotify</strong> 等平台的媒体内容。</p>
+        <ul>
+            <li>这些嵌入式内容仅用于分享站长的喜好与创作。</li>
+            <li>播放器及相关组件由源平台提供技术支持。</li>
+            <li>当您与这些嵌入式内容交互（如播放视频、收听音乐）时，源平台可能会收集您的播放记录或设备信息，此行为受源平台的隐私政策管辖，与本站无关。</li>
+        </ul>
+
+        <h2>4. 开源许可与致谢</h2>
+        <p>本站的构建离不开开源社区的贡献。我们在开发过程中使用了以下优秀的开源项目，并在此致以诚挚的谢意：</p>
+        
+        <div style="margin: 15px 0;">
+            <span class="tech-stack-badge">Marked.js</span>
+            <span class="tech-stack-badge">CRCMenu.v2.js</span>
+            <span class="tech-stack-badge">Viewer.js</span>
+            <span class="tech-stack-badge">Supabase JS Client</span>
+        </div>
+
+        <h3>核心组件</h3>
+        <ul>
+            <li><strong>Marked.js</strong> - 用于博客文章的 Markdown 实时渲染。</li>
+            <li><strong>CRCMenu.v2.js</strong> - (By add-qwq) 提供了网站自定义的右键菜单体验。</li>
+            <li><strong>Viewer.js</strong> - (By fengyuanchen) 提供了流畅的图片查看与画廊功能。</li>
+        </ul>
+        
+        <p>本站遵循 <strong>Apache License 2.0</strong> 开源协议，网站源代码（不包含个人隐私配置及密钥）已在 GitHub 上开源。您可以点击查看详细的 <a href="https://github.com/SatinAu-Zelynn/SatinAu-Website/blob/main/LICENSE" target="_blank">License 信息</a>。</p>
+
+        <h2>5. 协议的变更</h2>
+        <p>随着网站功能的更新或法律法规的变化，我们可能会适时修订本协议。修订后的协议一经公布即生效，继续使用本站即视为您同意相关变更。</p>
+        
+        <p style="margin-top: 40px; text-align: right; font-weight: 600;">最后更新日期：2025年11月30日</p>
+      </div>
+    </section>
+
+    <script src="/src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+
+  <!-- 加载动画 -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="copiedTip" class="copied-tip"></div>
+
+  <!-- 导航栏 -->
+  <script src="/src/script/components/navigate.js"></script>
+  <navigate-bar></navigate-bar>
+
+  <script>
+    // 页面加载完成后隐藏加载动画
+    window.addEventListener('load', function() {
+      const loader = document.getElementById('loadingOverlay');
+      if (loader) loader.classList.remove('show');
+    });
+  </script>
+</body>
+</html>
