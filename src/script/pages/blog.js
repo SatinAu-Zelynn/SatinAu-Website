@@ -139,7 +139,7 @@ function initBlog() {
     // 显示用户信息
     function showUserInfo(user) {
     // 从元数据中优先获取用户名
-    const meta = user.raw_user_meta_data || {};
+    const meta = user.user_metadata || {};
     const displayName = meta.name || meta.user_name || meta.preferred_username || user.email;
     userInfo.innerHTML = `欢迎, ${displayName}`;
     userInfo.style.display = 'inline-block';

@@ -150,7 +150,7 @@ class CommentSystem {
   createCommentNode(item) {
     const profile = item.profiles || {};
     const name = profile.username || '匿名用户';
-    const avatar = profile.avatar_url || 'https://satinau.cn/public/favicon.ico';
+    const avatar = profile.avatar_url || 'https://satinau.cn/public/guest.png';
     const date = new Date(item.created_at).toLocaleString();
     const isMyComment = this.user && this.user.id === item.user_id;
 
