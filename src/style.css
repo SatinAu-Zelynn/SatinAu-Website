@@ -59,7 +59,6 @@ body {
   overflow-x: hidden; /* 禁止横向滚动 */
   width: 100%;
   box-sizing: border-box;
-  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 18px);
   background: transparent !important; /* 透明背景，让色块直接作为底层 */
 }
 
@@ -880,6 +879,10 @@ body#index-page {
 }
 
 @media (max-width: 767px) {
+  body {
+    padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 36px);
+  }
+
   .more-menu-container {
     display: none !important;
   }
@@ -1719,7 +1722,7 @@ input:checked + .switch-slider {
   min-height: 80px;
   background: light-dark(rgba(255, 255, 255, 0.4), rgba(0, 0, 0, 0.2));
   border: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-sm);
   padding: 12px;
   font-family: inherit;
   font-size: 14px;
