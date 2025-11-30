@@ -748,8 +748,44 @@ function renderAiSummary(container, text) {
             </svg>
             AI 摘要
         </div>
-        <div class="ai-content">${text}</div>
+        <div class="ai-content"></div>
     `;
+
+    // 获取内容容器并执行打字机特效
+    const contentBox = container.querySelector('.ai-content');
+    typewriterEffect(contentBox, text);
+}
+
+function typewriterEffect(element, text) {
+    element.innerHTML = ''; // 清空现有内容
+    
+    let chars;
+
+    // 尝试使用 Intl.Segmenter
+    if (window.Intl && Intl.Segmenter) {
+        const segmenter = new Intl.Segmenter('zh', { granularity: 'grapheme' });
+        // 将迭代器转换为数组，提取 segment 属性
+        chars = Array.from(segmenter.segment(text), s => s.segment);
+    } 
+    // 降级方案：使用 ES6 扩展运算符
+    else {
+        chars = [...text]; 
+    }
+    
+    const fragment = document.createDocumentFragment();
+    
+    chars.forEach((char, index) => {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.className = 'ai-char';
+        
+        // 设置递增的延迟时间
+        span.style.animationDelay = `${index * 0.02}s`;
+        
+        fragment.appendChild(span);
+    });
+    
+    element.appendChild(fragment);
 }
 
 // 渲染生成按钮及处理点击事件

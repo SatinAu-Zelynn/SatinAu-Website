@@ -2014,3 +2014,30 @@ input:checked + .switch-slider {
   50% { transform: scale(1.15); filter: drop-shadow(0 0 5px rgba(66, 133, 244, 0.5)); }
   100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(66, 133, 244, 0)); }
 }
+
+/* ========== AI 打字机特效 ========== */
+
+/* 单个字符的基础样式 */
+.ai-char {
+  display: inline-block; /* 必须是 inline-block 才能应用 transform */
+  opacity: 0;            /* 初始隐藏 */
+  filter: blur(4px);     /* 初始模糊 */
+  transform: translateY(4px); /* 初始微下沉 */
+  animation: charBlurIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  white-space: pre-wrap; /* 保留空格和换行 */
+  will-change: opacity, filter, transform;
+}
+
+/* 字符进入动画关键帧 */
+@keyframes charBlurIn {
+  0% {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(4px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
