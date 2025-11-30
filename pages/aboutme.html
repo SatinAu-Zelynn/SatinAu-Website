@@ -31,7 +31,9 @@
   <link rel="preload" href="https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
   <script src="/src/script/config.js"></script>
   <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/comment.js" defer></script>
   <script src="/src/script/components/CRCMenu.v2.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/viewerjs@1.11.6/dist/viewer.min.css">
@@ -424,6 +426,11 @@
       } catch (err) {
         document.getElementById("aboutmeContent").innerHTML = "<p>加载失败，请稍后再试。</p>";
       }
+
+      // 初始化评论
+      if (typeof initPageComments === 'function') {
+        initPageComments('aboutme-comments', 'aboutme'); // 这里的 'aboutme' 是 pageId
+      }
     });
     document.addEventListener("DOMContentLoaded", () => {
       new Viewer(document.getElementById('aboutmeContent'), {
@@ -450,6 +457,10 @@
           </div>
         </a>
       </div>
+    </section>
+
+    <section style="text-align: left;">
+      <div id="aboutme-comments"></div>
     </section>
 
     <script src="/src/script/components/footer.js"></script>

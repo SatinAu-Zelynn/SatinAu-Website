@@ -15,7 +15,9 @@
   <link rel="preload" href="https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
   <script src="/src/script/config.js"></script>
   <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/comment.js" defer></script>
   <script src="/src/script/components/CRCMenu.v2.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
     /* 1. 网格容器：模仿 content-grid 的响应式布局 */
@@ -128,6 +130,10 @@
       </div>
     </section>
 
+    <section style="text-align: left;">
+      <div id="playlist-comments"></div>
+    </section>
+
     <script src="/src/script/components/footer.js"></script>
     <site-footer></site-footer>
   </main>
@@ -143,6 +149,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      initPageComments('playlist-comments', 'playlist');
       const container = document.getElementById('bilibili-list');
       // 请确保此路径与您实际创建 json 的位置一致
       const jsonUrl = 'https://blog.satinau.cn/data/playlist.json'; 

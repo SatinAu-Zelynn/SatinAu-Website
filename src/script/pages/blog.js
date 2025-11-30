@@ -164,7 +164,6 @@ function initBlog() {
         authOverlay.style.display = 'none';
         authOverlay.classList.remove('show');
         authModal.classList.remove('show');
-        showToast('登录成功');
         } else if (event === 'SIGNED_OUT') {
         // 登出成功
         showLoginButton();
@@ -483,6 +482,21 @@ function renderPost(post, mdContent) {
         });
         
         postContent.innerHTML = marked.parse(processedMd);
+
+        // 插入评论区容器
+        const commentSection = document.createElement('div');
+        commentSection.id = 'blog-post-comments'; // 容器 ID
+        commentSection.style.marginTop = '60px';  // 顶部间距
+        postContent.appendChild(commentSection);
+
+        // 初始化评论系统
+        // 使用 post.file (文件名) 作为唯一的 pageId
+        if (typeof window.initPageComments === 'function') {
+            // 稍微延迟一下确保 DOM 已经挂载
+            setTimeout(() => {
+                window.initPageComments('blog-post-comments', post.file);
+            }, 0);
+        }
 
         initImageViewer();
 
