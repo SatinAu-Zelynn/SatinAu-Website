@@ -483,6 +483,31 @@ function renderPost(post, mdContent) {
         
         postContent.innerHTML = marked.parse(processedMd);
 
+        // 创建容器
+        const summaryContainer = document.createElement('div');
+        summaryContainer.className = 'ai-summary-card';
+        summaryContainer.style.display = 'none'; // 默认隐藏
+
+        // 插入到文章最顶部
+        if (postContent.firstChild) {
+            postContent.insertBefore(summaryContainer, postContent.firstChild);
+        } else {
+            postContent.appendChild(summaryContainer);
+        }
+
+        // 检查缓存 (避免重复请求)
+        // 使用 "ai_summary_" + 文章文件名作为 key
+        const cacheKey = `ai_summary_${post.file}`;
+        const cachedSummary = sessionStorage.getItem(cacheKey);
+
+        if (cachedSummary) {
+            // 如果有缓存，直接显示结果
+            renderAiSummary(summaryContainer, cachedSummary);
+        } else {
+            // 如果没缓存，显示生成按钮
+            renderGenerateButton(summaryContainer, mdContent, cacheKey);
+        }
+
         // 插入评论区容器
         const commentSection = document.createElement('div');
         commentSection.id = 'blog-post-comments'; // 容器 ID
@@ -702,4 +727,99 @@ function calculateReadingStats(mdText) {
   );
 
   return `${totalCount} 字 · 约 ${readingMinutes} 分钟`;
+}
+
+/* ========== AI Summary Helper Functions ========== */
+
+// 渲染 AI 结果
+function renderAiSummary(container, text) {
+    container.style.display = 'block';
+    // 简单的打字机效果模拟
+    container.innerHTML = `
+        <div class="ai-header">
+            <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" fill="url(#gemini_grad)"/>
+                <defs>
+                    <linearGradient id="gemini_grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#4285F4"/>
+                        <stop offset="1" stop-color="#D96570"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            AI 摘要
+        </div>
+        <div class="ai-content">${text}</div>
+    `;
+}
+
+// 渲染生成按钮及处理点击事件
+function renderGenerateButton(container, rawMarkdown, cacheKey) {
+    container.style.display = 'block';
+    container.innerHTML = ''; // 清空
+
+    const btn = document.createElement('button');
+    btn.className = 'ai-generate-btn';
+    btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,1L17.74,3.75L15,5L17.74,6.26L19,9L20.25,6.26L23,5L20.25,3.75M9,4L6.5,9.5L1,12L6.5,14.5L9,20L11.5,14.5L17,12L11.5,9.5M19,15L17.74,17.74L15,19L17.74,20.25L19,23L20.25,20.25L23,19L20.25,17.74"/>
+        </svg>
+        生成 AI 摘要
+    `;
+    
+    // 提示文字
+    const hint = document.createElement('span');
+    hint.style.fontSize = '12px';
+    hint.style.opacity = '0.5';
+    hint.style.marginLeft = '10px';
+    hint.textContent = 'Powered by Gemini';
+
+    container.appendChild(btn);
+    container.appendChild(hint);
+
+    btn.addEventListener('click', async () => {
+        // UI 切换为加载状态
+        btn.disabled = true;
+        btn.innerHTML = '<div class="ai-loading-spinner"></div> 正在思考...';
+        hint.textContent = '需要几秒钟...';
+
+        try {
+            // 1. 清理 Markdown 符号，减少 Token 消耗
+            const cleanText = rawMarkdown
+                .replace(/!\[.*?\]\(.*?\)/g, '') // 去除图片
+                .replace(/[#*`\[\]()]/g, '')     // 去除特殊符
+                .substring(0, 10000);            // 截断
+
+            // 2. 发送请求给 Cloudflare Worker
+            const WORKER_URL = "https://blog-ai-summary.satinau.cn"; 
+
+            const response = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: cleanText })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || '请求失败');
+            }
+
+            // 3. 成功，保存并显示
+            const summary = data.summary;
+            sessionStorage.setItem(cacheKey, summary); // 缓存到会话
+            renderAiSummary(container, summary);
+
+        } catch (err) {
+            console.error('AI Summary Error:', err);
+            // 恢复按钮状态，允许重试
+            btn.disabled = false;
+            btn.innerHTML = '⚠️ 生成失败，点击重试';
+            hint.textContent = '网络有点问题';
+            
+            // 使用现有的 Toast 组件报错
+            if (typeof showToast === 'function') {
+                showToast('AI 摘要生成失败，请重试');
+            }
+        }
+    });
 }
