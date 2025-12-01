@@ -106,19 +106,30 @@
           <p id="postDate" class="post-date"></p>
         </div>
         <div id="postContent" class="md-body"></div>
-        <div class="post-actions" style="margin-top: 40px; display: flex; justify-content: space-between;">
-          <button id="backToListBtn" class="back-button" aria-label="返回文章列表">
-            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-            <span style="margin-left: 8px;">文章列表</span>
-          </button>
-          <button id="backToTopBtn" class="back-button" aria-label="返回顶部">
-            <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-            <span style="margin-left: 8px;">回到顶部</span>
-          </button>
-          <button class="back-button" id="downloadArticle">
-            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            下载TXT
-          </button>
+        <div class="post-actions-panel">
+          <!-- 文章列表按钮 -->
+          <div class="action-item">
+            <button id="backToListBtn" class="action-btn" aria-label="文章列表">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <span class="action-label">文章列表</span>
+          </div>
+
+          <!-- 回到顶部按钮 -->
+          <div class="action-item">
+            <button id="backToTopBtn" class="action-btn" aria-label="回到顶部">
+              <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="action-label">回到顶部</span>
+          </div>
+
+          <!-- 下载TXT按钮 -->
+          <div class="action-item">
+            <button id="downloadArticle" class="action-btn" aria-label="下载TXT">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="action-label">下载TXT</span>
+          </div>
         </div>
         <div id="postError" style="display: none; text-align: center; padding: 40px 20px;">
           <p>文章加载失败</p>

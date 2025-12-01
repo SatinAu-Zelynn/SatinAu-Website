@@ -1336,18 +1336,6 @@ body#index-page {
   gap: 16px;
 }
 
-.post-actions .back-button {
-  display: inline-flex;
-  align-items: center;
-  width: auto;
-  padding: 0 16px;
-  border-radius:var(--border-radius-xl);
-}
-
-#downloadArticle {
-  margin-left: auto;
-}
-
 /* ========== 设置页面 - 功能开关 ========== */
 .settings-container {
   display: flex;
@@ -2100,4 +2088,102 @@ input:checked + .switch-slider {
   font-weight: 600;
   min-width: 14px;
   text-align: center;
+}
+
+/* ========== 操作栏样式 ========== */
+
+/* 1. 外层容器：材质衬托 (Material Backing) */
+.post-actions-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 24px 40px;
+  margin: 40px auto; /* 上下间距 */
+  padding: 20px 40px;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  
+  /* 玻璃拟态/材质背景 */
+  background: light-dark(rgba(255, 255, 255, 0.45), rgba(40, 40, 40, 0.4));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.12));
+  border-radius: var(--border-radius-xl);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.1);
+  
+  /* 进场动画 */
+  animation: blurFadeUp 0.8s ease forwards;
+}
+
+/* 2. 单个操作项容器 (垂直排列) */
+.action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px; /* 按钮和文字的间距 */
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent; /* 移动端点击不高亮背景 */
+}
+
+/* 3. 圆形按钮样式 */
+.action-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* 按钮背景材质 */
+  background: light-dark(rgba(255, 255, 255, 0.6), rgba(60, 60, 60, 0.6));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  color: var(--word-color);
+  
+  cursor: var(--custom-cursor, pointer);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: none; /* 确保SVG是线条风格 */
+  stroke: currentColor;
+  transition: transform 0.3s ease;
+}
+
+/* 4. 下方文字标签 */
+.action-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: light-dark(#555, #ccc);
+  transition: color 0.3s ease;
+}
+
+/* 5. 交互效果 (Hover & Active) */
+/* 当鼠标悬停在整个item上时 */
+.action-item:hover .action-btn {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
+  border-color: transparent;
+}
+
+.action-item:hover .action-label {
+  color: var(--word-color);
+}
+
+/* 点击时的缩放 */
+.action-item:active .action-btn {
+  transform: scale(0.92);
+}
+
+/* 让回到顶部按钮在悬停时有个向上的小动画 */
+.action-item:hover #backToTopBtn svg {
+  transform: translateY(-2px);
 }

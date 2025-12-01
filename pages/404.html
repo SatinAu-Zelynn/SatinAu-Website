@@ -56,13 +56,27 @@
       <h2>页面未找到</h2>
       <p>抱歉，您访问的页面不存在或已被移除</p>
       
-      <div class="error-actions">
-        <a href="/index.html" class="back-button" onclick="spaNavigate('/index.html')">
-          <span>返回首页</span>
+      <div class="post-actions-panel">
+        <!-- 返回首页 -->
+        <a href="/index.html" class="action-item" onclick="spaNavigate('/index.html')">
+          <div class="action-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </div>
+          <span class="action-label">返回首页</span>
         </a>
-        
-        <a href="/blog.html" class="back-button" onclick="spaNavigate('/blog.html')">
-          <span>查看博客</span>
+
+        <!-- 查看博客 -->
+        <a href="/blog.html" class="action-item" onclick="spaNavigate('/blog.html')">
+          <div class="action-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </div>
+          <span class="action-label">查看博客</span>
         </a>
       </div>
     </section>
