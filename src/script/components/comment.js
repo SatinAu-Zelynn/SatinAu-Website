@@ -86,11 +86,12 @@ class CommentSystem {
     const listContainer = this.container.querySelector('#comment-list');
     
     // 获取所有评论 (包括 parent_id)
-    const { data, error } = await this.supabase
+    const { data: comments, error } = await this.supabase
       .from('comments')
       .select(`
         id, content, created_at, user_id, parent_id,
-        profiles (username, avatar_url)
+        profiles (username, avatar_url),
+        likes:comment_likes(count)
       `)
       .eq('page_id', this.pageId)
       .order('created_at', { ascending: true }); // 按时间正序，方便盖楼
@@ -101,13 +102,31 @@ class CommentSystem {
       return;
     }
 
-    if (!data || data.length === 0) {
+    if (!comments || comments.length === 0) {
       listContainer.innerHTML = '<p style="text-align:center; opacity:0.5;">暂无评论，来抢沙发吧~</p>';
       return;
     }
 
+    let myLikedCommentIds = new Set();
+    if (this.user) {
+      const { data: myLikes } = await this.supabase
+        .from('comment_likes')
+        .select('comment_id')
+        .eq('user_id', this.user.id);
+      
+      if (myLikes) {
+        myLikes.forEach(like => myLikedCommentIds.add(like.comment_id));
+      }
+    }
+
+    const processedComments = comments.map(c => ({
+      ...c,
+      like_count: c.likes ? c.likes[0]?.count || 0 : 0,
+      is_liked: myLikedCommentIds.has(c.id)
+    }));
+
     // 将扁平数组转为树形结构
-    const commentTree = this.buildCommentTree(data);
+    const commentTree = this.buildCommentTree(processedComments);
     // 渲染树
     this.renderTree(commentTree);
   }
@@ -154,6 +173,12 @@ class CommentSystem {
     const date = new Date(item.created_at).toLocaleString();
     const isMyComment = this.user && this.user.id === item.user_id;
 
+    // 点赞相关数据
+    const likeCount = item.like_count || 0;
+    const isLikedClass = item.is_liked ? 'liked' : '';
+    // SVG 图标 (大拇指)
+    const thumbSvg = `<svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+
     // 创建 DOM 元素
     const div = document.createElement('div');
     div.className = 'comment-item';
@@ -172,6 +197,10 @@ class CommentSystem {
         <div class="comment-content">${this.escapeHtml(item.content)}</div>
         
         <div class="comment-actions-bar">
+          <button class="comment-like-btn ${isLikedClass}" onclick="window.commentSystemInstance.toggleLike('${item.id}', this)">
+            ${thumbSvg}
+            <span class="comment-like-count">${likeCount > 0 ? likeCount : ''}</span>
+          </button>
           <span class="comment-reply-btn" onclick="window.commentSystemInstance.openReplyBox('${item.id}', '${name}')">回复</span>
           ${isMyComment ? `<span class="comment-delete" onclick="window.commentSystemInstance.deleteComment('${item.id}')">删除</span>` : ''}
         </div>
@@ -290,7 +319,63 @@ class CommentSystem {
     }
   }
 
-  // 7. 删除评论
+// 7. 点赞/取消点赞
+  async toggleLike(commentId, btnElement) {
+    if (!this.user) {
+      document.getElementById('loginBtn')?.click();
+      // 这里可以使用 iOS 风格弹窗提示，或者简单的 alert
+      alert('登录后才可以点赞哦');
+      return;
+    }
+
+    const countSpan = btnElement.querySelector('.comment-like-count');
+    const isLiked = btnElement.classList.contains('liked');
+    let currentCount = parseInt(countSpan.textContent) || 0;
+
+    // --- 乐观 UI 更新 (立即反馈) ---
+    if (isLiked) {
+      btnElement.classList.remove('liked');
+      currentCount--;
+    } else {
+      btnElement.classList.add('liked');
+      currentCount++;
+    }
+    countSpan.textContent = currentCount > 0 ? currentCount : '';
+
+    // --- 发送请求给 Supabase ---
+    try {
+      if (isLiked) {
+        // 取消点赞：删除记录
+        const { error } = await this.supabase
+          .from('comment_likes')
+          .delete()
+          .match({ user_id: this.user.id, comment_id: commentId });
+        
+        if (error) throw error;
+      } else {
+        // 点赞：插入记录
+        const { error } = await this.supabase
+          .from('comment_likes')
+          .insert({ user_id: this.user.id, comment_id: commentId });
+        
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Like toggle failed:', error);
+      // 如果失败，回滚 UI 状态
+      alert('操作失败，请重试');
+      if (isLiked) {
+        btnElement.classList.add('liked');
+        currentCount++;
+      } else {
+        btnElement.classList.remove('liked');
+        currentCount--;
+      }
+      countSpan.textContent = currentCount > 0 ? currentCount : '';
+    }
+  }
+
+  // 8. 删除评论
   async deleteComment(commentId) {
     if (!confirm('确定删除这条评论吗？')) return;
 

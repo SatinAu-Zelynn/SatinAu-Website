@@ -2054,3 +2054,50 @@ input:checked + .switch-slider {
     transform: translateY(0) scale(1);
   }
 }
+
+/* 点赞按钮样式 */
+.comment-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  margin: 0;
+  border-radius: var(--border-radius-sm);
+  color: light-dark(#666, #aaa); /* 默认灰色 */
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.comment-like-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.comment-like-btn:hover {
+  background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+}
+
+/* 已点赞状态 (Active) */
+.comment-like-btn.liked {
+  color: var(--primary-color); /* 使用主色调 */
+}
+
+.comment-like-btn.liked svg {
+  fill: var(--primary-color); /* 填充颜色 */
+  transform: scale(1.2) rotate(-12deg); /* 俏皮的跳动效果 */
+}
+
+.comment-like-count {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 14px;
+  text-align: center;
+}
