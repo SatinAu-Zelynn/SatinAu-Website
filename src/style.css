@@ -850,32 +850,80 @@ body#index-page {
   margin-top: 24px;
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30));
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
-  border-radius:var(--border-radius-md); /* 与导航栏风格统一的圆角 */
-  box-shadow: 0 12px 32px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4));
-  padding: 8px 0;
-  transform-origin: top right;
-  transform: scale(0.8) translateY(-10px);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 16px 40px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.4));
+  padding: 6px;
+  
+  /* 动画初始状态 */
+  transform-origin: top right; /* 从按钮位置扩散 */
+  transform: scale(0.7) skewX(-2deg) translateY(-15px); /* 初始缩小并带一点微小的斜切 */
   opacity: 0;
+  filter: blur(12px); /* 初始状态是模糊的 */
   pointer-events: none;
-  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  
+  /* 复合过渡：弹簧效果 transform，线性透明度 */
+  transition: 
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease,
+    filter 0.3s ease;
   z-index: 3000;
 
   /* 菜单显示状态 */
   &.show {
-    transform: scale(1) translateY(0);
+    transform: scale(1) skewX(0) translateY(0);
     opacity: 1;
+    filter: blur(0); /* 变得清晰 */
     pointer-events: auto;
   }
 }
 
-/* 菜单项样式优化 */
-.dropdown-item {
+/* 菜单项样式 - 带错落进场动画 */
+.more-dropdown .dropdown-item {
   display: block;
-  padding: 12px 16px;
-  color: inherit;
+  padding: 10px 14px;
+  margin-bottom: 2px;
+  color: var(--word-color);
   text-decoration: none;
   font-size: 14px;
-  transition: background 0.2s ease;
+  font-weight: 500;
+  border-radius: var(--border-radius-md); /* 子菜单项也是圆角 */
+  
+  /* 初始进场状态 */
+  opacity: 0;
+  transform: translateX(10px); 
+  
+  transition: 
+    background 0.2s ease, 
+    transform 0.2s ease,
+    opacity 0.2s ease;
+    
+  transition-delay: 0s;
+}
+
+/* 当菜单显示时，内部项的进场动画 */
+.more-dropdown.show .dropdown-item {
+  opacity: 1;
+  transform: translateX(0);
+  transition: 
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), /* 丝滑移动 */
+    background 0.2s ease; /* 背景色保持快速响应 */
+}
+
+/* 错落延迟 (Stagger Delay) */
+.more-dropdown.show .dropdown-item:nth-child(1) { transition-delay: 0.05s; }
+.more-dropdown.show .dropdown-item:nth-child(2) { transition-delay: 0.1s; }
+.more-dropdown.show .dropdown-item:nth-child(3) { transition-delay: 0.15s; }
+.more-dropdown.show .dropdown-item:nth-child(4) { transition-delay: 0.2s; }
+.more-dropdown.show .dropdown-item:nth-child(5) { transition-delay: 0.25s; }
+
+/* 菜单项悬停效果 */
+.more-dropdown .dropdown-item:hover {
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.15));
+}
+
+.more-dropdown .dropdown-item:active {
+  transform: scale(0.96);
 }
 
 @media (max-width: 767px) {
