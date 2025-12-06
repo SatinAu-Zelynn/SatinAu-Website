@@ -16,17 +16,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://satinau.cn/pages/character?lang=zh-cn</loc>
-    <lastmod>2025-11-22</lastmod>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://satinau.cn/pages/character?lang=zh-tw</loc>
-    <lastmod>2025-11-22</lastmod>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://satinau.cn/pages/character?lang=en</loc>
+    <loc>https://satinau.cn/pages/character</loc>
     <lastmod>2025-11-22</lastmod>
     <priority>0.6</priority>
   </url>
