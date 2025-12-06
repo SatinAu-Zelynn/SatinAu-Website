@@ -89,7 +89,7 @@ class CommentSystem {
     const { data: comments, error } = await this.supabase
       .from('comments')
       .select(`
-        id, content, created_at, user_id, parent_id,
+        id, content, created_at, user_id, parent_id, status, 
         profiles (username, avatar_url),
         likes:comment_likes(count)
       `)
@@ -173,6 +173,22 @@ class CommentSystem {
     const date = new Date(item.created_at).toLocaleString();
     const isMyComment = this.user && this.user.id === item.user_id;
 
+    let statusBadge = '';
+    let itemClass = 'comment-item';
+    let contentOpacity = '';
+
+    // 如果状态不是"审核通过"
+    if (item.status && item.status !== '审核通过') {
+        itemClass += ' audit-filtered'; // 给整个卡片加样式
+        contentOpacity = 'style="opacity: 0.6;"'; // 让内容稍微透明一点
+
+        if (item.status === '待审核') {
+            statusBadge = `<div class="comment-status pending">⏳ 审核中</div>`;
+        } else if (item.status === '审核不通过') {
+            statusBadge = `<div class="comment-status rejected">❌ 审核不通过</div>`;
+        }
+    }
+
     // 点赞相关数据
     const likeCount = item.like_count || 0;
     const isLikedClass = item.is_liked ? 'liked' : '';
@@ -194,6 +210,7 @@ class CommentSystem {
             <span class="comment-date">${date}</span>
           </div>
         </div>
+        ${statusBadge}
         <div class="comment-content">${this.escapeHtml(item.content)}</div>
         
         <div class="comment-actions-bar">
@@ -201,7 +218,9 @@ class CommentSystem {
             ${thumbSvg}
             <span class="comment-like-count">${likeCount > 0 ? likeCount : ''}</span>
           </button>
-          <span class="comment-reply-btn" onclick="window.commentSystemInstance.openReplyBox('${item.id}', '${name}')">回复</span>
+          ${item.status === '审核通过' ? 
+            `<span class="comment-reply-btn" onclick="window.commentSystemInstance.openReplyBox('${item.id}', '${name}')">回复</span>` : ''
+          }
           ${isMyComment ? `<span class="comment-delete" onclick="window.commentSystemInstance.deleteComment('${item.id}')">删除</span>` : ''}
         </div>
 
