@@ -1,5 +1,3 @@
-const SUPABASE_URL = "__SUPABASE_URL__";
-const SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
 window.BUILD_INFO = `
 __BUILD_INFO__
 `;

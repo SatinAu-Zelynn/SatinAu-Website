@@ -27,19 +27,6 @@ const emptyState = document.getElementById("emptyState");
 const errorState = document.getElementById("errorState");
 const retryBtn = document.getElementById("retryBtn");
 const postError = document.getElementById("postError");
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const loginBtn = document.getElementById('loginBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const userInfo = document.getElementById('userInfo');
-const authModal = document.getElementById('authModal');
-const closeAuthModal = document.getElementById('closeAuthModal');
-const emailLoginBtn = document.getElementById('emailLoginBtn');
-const signupBtn = document.getElementById('signupBtn');
-const githubLoginBtn = document.getElementById('githubLoginBtn');
-const googleLoginBtn = document.getElementById('googleLoginBtn');
-const authError = document.getElementById('authError');
-const tabBtns = document.querySelectorAll('.tab-btn');
-const authTabs = document.querySelectorAll('.auth-tab');
 
 // 缓存机制
 const postCache = new Map();
@@ -62,9 +49,6 @@ function initBlog() {
         if (loader) loader.classList.remove("show");
     });
 
-    checkUserSession();
-    setupAuthEventListeners();
-    setupAuthStateListener();
     initBlogButtons();
 
     // 检查URL中是否有文章标题参数
@@ -119,175 +103,6 @@ function initBlog() {
         listEl.style.display = "grid";
     }
     });
-
-    // 检查用户会话
-    async function checkUserSession() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) {
-        console.error('会话检查失败:', error);
-        return;
-    }
-
-    if (session) {
-        showUserInfo(session.user);
-    } else {
-        showLoginButton();
-    }
-    }
-
-    // 显示用户信息
-    function showUserInfo(user) {
-    // 从元数据中优先获取用户名
-    const meta = user.user_metadata || {};
-    const displayName = meta.name || meta.user_name || meta.preferred_username || user.email;
-    userInfo.innerHTML = `欢迎, ${displayName}`;
-    userInfo.style.display = 'inline-block';
-    logoutBtn.style.display = 'inline-block';
-    loginBtn.style.display = 'none';
-    }
-
-    // 显示登录按钮
-    function showLoginButton() {
-    loginBtn.style.display = 'inline-block';
-    userInfo.style.display = 'none';
-    logoutBtn.style.display = 'none';
-    }
-
-    function setupAuthStateListener() {
-    // 监听登录状态变化（包括OAuth回调）
-    supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-        // 登录成功，显示用户信息
-        showUserInfo(session.user);
-        // 关闭登录弹窗（如果打开）
-        authOverlay.style.display = 'none';
-        authOverlay.classList.remove('show');
-        authModal.classList.remove('show');
-        } else if (event === 'SIGNED_OUT') {
-        // 登出成功
-        showLoginButton();
-        showToast('已退出登录');
-        }
-    });
-    }
-
-    // 设置认证事件监听
-    function setupAuthEventListeners() {
-    // 登录按钮
-    loginBtn.addEventListener('click', () => {
-        authOverlay.style.display = 'block';
-        authOverlay.classList.add('show');
-        authModal.classList.add('show');
-    });
-
-    // 关闭弹窗
-    closeAuthModal.addEventListener('click', () => {
-        authOverlay.style.display = 'none';
-        authOverlay.classList.remove('show');
-        authModal.classList.remove('show');
-        authError.textContent = '';
-    });
-
-    // 标签切换
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-        const tab = btn.getAttribute('data-tab');
-        tabBtns.forEach(b => b.classList.remove('active'));
-        authTabs.forEach(t => t.style.display = 'none');
-        btn.classList.add('active');
-        document.getElementById(`${tab}Tab`).style.display = 'block';
-        });
-    });
-
-    // 邮箱登录
-    emailLoginBtn.addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        
-        const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-        });
-
-        if (error) {
-        authError.textContent = error.message;
-        } else {
-        showUserInfo(data.user);
-        authOverlay.style.display = 'none';
-        authOverlay.classList.remove('show');
-        authModal.classList.remove('show');
-        }
-    });
-
-    // 注册新用户
-    signupBtn.addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            emailRedirectTo: window.location.origin
-        }
-        });
-
-        if (error) {
-        authError.textContent = error.message;
-        } else {
-        authError.textContent = '注册成功';
-        authError.style.color = 'green'; // 改为绿色提示
-        document.getElementById('emailTab').style.display = 'block';
-        document.getElementById('oauthTab').style.display = 'none';
-        tabBtns.forEach(b => b.classList.remove('active'));
-        document.querySelector('[data-tab="email"]').classList.add('active');
-        }
-    });
-
-    // GitHub 登录
-    githubLoginBtn.addEventListener('click', async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-            // 指定回调地址
-            redirectTo: window.location.origin + '/blog'
-        }
-        });
-
-        if (error) {
-        authError.textContent = error.message;
-        }
-    });
-
-    // Google 登录
-    googleLoginBtn.addEventListener('click', async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
-        });
-        
-        if (error) {
-        authError.textContent = error.message;
-        }
-    });
-
-    // 退出登录
-    logoutBtn.addEventListener('click', async () => {
-        const { error } = await supabase.auth.signOut();
-        if (!error) {
-        showLoginButton();
-        }
-    });
-
-    // 监听认证状态变化
-    supabase.auth.onAuthStateChange((event, session) => {
-        if (session) {
-        showUserInfo(session.user);
-        } else {
-        showLoginButton();
-        }
-    });
-    }
 
     // 返回列表按钮事件
     backToList.addEventListener("click", () => {
@@ -508,20 +323,8 @@ function renderPost(post, mdContent) {
             renderGenerateButton(summaryContainer, mdContent, cacheKey);
         }
 
-        // 插入评论区容器
-        const commentSection = document.createElement('div');
-        commentSection.id = 'blog-post-comments'; // 容器 ID
-        commentSection.style.marginTop = '60px';  // 顶部间距
-        postContent.appendChild(commentSection);
-
-        // 初始化评论系统
-        // 使用 post.file (文件名) 作为唯一的 pageId
-        if (typeof window.initPageComments === 'function') {
-            // 稍微延迟一下确保 DOM 已经挂载
-            setTimeout(() => {
-                window.initPageComments('blog-post-comments', post.file);
-            }, 0);
-        }
+        // 插入评论区容器已移除，评论系统已下线
+        // Supabase 后端已下线
 
         initImageViewer();
 
