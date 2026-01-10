@@ -142,7 +142,7 @@ emptyState.style.display = "none";
 errorState.style.display = "none";
 
 // 显式返回 fetch 的 Promise 链
-return fetch("https://blog.satinau.cn/index.json")
+return fetch("https://blog.satinau.cn/blog/index.json")
     .then(res => {
     if (!res.ok) throw new Error("网络响应异常");
     return res.json();
@@ -243,7 +243,7 @@ if (!forceRefresh && postCache.has(post.file)) {
 }
 
 // 从网络加载
-fetch(`https://blog.satinau.cn/${post.file}`)
+fetch(`https://blog.satinau.cn/blog/${post.file}`)
     .then(res => {
     if (!res.ok) throw new Error("文章加载失败");
     return res.text();
