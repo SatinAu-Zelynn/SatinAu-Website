@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const galleryContainer = document.getElementById('zelynnGallery');
   
   // 加载图片列表
-  fetch('https://blog.satinau.cn/image/zelynn/list.json')
+  fetch('https://blog.satinau.cn/zelynn/list.json')
     .then(response => {
       if (!response.ok) {
         throw new Error('图片列表加载失败');
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 创建图片元素
       images.forEach(imgInfo => {
         const img = document.createElement('img');
-        img.src = `https://blog.satinau.cn/image/zelynn/${imgInfo.filename}`;
+        img.src = `https://blog.satinau.cn/zelynn/${imgInfo.filename}`;
         img.alt = imgInfo.alt || '泽凌图片';
         img.loading = 'lazy'; // 懒加载
         
