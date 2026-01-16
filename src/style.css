@@ -244,7 +244,7 @@ section {
   }
 }
 
-/* 为四行文字设置递增延迟，在标题动画后依次出现 */
+/* 为文字设置递增延迟，在标题动画后依次出现 */
 body#index-page section p {
   font-family: MiSans, sans-serif;
   font-weight: 500;
@@ -670,12 +670,11 @@ body#index-page {
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
-  /* 修正盒模型和宽度 */
   box-sizing: border-box;
   width: min(90vw, 320px);
   padding: 10px;
   border-radius:var(--border-radius-xl);
-  background: light-dark(rgba(255,255,255,0.28),rgba(30,30,30,0.5));
+  background: light-dark(rgba(255,255,255,0.5),rgba(30,30,30,0.5));
   -webkit-backdrop-filter: var(--filter-blur);
   backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255,255,255,0.35),rgba(255,255,255,0.12));

@@ -16,15 +16,35 @@
 
 /* ========== 公用逻辑 ========== */
 
-// 页面加载完成后设置当前年份
+// 页面加载完成后设置当前年份（优先使用网络时间）
 document.addEventListener('DOMContentLoaded', function() {
-  // 获取当前年份
-  const currentYear = new Date().getFullYear();
-  // 设置到页面元素
   const yearElement = document.getElementById('current-year');
-  if (yearElement) {
-    yearElement.textContent = currentYear;
-  }
+  if (!yearElement) return;
+
+  // 1. 默认先显示本地时间作为占位（防止网络请求期间空白）
+  const localYear = new Date().getFullYear();
+  yearElement.textContent = localYear;
+
+  // 2. 异步请求当前页面的头部信息以获取服务器时间
+  fetch(window.location.href, { method: 'HEAD', cache: 'no-cache' })
+    .then(response => {
+      // 获取 HTTP Date 头 (格式如: Fri, 16 Jan 2026 10:00:00 GMT)
+      const dateHeader = response.headers.get('date');
+      if (dateHeader) {
+        const serverDate = new Date(dateHeader);
+        const serverYear = serverDate.getFullYear();
+        
+        // 如果服务器年份与本地不同，或者为了确保精准，更新界面
+        if (!isNaN(serverYear) && serverYear !== localYear) {
+          yearElement.textContent = serverYear;
+          console.log(`%c已校准为服务器时间: ${serverYear}`, "color: #00FFCC;");
+        }
+      }
+    })
+    .catch(err => {
+      // 如果请求失败（如断网），保持本地时间显示，并在控制台静默失败
+      console.warn('无法获取网络时间，保持本地系统时间显示。', err);
+    });
 });
 
 /* iOS 弹窗逻辑 */
@@ -255,7 +275,7 @@ if (greetingEl) {
   greetingEl.style.animation = 'fadeIn 1s ease forwards';
 }
 
-// 控制台美化效果
+// 控制台输出
 function consoleBeautify() {
   // 输出带样式的文字信息
   console.log(

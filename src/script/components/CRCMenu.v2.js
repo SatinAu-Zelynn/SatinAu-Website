@@ -598,9 +598,9 @@ const copyAction = (ctx) => {
     const menu = new CustomRightClickMenu({
       theme: {
         // 对应菜单的背景
-        '--menu-bg': 'light-dark(rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
+        '--menu-bg': 'light-dark(rgba(255,255,255,0.5), rgba(255,255,255,0.1))',
         // 对应菜单的边框
-        '--menu-border': '1px solid rgba(255, 255, 255, 0.25)',
+        '--menu-border': '1px solid light-dark(rgba(255,255,255,0.35),rgba(255,255,255,0.12))',
         // 对应backdrop-filter---自定义项
         '--menu-backdrop': 'blur(24px) saturate(180%)',
         // 对应过渡效果的时间
