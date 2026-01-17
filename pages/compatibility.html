@@ -58,6 +58,7 @@
         th { background-color: #f9f9f9; }
         .pass { color: #34c759; font-weight: bold; }
         .fail { color: #ff3b30; font-weight: bold; }
+        .optional-fail { color: #ff9500; font-weight: bold; } /* 黄色表示非致命的不支持 */
         .btn {
             display: inline-block;
             background-color: #007aff;
@@ -75,6 +76,9 @@
             font-size: 13px;
             color: #666;
             margin-top: 10px;
+            padding: 10px;
+            background: #fafafa;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -85,19 +89,19 @@
         正在检测...
     </div>
 
-    <h1>浏览器兼容性报告</h1>
+    <h1>兼容性与硬件能力报告</h1>
 
     <div class="browser-info">
         <strong>当前环境：</strong> <span id="browserName">检测中...</span>
     </div>
 
-    <p>缎金SatinAu 网站使用了最新的 Web 技术以提供最佳视觉体验。以下是您的浏览器对关键特性的支持情况：</p>
+    <p>以下检测包含 Web 核心技术支持情况，以及您的设备是否支持 HDR 和广色域显示。</p>
 
     <table id="featureTable">
         <thead>
             <tr>
                 <th>检测项目</th>
-                <th>重要性</th>
+                <th>类型</th>
                 <th>状态</th>
             </tr>
         </thead>
@@ -107,11 +111,16 @@
     </table>
 
     <div class="details-box">
-        <p>※ 核心功能缺失可能导致网站无法布局或交互。<br>※ 视觉特效缺失不影响功能，但会降级显示效果。</p>
+        <p><strong>说明：</strong></p>
+        <ul style="margin: 5px 0 0 0; padding-left: 20px;">
+            <li><strong>核心</strong>：不支持会导致网站无法使用。</li>
+            <li><strong>视觉</strong>：不支持会降级显示效果（如无毛玻璃、无圆角等），但不影响浏览。</li>
+            <li><strong>屏幕</strong>：检测您的显示器是否支持 HDR 或 P3 色域。如不支持，图片颜色可能不够鲜艳或有色差。</li>
+        </ul>
     </div>
 
     <div style="text-align: center; margin-top: 30px;">
-        <button onclick="window.close()" class="btn">关闭页面 / 继续浏览</button>
+        <button onclick="window.history.length > 1 ? window.history.back() : window.close()" class="btn">返回 / 关闭页面</button>
     </div>
 </div>
 
@@ -119,6 +128,7 @@
     // 基础功能检测逻辑 - 不使用 ES6 模块语法
     (function() {
         var features = [
+            // 核心与视觉功能
             { name: "CSS 变量 (Custom Properties)", type: "css", prop: "color", val: "var(--c)", level: "core" },
             { name: "CSS Grid 布局", type: "css", prop: "display", val: "grid", level: "core" },
             { name: "ES6 模块 (type=\"module\")", type: "js-module", level: "core" },
@@ -126,12 +136,17 @@
             { name: "CSS :has() 伪类", type: "css-selector", selector: ":has(*)", level: "visual" },
             { name: "backdrop-filter (毛玻璃)", type: "css", prop: "backdrop-filter", val: "blur(10px)", level: "visual" },
             { name: "light-dark() 颜色函数", type: "css", prop: "color", val: "light-dark(black, white)", level: "visual" },
-            { name: "CSS @container 容器查询", type: "css-at", rule: "@container (min-width: 1px)", level: "visual" }
+            { name: "CSS @container 容器查询", type: "css-at", rule: "@container (min-width: 1px)", level: "visual" },
+            
+            // 新增：屏幕/硬件能力检测
+            { name: "HDR 屏幕显示 (High Dynamic Range)", type: "media-query", query: "(dynamic-range: high)", level: "screen" },
+            { name: "Display P3 广色域", type: "media-query", query: "(color-gamut: p3)", level: "screen" }
         ];
 
         var results = {
             core: { total: 0, passed: 0 },
-            visual: { total: 0, passed: 0 }
+            visual: { total: 0, passed: 0 },
+            screen: { total: 0, passed: 0 }
         };
 
         // 1. 获取浏览器信息
@@ -168,21 +183,27 @@
         }
 
         function supportsAtRule(rule) {
-             // 简单的 @support 检测无法直接检测 @rule，这里通过 CSS.supports 变通或 assume false for very old browsers
              if (window.CSS && window.CSS.supports) {
-                 // 大多数现代浏览器支持 CSS.supports(conditionText)
                  try {
-                    return window.CSS.supports('(container-type: size)'); // container query proxy check
+                    // 容器查询的代理检测
+                    return window.CSS.supports('(container-type: size)'); 
                  } catch(e) { return false; }
              }
              return false;
         }
 
-        // 检测 JS Module (尝试创建一个 script module)
+        // 检测 JS Module
         var jsModuleSupported = false;
-        // 这是一个同步检测的 hack
         var script = document.createElement('script');
         if ('noModule' in script) { jsModuleSupported = true; }
+
+        // 检测 Media Query (HDR/Color Gamut)
+        function supportsMediaQuery(query) {
+            if (window.matchMedia) {
+                return window.matchMedia(query).matches;
+            }
+            return false;
+        }
 
         // 3. 执行检测并渲染表格
         var tbody = document.querySelector('#featureTable tbody');
@@ -199,6 +220,8 @@
                 isSupported = supportsAtRule(f.rule);
             } else if (f.type === 'js-module') {
                 isSupported = jsModuleSupported;
+            } else if (f.type === 'media-query') {
+                isSupported = supportsMediaQuery(f.query);
             }
 
             // 统计
@@ -207,10 +230,34 @@
 
             // 渲染行
             var tr = document.createElement('tr');
+            var levelText = '';
+            var statusClass = '';
+            var statusText = '';
+
+            switch(f.level) {
+                case 'core': levelText = '核心技术'; break;
+                case 'visual': levelText = '视觉特效'; break;
+                case 'screen': levelText = '屏幕硬件'; break;
+            }
+
+            if (isSupported) {
+                statusClass = 'pass';
+                statusText = '支持 / 是';
+            } else {
+                // 对于屏幕硬件，不支持只显示为警告色，不是错误
+                if (f.level === 'screen') {
+                    statusClass = 'optional-fail';
+                    statusText = '不支持 (SDR)';
+                } else {
+                    statusClass = 'fail';
+                    statusText = '不支持';
+                }
+            }
+
             tr.innerHTML = 
                 '<td>' + f.name + '</td>' +
-                '<td>' + (f.level === 'core' ? '核心' : '视觉') + '</td>' +
-                '<td class="' + (isSupported ? 'pass' : 'fail') + '">' + (isSupported ? '支持' : '不支持') + '</td>';
+                '<td>' + levelText + '</td>' +
+                '<td class="' + statusClass + '">' + statusText + '</td>';
             tbody.appendChild(tr);
         }
 
@@ -222,17 +269,23 @@
             // 核心功能挂了
             header.className = 'status-header status-error';
             header.textContent = '❌ 严重不兼容';
-            mainTitle.textContent = '抱歉，您的浏览器无法正常浏览该网站';
+            mainTitle.textContent = '抱歉，您的浏览器过旧，无法正常浏览';
         } else if (results.visual.passed < results.visual.total) {
             // 核心过了，视觉挂了
             header.className = 'status-header status-warn';
             header.textContent = '⚠️ 部分兼容';
-            mainTitle.textContent = '您的浏览器部分内容可能显示出错';
+            mainTitle.textContent = '浏览器可用，但视觉效果会降级';
         } else {
-            // 全过
+            // 核心和视觉全过 (不强制要求HDR屏幕)
             header.className = 'status-header status-ok';
             header.textContent = '✅ 完美兼容';
-            mainTitle.textContent = '您的浏览器可正常显示全部内容';
+            
+            // 如果屏幕支持HDR，给个好评
+            if (results.screen.passed === results.screen.total) {
+                mainTitle.textContent = '您的设备支持 HDR，将获得最佳体验';
+            } else {
+                mainTitle.textContent = '浏览器兼容性良好 (当前为 SDR 显示模式)';
+            }
         }
 
     })();

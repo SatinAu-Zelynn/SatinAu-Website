@@ -1,0 +1,90 @@
+<!--
+  Copyright 2025 缎金SatinAu
+  Licensed under the Apache License, Version 2.0
+-->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HDR 图片与色彩说明 - 缎金SatinAu</title>
+  <link rel="icon" type="image/x-icon" href="../public/favicon.ico">
+  <!-- 路径调整为上一级目录 -->
+  <link rel="stylesheet" href="../src/style.css">
+  <link rel="preload" href="https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <script src="../src/script/config.js"></script>
+  <!-- 简单的内联脚本处理返回功能，避免依赖复杂的 common.js 加载逻辑 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.style.opacity = '1';
+    });
+  </script>
+</head>
+<body id="hdr-info-page">
+  <!-- 背景色块 -->
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+
+  <main class="page container">
+    <header style="padding-top: 60px; padding-bottom: 20px;">
+      <!-- 返回按钮 -->
+      <a onclick="window.close()" class="back-button" aria-label="返回">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </a>
+      <div class="title-row" style="justify-content: center; display: flex;">
+        <h1>图片与色彩说明</h1>
+      </div>
+    </header>
+
+    <section>
+      <div class="ai-summary-card" style="margin-top: 0; text-align: left;">
+        <div class="ai-header">
+          <span class="ai-icon">⚠️</span>
+          <span>AVIF HDR 格式说明</span>
+        </div>
+        <div class="ai-content">
+          <p>本栏目展示的图片采用了 <strong>AVIF 格式的高动态范围 (HDR)</strong> 图像技术。相比传统图片，它能提供更丰富的亮度和色彩细节。</p>
+          <ul style="margin: 10px 0 10px 20px; padding: 0; font-size: 14px; line-height: 1.6; color: var(--word-color);">
+            <li style="margin-bottom: 8px;"><strong>性能提示：</strong> 部分性能落后的设备或旧版本浏览器可能无法解码，或出现加载缓慢、卡顿等现象。</li>
+            <li style="margin-bottom: 8px;"><strong>色域提示：</strong> 图片使用 <strong>Display P3 广色域</strong>，仅在支持 P3 色域及 HDR 显示的设备上能获得最佳观感。</li>
+            <li><strong>色彩准确性：</strong> 由于 HDR 映射机制，浏览器显示的颜色可能与原始设定存在偏差。<strong>请不要直接从图片中取色</strong>。</li>
+          </ul>
+          <p style="margin-top: 15px; font-weight: 600; color: var(--primary-color);">如需获取准确颜色，请前往上方“设定总览”查看设定文件，使用其中提供的标准 HEX/RGB 色号。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>设备兼容性检测</h2>
+      <p>您可以点击下方卡片，检测您的当前浏览器与设备屏幕是否支持相关特性。</p>
+      
+      <div class="content-grid" style="justify-content: center;">
+        <!-- 链接到根目录的 compatibility.html -->
+        <a class="contact-card visible" href="compatibility.html" target="_blank" style="opacity: 1; transform: none; max-width: 400px; margin: 0 auto;">
+          <div class="icon" style="background: linear-gradient(135deg, #34c759, #30d158);">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+              <polyline points="10 9 12 7 14 9"></polyline>
+            </svg>
+          </div>
+          <div class="text">
+            <div class="label">System Check</div>
+            <div class="value">运行浏览器兼容性检测</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <script src="/src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+
+  <!-- Toast -->
+  <div id="copiedTip" class="copied-tip"></div>
+</body>
+</html>
