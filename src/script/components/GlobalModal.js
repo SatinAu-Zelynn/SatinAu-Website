@@ -151,7 +151,10 @@ class GlobalModal extends HTMLElement {
     return `
       <div class="email-item">
         <span>${email}</span>
-        <button class="copy-btn" data-email="${email}">复制</button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="mailto:${email}" style="font-size: 14px; text-decoration: none; color: inherit; opacity: 0.8;">打开</a>
+          <button class="copy-btn" data-email="${email}">复制</button>
+        </div>
       </div>
     `;
   }
