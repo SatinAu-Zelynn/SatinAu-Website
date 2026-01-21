@@ -3,7 +3,7 @@ set -e
 echo "[BUILD] 开始生成构建信息..."
 
 # ==========================================
-# 定义 SVG 图标资源 (使用单引号以保留 HTML 中的双引号)
+# 定义 SVG 图标资源
 # ==========================================
 
 # Cloudflare Logo
@@ -36,8 +36,8 @@ if [ -n "$CF_PAGES" ]; then
         VERSION_SUFFIX="（测试版）"
     fi
 
-    # 拼接 Cloudflare 专用 HTML (注意 \n 用于换行)
-    FINAL_INFO="${SVG_CF}Cloudflare${SVG_CF_PAGES}${SVG_CF_WORKERS}提供静态托管和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
+    # 拼接 Cloudflare 专用 HTML
+    FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态托管和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 elif [ -n "$VERCEL" ]; then
     # --- Vercel 环境 ---
@@ -45,7 +45,7 @@ elif [ -n "$VERCEL" ]; then
     COMMIT_HASH=${VERCEL_GIT_COMMIT_SHA:0:7}
     
     # 拼接 Vercel 专用 HTML
-    FINAL_INFO="${SVG_VERCEL}Vercel 提供静态托管服务 版本: ${COMMIT_HASH}"
+    FINAL_INFO="${SVG_VERCEL} Vercel 提供静态托管服务 版本: ${COMMIT_HASH}"
 
 else
     # --- 本地/其他环境 (回退方案) ---
@@ -68,7 +68,6 @@ echo -e "$FINAL_INFO"
 # 写入配置文件
 # ==========================================
 
-# 使用 printf %b 来解释 \n 为实际换行符，并写入 config.js
 printf "%b" "$FINAL_INFO" | \
 sed -e "/__BUILD_INFO__/{
         r /dev/stdin
