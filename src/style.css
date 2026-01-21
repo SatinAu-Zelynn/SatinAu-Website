@@ -2263,3 +2263,10 @@ input:checked + .switch-slider {
 .action-item:hover #backToTopBtn svg {
   transform: translateY(-2px);
 }
+
+.chime-modal h2 {
+  background: linear-gradient(90deg, #FF9999, #FFE92C);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

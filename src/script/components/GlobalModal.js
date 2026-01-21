@@ -7,6 +7,7 @@ class GlobalModal extends HTMLElement {
   constructor() {
     super();
     this.pendingAction = null; // 用于存储弹窗确认后的操作
+    this.audioInstance = null; // 用于存储音频实例
   }
 
   connectedCallback() {
@@ -53,6 +54,13 @@ class GlobalModal extends HTMLElement {
     this.overlay.classList.remove('show');
     this.modal.classList.remove('show');
     this.pendingAction = null;
+
+    // 如果有正在播放的音频，停止并销毁
+    if (this.audioInstance) {
+      this.audioInstance.pause();
+      this.audioInstance.currentTime = 0;
+      this.audioInstance = null;
+    }
     
     // 动画结束后清空内容，防止下次打开闪烁
     setTimeout(() => {
@@ -62,7 +70,7 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
-  // 模式 1: iOS 风格跳转提示 (替代原 showIosAlert)
+  // iOS 风格跳转提示
   // ==========================================
   alert(message, url, appUrl = null) {
     // 存储跳转逻辑
@@ -97,7 +105,7 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
-  // 模式 2: 微信二维码 (替代原 showWeChatQR)
+  // 微信二维码
   // ==========================================
   wechat() {
     this.modal.className = 'modal wechat-qr';
@@ -109,7 +117,7 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
-  // 模式 3: 邮箱列表 (替代原 showEmailPopup)
+  // 邮箱列表
   // ==========================================
   email() {
     this.modal.className = 'modal'; // 使用默认样式
@@ -146,6 +154,51 @@ class GlobalModal extends HTMLElement {
         <button class="copy-btn" data-email="${email}">复制</button>
       </div>
     `;
+  }
+
+  // ==========================================
+  // 整点报时
+  // ==========================================
+  showChime(hour) {
+    this.modal.className = 'modal ios-alert chime-modal';
+    
+    // 格式化时间显示
+    const displayHour = hour < 10 ? `0${hour}` : hour;
+    
+    this.content.innerHTML = `
+      <div style="padding: 10px 0;">
+        <div style="font-size: 48px; margin-bottom: 10px;">🕰️</div>
+        <h2 style="margin: 0 0 10px; font-size: 24px;">整点报时</h2>
+        <p style="font-size: 18px; font-weight: bold; color: var(--primary-color);">
+          现在是 ${displayHour}:00
+        </p>
+        <p style="font-size: 14px; opacity: 0.7; margin-top:10px;">Westminster Quarters</p>
+      </div>
+      <div class="actions">
+        <button class="cancel" id="modalClose">关闭</button>
+      </div>
+    `;
+
+    // 绑定关闭按钮
+    this.querySelector('#modalClose').onclick = () => this.close();
+
+    // 初始化音频
+    try {
+      this.audioInstance = new Audio('/public/Westminster.ogg');
+
+      this.audioInstance.addEventListener('ended', () => {
+        this.close();
+      });
+      
+      this.audioInstance.play().catch(e => {
+        console.warn("自动播放被浏览器拦截，用户需先与页面交互:", e);
+        this.showToast("未能播放报时音效（需先点击页面）");
+      });
+    } catch (err) {
+      console.error("音频加载失败", err);
+    }
+
+    this.show();
   }
 
   // === 辅助逻辑 ===
