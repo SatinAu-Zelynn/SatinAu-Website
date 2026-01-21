@@ -26,6 +26,9 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
   <script src="/src/script/config.js"></script>
+  <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/CRCMenu.v2.js"></script>
+  <script src="/src/script/components/GlobalModal.js" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       document.body.style.opacity = '1';
@@ -113,5 +116,9 @@
     <script src="/src/script/components/footer.js"></script>
     <site-footer></site-footer>
   </main>
+
+  <!-- 弹窗组件 -->
+  <global-modal id="globalModal"></global-modal>
+
 </body>
 </html>
