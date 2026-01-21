@@ -1,0 +1,117 @@
+<!--
+  Copyright 2025 缎金SatinAu
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>帮助中心 - 缎金SatinAu</title>
+  <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <script src="/src/script/config.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.style.opacity = '1';
+    });
+  </script>
+</head>
+<body id="help-center-page">
+  <!-- 背景色块 -->
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+
+  <main class="page container">
+    <header style="padding-top: 60px; padding-bottom: 30px;">
+      <!-- 返回主页按钮 -->
+      <a onclick="window.close()" class="back-button" aria-label="返回主页">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </a>
+      <div class="title-row" style="justify-content: center; display: flex; flex-direction: column; gap: 10px;">
+        <h1>帮助中心</h1>
+        <p style="margin: 0; font-size: 14px; opacity: 0.7; font-weight: normal;">Help Center</p>
+      </div>
+    </header>
+
+    <section>
+      <h2 class="visible">常见问题与说明</h2>
+      <p style="margin-bottom: 30px;">这里汇集了本站的说明文档。</p>
+
+      <!-- 帮助文档导航网格 -->
+      <div class="contact-wrapper">
+        
+        <!-- HDR 图片说明 -->
+        <a href="hdr-info.html" target="_blank" class="contact-card visible">
+          <div class="icon" style="background: linear-gradient(135deg, #a18cd1, #fbc2eb);">
+            <!-- 图片/相册图标 -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </div>
+          <div class="text">
+            <div class="label">Display & Color</div>
+            <div class="value">HDR 图片与色彩说明</div>
+          </div>
+        </a>
+
+        <!-- 兼容性检测 -->
+        <a href="compatibility.html" target="_blank" class="contact-card visible">
+          <div class="icon" style="background: linear-gradient(135deg, #34c759, #30d158);">
+            <!-- 检测/系统图标 -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          <div class="text">
+            <div class="label">System Check</div>
+            <div class="value">设备与浏览器兼容性</div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <section style="margin-top: 20px;">
+      <h2 class="visible">联系支持</h2>
+      <div class="ai-summary-card" style="margin-top: 10px; text-align: left;">
+        <div class="ai-header">
+          <span class="ai-icon">📧</span>
+          <span>需要更多帮助？</span>
+        </div>
+        <div class="ai-content">
+          <p>如果上方文档无法解决您的问题，或者您发现了网站的 Bug，欢迎通过邮件联系我。</p>
+          <div style="margin-top: 15px; text-align: center;">
+            <a href="mailto:zelynn@satinau.cn" class="ai-generate-btn" style="text-decoration: none;">
+              发送反馈邮件
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <script src="/src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+</body>
+</html>

@@ -814,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.warn('Browser compatibility check failed. Redirecting to report...');
     
     // 尝试在新标签页打开
-    const targetUrl = '/pages/compatibility.html';
+    const targetUrl = '/pages/help/compatibility.html';
     
     // 注意：非用户触发的 window.open 可能会被拦截
     const newWin = window.open(targetUrl, '_blank');
