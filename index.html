@@ -45,6 +45,7 @@
   <script src="src/script/common.js" defer></script>
   <script src="src/script/pages/index.js" defer></script>
   <script src="src/script/components/CRCMenu.v2.js"></script>
+  <script src="src/script/components/GlobalModal.js" defer></script>
   
   <script type="application/ld+json">
   {
@@ -136,7 +137,7 @@
       <h2>交友扩列 / Reach Out 🤝</h2>
       <div class="contact-wrapper">
         <!-- 邮箱 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showEmailPopup()">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').email()">
           <div class="icon">
             <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -151,7 +152,7 @@
         </a>
 
         <!-- QQ -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://qm.qq.com/q/WTOl1Swrqa','是否跳转到 QQ？')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 QQ？','https://qm.qq.com/q/WTOl1Swrqa')">
           <div class="icon">
             <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -166,7 +167,7 @@
         </a>
 
         <!-- 微信 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showWeChatQR()">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').wechat()">
           <div class="icon">
             <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -181,7 +182,7 @@
         </a>
 
         <!-- 哔哩哔哩 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://space.bilibili.com/1502522588','是否跳转到 哔哩哔哩？','bilibili://space/1502522588')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 哔哩哔哩？','https://space.bilibili.com/1502522588','bilibili://space/1502522588')">
           <div class="icon">
             <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -196,7 +197,7 @@
         </a>
 
         <!-- 酷安 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('http://www.coolapk.com/u/3561588','是否跳转到 酷安？','coolmarket://www.coolapk.com/u/3561588')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 酷安？','http://www.coolapk.com/u/3561588','coolmarket://www.coolapk.com/u/3561588')">
           <div class="icon">
             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="660.6982421875" height="351.28857421875" viewBox="0 0 660.6982421875 351.28857421875" fill="none">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -210,7 +211,7 @@
         </a>
 
         <!-- 小黑盒 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://www.xiaoheihe.cn/app/user/profile/791b6af05a3c','是否跳转到 小黑盒？','heybox://%7B%22need_login%22%3A0%2C%22path%22%3A%22%2Fuser_home%22%2C%22params%22%3A%7B%22referer%22%3A%22web_share%22%2C%22userid%22%3A%2264661333%22%7D%2C%22protocol_type%22%3A%22openRouterPath%22%7D')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 小黑盒？','https://www.xiaoheihe.cn/app/user/profile/791b6af05a3c','heybox://%7B%22need_login%22%3A0%2C%22path%22%3A%22%2Fuser_home%22%2C%22params%22%3A%7B%22referer%22%3A%22web_share%22%2C%22userid%22%3A%2264661333%22%7D%2C%22protocol_type%22%3A%22openRouterPath%22%7D')">
           <div class="icon">
             <svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="-3 1 30 30" xml:space="preserve" style="enable-background:new 0 0 84 30;" data-v-d9f4d63e="">
               <path id="logo_heybox_with_en" d="M23.5,7.8C23.8,7.9,24,8.3,24,8.6v12.7c0,0.3-0.2,0.7-0.5,0.8l-3.8,2.2
@@ -229,7 +230,7 @@
         </a>
 
         <!-- 微博 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://weibo.com/u/7452701895','是否跳转到 微博？')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 微博？','https://weibo.com/u/7452701895')">
           <div class="icon">
             <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -244,7 +245,7 @@
         </a>
 
         <!-- 抖音 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://v.douyin.com/XuEghUoCzX0/','是否跳转到 抖音？')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 抖音？','https://v.douyin.com/XuEghUoCzX0/')">
           <div class="icon">
             <svg style="fill:light-dark(#000, #fff);" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>TikTok</title><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
           </div>
@@ -255,7 +256,7 @@
         </a>
 
         <!-- 小红书 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://www.xiaohongshu.com/user/profile/5e950c600000000001009b54','是否跳转到 小红书？')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 小红书？','https://www.xiaohongshu.com/user/profile/5e950c600000000001009b54')">
           <div class="icon">
             <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -270,7 +271,7 @@
         </a>
 
         <!-- 知乎 -->
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://www.zhihu.com/people/31-87-23-61','是否跳转到 知乎？','zhihu://people/401ab363ec2eb61d06b28c8918a071f3?open=1&utm_medium=profile&utm_content=app_jumping&mcid=ff796d64-ef89-4205-a9f5-9f7b25e2e32d&fallback_url=https%3A%2F%2Fwww.zhihu.com%2Foia%2Fpeople%2F401ab363ec2eb61d06b28c8918a071f3%3Fopen%3D1%26utm_medium%3Dprofile%26utm_content%3Dapp_jumping%26mcid%3Dff796d64-ef89-4205-a9f5-9f7b25e2e32d%26fallback_url%3Dhttps%253A%252F%252Foia.zhihu.com%252Fpeople%252F401ab363ec2eb61d06b28c8918a071f3%253Futm_medium%253Dprofile%2526utm_content%253Dapp_jumping%2526mcid%253Dff796d64-ef89-4205-a9f5-9f7b25e2e32d')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 知乎？','https://www.zhihu.com/people/31-87-23-61','zhihu://people/401ab363ec2eb61d06b28c8918a071f3?open=1&utm_medium=profile&utm_content=app_jumping&mcid=ff796d64-ef89-4205-a9f5-9f7b25e2e32d&fallback_url=https%3A%2F%2Fwww.zhihu.com%2Foia%2Fpeople%2F401ab363ec2eb61d06b28c8918a071f3%3Fopen%3D1%26utm_medium%3Dprofile%26utm_content%3Dapp_jumping%26mcid%3Dff796d64-ef89-4205-a9f5-9f7b25e2e32d%26fallback_url%3Dhttps%253A%252F%252Foia.zhihu.com%252Fpeople%252F401ab363ec2eb61d06b28c8918a071f3%253Futm_medium%253Dprofile%2526utm_content%253Dapp_jumping%2526mcid%253Dff796d64-ef89-4205-a9f5-9f7b25e2e32d')">
           <div class="icon">
             <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <color-profile id="display-p3" xlink:href="http://www.w3.org/2005/02/ColorSpace/p3" />
@@ -284,7 +285,7 @@
           </div>
         </a>
 
-        <a class="contact-card" href="javascript:void(0);" onclick="showIosAlert('https://www.travellings.cn/go.html','是否跳转到 随机友链（开往）？')">
+        <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 随机友链（开往）？','https://www.travellings.cn/go.html')">
           <div class="icon">
             <span style="font-size: 20px;">🚇</span>
           </div>
@@ -305,46 +306,11 @@
     <div class="spinner"></div>
   </div>
 
+  <!-- 弹窗组件 -->
+  <global-modal id="globalModal"></global-modal>
+
   <!-- Toast -->
   <div id="copiedTip" class="copied-tip"></div>
-
-  <!-- 邮箱选择弹窗 -->
-  <div id="emailOverlay" class="overlay" onclick="closeEmailPopup()"></div>
-  <div id="emailPopup" class="modal">
-    <p>邮箱地址</p>
-    <div class="email-list">
-      <div class="email-item">
-        <span>zelynn@satinau.cn</span>
-        <button onclick="copyEmail('zelynn@satinau.cn')">复制</button>
-      </div>
-      <div class="email-item">
-        <span>contect@satinau.cn</span>
-        <button onclick="copyEmail('contect@satinau.cn')">复制</button>
-      </div>
-    </div>
-    <div class="actions">
-      <button class="cancel" onclick="closeEmailPopup()">关闭</button>
-    </div>
-  </div>
-
-  <!-- 弹窗遮罩 -->
-  <div id="iosOverlay" class="overlay" onclick="closeIosAlert()"></div>
-
-  <!-- 确认弹窗 -->
-  <div id="iosAlert" class="modal ios-alert">
-    <p id="iosAlertMsg">是否跳转？</p>
-    <div class="actions">
-      <button class="cancel" onclick="closeIosAlert()">取消</button>
-      <button class="confirm" onclick="confirmIosAlert()">确定</button>
-    </div>
-  </div>
-
-  <!-- 微信二维码弹窗 -->
-  <div id="wechatOverlay" class="overlay" onclick="closeWeChatQR()"></div>
-  <div id="wechatQR" class="modal wechat-qr">
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=https://u.wechat.com/MASBAq1qageU9c51LoYg2-Q?s=2" alt="WeChat QR">
-    <p>微信扫码加我</p>
-  </div>
 
   <!-- 导航栏 -->
   <script src="src/script/components/navigate.js"></script>

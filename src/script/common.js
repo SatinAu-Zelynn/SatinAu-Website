@@ -47,57 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-/* iOS 弹窗逻辑 */
-let pendingUrl = null;
-
-function isMobileDevice() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
-function showIosAlert(url, msg = "是否跳转到外部链接？", appUrl = null) {
-  pendingUrl = {
-    webUrl: url,
-    appUrl: appUrl
-  };
-  const msgEl = document.getElementById("iosAlertMsg");
-  if (msgEl) msgEl.textContent = msg;
-  toggleModal("iosOverlay", true);
-  toggleModal("iosAlert", true);
-}
-
-function closeIosAlert() {
-  toggleModal("iosOverlay", false);
-  toggleModal("iosAlert", false);
-  pendingUrl = null;
-}
-
-function confirmIosAlert() {
-  if (pendingUrl) {
-    // 移动端优先尝试唤起APP
-    if (isMobileDevice() && pendingUrl.appUrl) {
-      try {
-        // 尝试打开APP
-        showToast("尝试打开APP");
-        window.location.href = pendingUrl.appUrl;
-        
-        // 2秒后跳转网页作为备用
-        setTimeout(() => {
-          window.open(pendingUrl.webUrl, "_blank");
-          closeIosAlert();
-        }, 2000);
-      } catch (err) {
-        // 失败时直接跳转网页
-        window.open(pendingUrl.webUrl, "_blank");
-        closeIosAlert();
-      }
-    } else {
-      // 桌面端直接跳转网页
-      window.open(pendingUrl.webUrl, "_blank");
-      closeIosAlert();
-    }
-  }
-}
-
 /* 通用工具函数 */
 function toggleModal(id, show = true) {
   const el = document.getElementById(id);
