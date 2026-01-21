@@ -34,6 +34,8 @@ if [ -n "$CF_PAGES" ]; then
     VERSION_SUFFIX=""
     if [ "$BRANCH" == "test" ]; then
         VERSION_SUFFIX="（测试版）"
+    elif [ "$BRANCH" == "main" ]; then
+        VERSION_SUFFIX="（正式版）"
     fi
 
     # 拼接 Cloudflare 专用 HTML
@@ -43,9 +45,16 @@ elif [ -n "$VERCEL" ]; then
     # --- Vercel 环境 ---
     echo "Detected Environment: Vercel"
     COMMIT_HASH=${VERCEL_GIT_COMMIT_SHA:0:7}
+    BRANCH=$VERCEL_GIT_COMMIT_REF
     
+    # 构建版本后缀
+    VERSION_SUFFIX=""
+    if [ "$BRANCH" == "main" ]; then
+        VERSION_SUFFIX="（正式版）"
+    fi
+
     # 拼接 Vercel 专用 HTML
-    FINAL_INFO="${SVG_VERCEL} Vercel 提供静态托管服务 版本: ${COMMIT_HASH}"
+    FINAL_INFO="${SVG_VERCEL} Vercel 提供静态托管服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 else
     # --- 本地/其他环境 (回退方案) ---
