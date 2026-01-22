@@ -38,6 +38,32 @@
           y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
       })(window, document, "clarity", "script", "trwlkhxzch");
   </script>
+  <style>
+    body#error-page h1 {
+      font-size: clamp(4rem, 15vw, 12rem);
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, 
+        #00FFCC 0%, 
+        #5E447B 25%, 
+        #FFE92C 50%, 
+        #FF9999 75%, 
+        #00FFCC 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 10px 30px rgba(94, 68, 123, 0.4))
+              drop-shadow(0 5px 15px rgba(255, 233, 44, 0.3));
+      animation: gradientShift 8s ease infinite;
+      background-size: 200% 200%;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
 </head>
 <body id="error-page">
   <!-- 背景色块 -->
