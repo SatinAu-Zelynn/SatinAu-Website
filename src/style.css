@@ -128,34 +128,45 @@ body {
   100% { transform: translate(0, 0); }
 }
 
-/* ========== 页面切换动画（作用于 .page） ========== */
-.page {
-  min-width: 100vw; /* 确保页面宽度正确 */
-  box-sizing: border-box;
-  will-change: transform, opacity;
-  transform: translateZ(0); /* 触发GPU加速 */
+/* ===================== iOS-like parallel page transitions (3 pages) ===================== */
+.page { transform: translateZ(0); }
 
-  &.slide-out-left,
-  &.slide-out-right,
-  &.slide-in-left,
-  &.slide-in-right {
-    will-change: transform; /* 提前优化 */
-
-    &.finished {
-      will-change: auto; /* 动画结束后释放资源 */
-    }
-  }
-
-  &.slide-out-left  { animation: slideOutLeft  0.5s ease forwards; }
-  &.slide-out-right { animation: slideOutRight 0.5s ease forwards; }
-  &.slide-in-left   { animation: slideInLeft   0.5s ease forwards; }
-  &.slide-in-right  { animation: slideInRight  0.5s ease forwards; }
+/* Exit current page */
+@keyframes slideOutToLeft {
+  from { transform: translateX(0); opacity: 1; filter: blur(0); }
+  to   { transform: translateX(-22px); opacity: 0.01; filter: blur(6px); }
+}
+@keyframes slideOutToRight {
+  from { transform: translateX(0); opacity: 1; filter: blur(0); }
+  to   { transform: translateX(22px); opacity: 0.01; filter: blur(6px); }
 }
 
-@keyframes slideOutLeft  { from{transform:translateX(0);   opacity:1;} to{transform:translateX(-30%); opacity:0;} }
-@keyframes slideOutRight { from{transform:translateX(0);   opacity:1;} to{transform:translateX(30%);  opacity:0;} }
-@keyframes slideInLeft   { from{transform:translateX(-30%);opacity:0;} to{transform:translateX(0);    opacity:1;} }
-@keyframes slideInRight  { from{transform:translateX(30%); opacity:0;} to{transform:translateX(0);    opacity:1;} }
+/* Enter new page */
+@keyframes slideInFromRight {
+  from { transform: translateX(22px); opacity: 0.01; filter: blur(6px); }
+  to   { transform: translateX(0); opacity: 1; filter: blur(0); }
+}
+@keyframes slideInFromLeft {
+  from { transform: translateX(-22px); opacity: 0.01; filter: blur(6px); }
+  to   { transform: translateX(0); opacity: 1; filter: blur(0); }
+}
+
+/* Classes used by JS */
+.page.slide-out-left  { animation: slideOutToLeft 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
+.page.slide-out-right { animation: slideOutToRight 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
+.page.slide-in-right  { animation: slideInFromRight 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
+.page.slide-in-left   { animation: slideInFromLeft 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
+
+/* Disable fancy motion for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .page.slide-out-left,
+  .page.slide-out-right,
+  .page.slide-in-right,
+  .page.slide-in-left {
+    animation: none !important;
+    transition: opacity 240ms ease;
+  }
+}
 
 /* ========== Header ========== */
 header {
@@ -1085,46 +1096,6 @@ body#index-page {
   /* 确保原有三个点按钮在移动端保持隐藏 */
   .more-menu-container {
     display: none !important;
-  }
-}
-
-/* ===================== iOS-like parallel page transitions (3 pages) ===================== */
-.page { will-change: transform, opacity; transform: translateZ(0); }
-
-/* Exit current page */
-@keyframes slideOutToLeft {
-  from { transform: translateX(0); opacity: 1; filter: blur(0); }
-  to   { transform: translateX(-22px); opacity: 0.01; filter: blur(6px); }
-}
-@keyframes slideOutToRight {
-  from { transform: translateX(0); opacity: 1; filter: blur(0); }
-  to   { transform: translateX(22px); opacity: 0.01; filter: blur(6px); }
-}
-
-/* Enter new page */
-@keyframes slideInFromRight {
-  from { transform: translateX(22px); opacity: 0.01; filter: blur(6px); }
-  to   { transform: translateX(0); opacity: 1; filter: blur(0); }
-}
-@keyframes slideInFromLeft {
-  from { transform: translateX(-22px); opacity: 0.01; filter: blur(6px); }
-  to   { transform: translateX(0); opacity: 1; filter: blur(0); }
-}
-
-/* Classes used by JS */
-.page.slide-out-left  { animation: slideOutToLeft 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-.page.slide-out-right { animation: slideOutToRight 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-.page.slide-in-right  { animation: slideInFromRight 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-.page.slide-in-left   { animation: slideInFromLeft 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-
-/* Disable fancy motion for users who prefer reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .page.slide-out-left,
-  .page.slide-out-right,
-  .page.slide-in-right,
-  .page.slide-in-left {
-    animation: none !important;
-    transition: opacity 240ms ease;
   }
 }
 
