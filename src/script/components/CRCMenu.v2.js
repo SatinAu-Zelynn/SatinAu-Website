@@ -559,6 +559,7 @@ const copyAction = (ctx) => {
   const copyLinkAction = (ctx) => {
     if (ctx.currentLinkUrl) {
       navigator.clipboard?.writeText(ctx.currentLinkUrl).catch(() => fallbackCopyText(ctx.currentLinkUrl));
+      showToast("📋 已复制: " + ctx.currentLinkUrl);
     }
   };
   
