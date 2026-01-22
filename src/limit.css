@@ -81,7 +81,7 @@
 .moment-card,
 .bottom-nav, footer,
 .modal, pre,
-.copied-tip,
+.toast,
 .setting-item, .mobile-more-menu,
 #loginBtn, #logoutBtn, .post-actions .back-button {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;

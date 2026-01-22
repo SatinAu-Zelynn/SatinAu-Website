@@ -250,13 +250,13 @@ class GlobalModal extends HTMLElement {
     document.body.removeChild(input);
   }
 
-  // 调用全局 Toast (假设页面上有 <div id="copiedTip">)
+  // 调用全局 Toast (假设页面上有 <div id="toast">)
   showToast(msg) {
     // 为了兼容旧代码，这里查找全局的 showToast 函数，或者自己实现
     if (typeof window.showToast === 'function') {
       window.showToast(msg);
     } else {
-      const tip = document.getElementById("copiedTip");
+      const tip = document.getElementById("toast");
       if (tip) {
         tip.textContent = msg;
         tip.classList.add("show");

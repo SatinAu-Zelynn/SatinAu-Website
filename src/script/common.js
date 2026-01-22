@@ -104,7 +104,7 @@ function toggleModal(id, show = true) {
 }
 
 function showToast(msg) {
-  const tip = document.getElementById("copiedTip");
+  const tip = document.getElementById("toast");
   if (!tip) return;
   tip.textContent = msg;
   tip.classList.add("show");

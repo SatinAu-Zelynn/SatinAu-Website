@@ -485,7 +485,7 @@ footer{
 }
 
 /* ========== iOS 风格提示 & 弹窗 ========== */
-.copied-tip {
+.toast {
   position: fixed;
   bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 30px);
   left: 50%;
@@ -494,7 +494,7 @@ footer{
   border-radius:var(--border-radius-md);
   font-size: 15px;
   font-weight: 500;
-  background: light-dark(rgba(255,255,255,0.25), rgba(30,30,30,0.5));
+  background: light-dark(rgba(255,255,255,0.5), rgba(30,30,30,0.5));
   color: var(--word-color);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
