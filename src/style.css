@@ -38,6 +38,60 @@
   font-family: var(--global-font);
 }
 
+/* ========== 全局滚动条美化 ========== */
+
+/* Webkit 核心浏览器 (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 14px;  /* 设置较宽的触控/点击区域 */
+  height: 14px; /* 横向滚动条高度 */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+::-webkit-scrollbar-thumb {
+  /* 默认状态：半透明灰色/白色，融入背景 */
+  background-color: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.15));
+  border-radius: 999px; /* 胶囊圆角 */
+  
+  border: 5px solid transparent; 
+  background-clip: content-box; /* 让背景色仅填充在内盒，不覆盖边框区域 */
+  
+  transition: background-color 0.3s ease, border-width 0.2s ease;
+}
+
+/* 鼠标悬停在滚动条上时 */
+::-webkit-scrollbar-thumb:hover {
+  /* 加深颜色，增加可视度 */
+  background-color: light-dark(rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.4));
+  /* 边框变窄，视觉上滑块变粗，提示可点击 */
+  border-width: 3px; 
+}
+
+/* 正在拖拽滚动条时 */
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--primary-color);
+  border-width: 3px;
+}
+
+/* 横竖滚动条交接处 */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@supports (scrollbar-color: auto) {
+  * {
+    scrollbar-width: thin; /* 细滚动条 */
+    scrollbar-color: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2)) transparent;
+  }
+}
+
+/* ========== 全局文字选中美化 ========== */
+::selection {
+  background: var(--primary-color);
+}
+
 /* 替换手型光标 */
 a,
 button,
@@ -1438,6 +1492,56 @@ input:checked + .switch-slider {
   &::before {
     transform: translateX(22px); /* Sliding distance */
   }
+}
+
+/* ========== 主题色选择器 ========== */
+.theme-selector-wrapper {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end; /* 靠右对齐，与Toggle Switch保持一致 */
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: var(--custom-cursor, pointer);
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border: 2px solid rgba(255,255,255,0.2); /* 默认微弱描边 */
+}
+
+/* 悬停效果 */
+.color-swatch:hover {
+  transform: scale(1.15);
+  z-index: 2;
+}
+
+/* 选中状态：外圈光环 */
+.color-swatch.selected {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px var(--word-color), 0 4px 12px rgba(0,0,0,0.2);
+  border-color: transparent;
+}
+
+/* 选中状态下的对勾 (可选，这里用纯CSS画一个小点或对勾) */
+.color-swatch.selected::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px; height: 10px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+  from { transform: translate(-50%, -50%) scale(0); }
+  to { transform: translate(-50%, -50%) scale(1); }
 }
 
 /* ================= Viewer.js 自定义主题 ================= */

@@ -640,6 +640,88 @@ function applyFontMode(mode) {
   }
 }
 
+/* ========== 主题色切换逻辑 ========== */
+const THEME_COLOR_KEY = 'setting_theme_color';
+
+// 预设颜色值 (格式: [浅色模式Hex, 深色模式Hex])
+// 默认蓝: #007aff, #0a84ff
+const THEME_PRESETS = {
+  'default': ['#007aff', '#0a84ff'], // 默认蓝
+  'purple':  ['#AF52DE', '#BF5AF2'], // 霓虹紫
+  'pink':    ['#FF2D55', '#FF375F'], // 活力粉
+  'orange':  ['#FF9500', '#FF9F0A'], // 暖阳橙
+  'green':   ['#34C759', '#30D158'], // 薄荷绿
+  'cyan':    ['#00C7BE', '#59DAC6']  // 青色
+};
+
+// 1. 初始化逻辑 (页面加载时执行)
+document.addEventListener('DOMContentLoaded', () => {
+  // 无论在哪个页面，都要应用当前保存的主题色
+  const savedColorKey = localStorage.getItem(THEME_COLOR_KEY) || 'default';
+  applyThemeColor(savedColorKey);
+
+  // 如果在设置页面，初始化选择器 UI
+  const selectorWrapper = document.getElementById('themeColorSelector');
+  if (selectorWrapper) {
+    initThemeColorSelector(selectorWrapper, savedColorKey);
+  }
+});
+
+// 2. 核心功能：应用主题色变量
+function applyThemeColor(key) {
+  const colors = THEME_PRESETS[key] || THEME_PRESETS['default'];
+  const root = document.documentElement;
+  
+  // 使用 CSS 的 light-dark() 函数
+  // 注意：需要浏览器支持 CSS Color Module Level 5，现代浏览器均已支持
+  const colorValue = `light-dark(${colors[0]}, ${colors[1]})`;
+  
+  root.style.setProperty('--primary-color', colorValue);
+}
+
+// 3. 初始化 UI
+function initThemeColorSelector(wrapper, currentKey) {
+  // 清空现有内容（防止重复初始化）
+  wrapper.innerHTML = '';
+
+  // 遍历预设生成色块
+  for (const [key, colors] of Object.entries(THEME_PRESETS)) {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch';
+    swatch.dataset.key = key;
+    
+    // 为了让色块在UI上好看，我们取深色模式的颜色作为背景展示，或者做一个简单的渐变
+    swatch.style.background = colors[0]; 
+    swatch.title = key; // 简单的提示
+
+    // 标记当前选中项
+    if (key === currentKey) {
+      swatch.classList.add('selected');
+    }
+
+    // 点击事件
+    swatch.addEventListener('click', () => {
+      // 1. 移除其他选中状态
+      wrapper.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      // 2. 选中当前
+      swatch.classList.add('selected');
+      // 3. 保存设置
+      localStorage.setItem(THEME_COLOR_KEY, key);
+      // 4. 立即应用
+      applyThemeColor(key);
+      // 5. 提示
+      // 简单的中文映射
+      const nameMap = {
+        'default': '默认蓝', 'purple': '霓虹紫', 'pink': '活力粉',
+        'orange': '暖阳橙', 'green': '薄荷绿', 'cyan': '青色'
+      };
+      showToast(`主题色已切换为：${nameMap[key] || key}`);
+    });
+
+    wrapper.appendChild(swatch);
+  }
+}
+
 // 游戏控制器适配逻辑
 class GamepadHandler {
   constructor() {
