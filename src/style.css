@@ -2241,3 +2241,104 @@ input:checked + .switch-slider {
   background-clip: text;
   color: transparent;
 }
+
+/* 分享图片生成的临时容器 (移出屏幕) */
+#share-card-container {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 375px; /* 朋友圈标准宽度 */
+  background: #fff;
+  z-index: -1;
+  padding: 30px;
+  box-sizing: border-box;
+  font-family: var(--font-sans);
+  color: #333;
+  overflow: hidden;
+  border-radius: 0; /* 生成图片不需要圆角，或者由容器决定 */
+}
+
+/* 生成图片的装饰背景 */
+#share-card-container::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #00FFCC, #007aff, #FF9999);
+}
+
+.share-card-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 20px 0 12px;
+  line-height: 1.4;
+  color: #111;
+}
+
+.share-card-date {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 20px;
+}
+
+.share-card-excerpt {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #555;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border-left: 4px solid #ddd;
+}
+
+.share-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.share-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.share-site-name {
+  font-weight: 700;
+  font-size: 16px;
+  color: #333;
+}
+
+.share-site-url {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.share-qr img {
+  width: 80px;
+  height: 80px;
+  display: block;
+}
+
+/* 弹窗内的图片展示 */
+.modal.share-modal img.generated-share-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 16px;
+  display: block;
+}
+
+/* 分享弹窗的按钮组 */
+.share-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+.share-actions button {
+  flex: 1;
+}

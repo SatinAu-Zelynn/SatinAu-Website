@@ -204,6 +204,100 @@ class GlobalModal extends HTMLElement {
     this.show();
   }
 
+  // ==========================================
+  // 分享文章卡片
+  // ==========================================
+  async share(title, excerpt, url, date) {
+    this.modal.className = 'modal share-modal'; // 设置特定样式
+    
+    // 1. 显示加载中
+    this.content.innerHTML = `
+      <div style="padding: 20px;">
+        <div class="ai-loading-spinner" style="margin: 0 auto 10px;"></div>
+        <p style="font-size:14px; color:var(--word-color)">正在生成分享卡片...</p>
+      </div>
+    `;
+    this.show();
+
+    // 2. 创建用于生成的 DOM 结构
+    // 移除旧的容器（如果存在）
+    const oldContainer = document.getElementById('share-card-container');
+    if (oldContainer) oldContainer.remove();
+
+    const container = document.createElement('div');
+    container.id = 'share-card-container';
+    
+    // 截取摘要，限制字数
+    const cleanExcerpt = excerpt.replace(/[\r\n]/g, '').substring(0, 120) + '...';
+    // 确保 URL 是绝对路径
+    const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+    // 二维码 API (使用 cors 代理或支持 cors 的 api)
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
+
+    container.innerHTML = `
+      <div class="share-card-title">${title}</div>
+      <div class="share-card-date">${date}</div>
+      <div class="share-card-excerpt">${cleanExcerpt}</div>
+      <div class="share-card-footer">
+        <div class="share-info">
+          <span class="share-site-name">缎金SatinAu</span>
+          <span class="share-site-url">satinau.cn</span>
+        </div>
+        <div class="share-qr">
+          <img src="${qrUrl}" crossOrigin="anonymous" alt="QR">
+        </div>
+      </div>
+    `;
+    document.body.appendChild(container);
+
+    try {
+      // 3. 等待二维码图片加载完成
+      const qrImg = container.querySelector('.share-qr img');
+      await new Promise((resolve, reject) => {
+        if (qrImg.complete) resolve();
+        else {
+          qrImg.onload = resolve;
+          qrImg.onerror = () => resolve(); // 即使失败也继续生成
+        }
+      });
+
+      // 4. 使用 html2canvas 生成图片
+      if (!window.html2canvas) throw new Error("组件未加载");
+
+      const canvas = await html2canvas(container, {
+        useCORS: true, // 允许跨域图片
+        scale: 2, // 高清
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+
+      // 5. 更新弹窗内容
+      this.content.innerHTML = `
+        <img src="${imgData}" class="generated-share-img" alt="Share Card">
+        <p style="font-size:12px; color:#888; margin-bottom:12px;">长按图片保存或分享</p>
+        <div class="share-actions">
+          <button id="shareCopyLink" class="confirm" style="background:var(--primary-color); color:#fff; border:none; border-radius:10px; padding:10px; cursor:pointer;">复制链接</button>
+          <button id="shareClose" class="cancel" style="background:rgba(128,128,128,0.2); color:var(--word-color); border:none; border-radius:10px; padding:10px; cursor:pointer;">关闭</button>
+        </div>
+      `;
+
+      // 绑定按钮事件
+      this.querySelector('#shareClose').onclick = () => this.close();
+      this.querySelector('#shareCopyLink').onclick = () => {
+        this.copyToClipboard(fullUrl);
+      };
+
+    } catch (err) {
+      console.error("生成分享图失败:", err);
+      this.content.innerHTML = `<p style="padding:20px;">生成失败，请刷新重试</p>`;
+      setTimeout(() => this.close(), 2000);
+    } finally {
+      // 清理 DOM
+      container.remove();
+    }
+  }
+
   // === 辅助逻辑 ===
   
   isMobileDevice() {

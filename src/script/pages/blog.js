@@ -432,46 +432,45 @@ if (backToTopBtn) {
 }
 }
 
-const downloadBtn = document.getElementById('downloadArticle');
-if (downloadBtn) {
-downloadBtn.addEventListener('click', downloadCurrentArticle);
+const shareBtn = document.getElementById('shareArticleBtn');
+if (shareBtn) {
+  shareBtn.addEventListener('click', handleShare);
 }
 
-function downloadCurrentArticle() {
-// 获取文章标题和内容
-const title = postTitle ? postTitle.textContent.trim() : '未命名文章';
-const date = postDate ? postDate.textContent.trim() : '';
-const content = postContent ? postContent.innerText.trim() : '';
+function handleShare() {
+  // 1. 获取文章信息
+  const title = postTitle ? postTitle.textContent.trim() : '未命名文章';
+  
+  // 从 postDate 获取日期 (格式: "2024-01-01 · 1200字")
+  let date = '';
+  if (postDate && postDate.textContent) {
+     date = postDate.textContent.split('·')[0].trim();
+  }
 
-// 构建要下载的文本内容
-let textContent = `${title}\n\n`;
-if (date) textContent += `发布日期: ${date}\n\n`;
-textContent += content;
-textContent += `\n---\n`;
-textContent += `作者: 缎金SatinAu\n`;
-textContent += `来源: https://satinau.cn/\n`;
+  // 获取纯文本摘要
+  // 过滤掉 markdown 符号，只留前 100 字
+  let plainText = postContent ? postContent.innerText : '';
+  // 简单的清理逻辑，移除多余空行
+  plainText = plainText.replace(/\n+/g, ' ').trim(); 
 
-// 创建Blob对象
-const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+  // 获取当前 URL
+  const url = window.location.href;
 
-// 创建下载链接
-const a = document.createElement('a');
-const url = URL.createObjectURL(blob);
-
-// 设置下载属性
-a.href = url;
-a.download = `${title.replace(/\s+/g, '_')}.txt`; // 替换空格为下划线
-
-// 触发下载
-document.body.appendChild(a);
-a.click();
-
-// 清理
-setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('开始下载文章TXT');
-}, 0);
+  // 2. 调用 GlobalModal 生成分享卡片
+  const modal = document.getElementById('globalModal');
+  if (modal && modal.share) {
+    modal.share(title, plainText, url, date);
+  } else {
+    // 降级处理：如果没有加载 html2canvas 或 modal 异常，直接复制链接
+    const tempInput = document.createElement('input');
+    document.body.appendChild(tempInput);
+    tempInput.value = url;
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    if(typeof showToast === 'function') showToast('已复制文章链接');
+    else alert('已复制链接');
+  }
 }
 
 function initImageViewer() {
