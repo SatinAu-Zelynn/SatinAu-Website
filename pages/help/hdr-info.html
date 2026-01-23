@@ -23,7 +23,6 @@
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
   <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
-  <!-- 路径调整为上一级目录 -->
   <link rel="stylesheet" href="/src/style.css">
   <link rel="preload" href="https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
   <script src="/src/script/config.js"></script>
@@ -59,15 +58,27 @@
       <div class="ai-summary-card" style="margin-top: 0; text-align: left;">
         <div class="ai-header">
           <span class="ai-icon">⚠️</span>
-          <span>AVIF HDR 格式说明</span>
+          <span>HDR 格式与显示设置</span>
         </div>
         <div class="ai-content">
-          <p>本栏目展示的图片采用了 <strong>AVIF 格式的高动态范围 (HDR)</strong> 图像技术。相比传统图片，它能提供更丰富的亮度和色彩细节。</p>
-          <ul style="margin: 10px 0 10px 20px; padding: 0; font-size: 14px; line-height: 1.6; color: var(--word-color);">
-            <li style="margin-bottom: 8px;"><strong>性能提示：</strong> 部分性能落后的设备或旧版本浏览器可能无法解码，或出现加载缓慢、卡顿等现象。</li>
-            <li style="margin-bottom: 8px;"><strong>色域提示：</strong> 图片使用 <strong>Display P3 广色域</strong>，仅在支持 P3 色域及 HDR 显示的设备上能获得最佳观感。</li>
+          <p>本栏目支持 <strong>AVIF 格式的高动态范围 (HDR)</strong> 图像技术。开启后，在支持的屏幕上能获得更丰富的亮度和色彩细节。</p>
+          
+          <ul style="margin: 10px 0 15px 20px; padding: 0; font-size: 14px; line-height: 1.6; color: var(--word-color);">
+            <li style="margin-bottom: 8px;"><strong>性能提示：</strong> 部分旧版本浏览器可能无法解码 AVIF，或出现加载缓慢、卡顿等现象。</li>
+            <li style="margin-bottom: 8px;"><strong>色域提示：</strong> 图片使用 <strong>Display P3 广色域</strong>，仅在支持 HDR 的设备上能获得最佳观感。</li>
             <li><strong>色彩准确性：</strong> 由于 HDR 映射机制，浏览器显示的颜色可能与原始设定存在偏差。<strong>请不要直接从图片中取色</strong>。</li>
           </ul>
+
+          <!-- 切换设置提示块 -->
+          <div style="background: rgba(var(--primary-rgb), 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(var(--primary-rgb), 0.15);">
+            <p style="margin: 0; font-size: 14px; line-height: 1.5;">
+              <strong>⚙️ 显示异常？</strong><br>
+              如果您遇到图片无法加载、黑屏或希望节省流量，请前往 
+              <a href="/pages/settings.html" target="_blank" style="color: var(--primary-color); font-weight: 700; text-decoration: underline;">网站设置</a> 
+              中关闭 <strong>“HDR 图片模式”</strong>，系统将自动切换为兼容性更好的 WEBP 格式。
+            </p>
+          </div>
+
           <p style="margin-top: 15px; font-weight: 600; color: var(--primary-color);">如需获取准确颜色，请前往上方“设定总览”查看设定文件，使用其中提供的标准 HEX/RGB 色号。</p>
         </div>
       </div>

@@ -20,6 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // 图片画廊容器
   const galleryContainer = document.getElementById('zelynnGallery');
   
+  // 获取 HDR 设置状态
+  // 默认为 false (使用 webp)，只有明确设置为 'true' 时才使用 avif
+  const useHDR = localStorage.getItem('enableHDR') === 'true';
+  const imgExtension = useHDR ? '.avif' : '.webp';
+
+  console.log(`Loading images with extension: ${imgExtension} (HDR: ${useHDR})`);
+
   // 加载图片列表
   fetch('https://blog.satinau.cn/zelynn/list.json')
     .then(response => {
@@ -35,12 +42,22 @@ document.addEventListener('DOMContentLoaded', function() {
       // 创建图片元素
       images.forEach(imgInfo => {
         const img = document.createElement('img');
-        img.src = `https://blog.satinau.cn/zelynn/${imgInfo.filename}`;
+        
+        // 动态拼接后缀
+        img.src = `https://blog.satinau.cn/zelynn/${imgInfo.filename}${imgExtension}`;
+        
         img.alt = imgInfo.alt || '泽凌图片';
         img.loading = 'lazy'; // 懒加载
         
         // 添加错误处理
         img.onerror = function() {
+          // 如果开启了 HDR 但加载失败（例如浏览器不支持 AVIF），可以尝试回退到 WEBP
+          if (this.src.endsWith('.avif')) {
+             console.warn('AVIF loading failed, falling back to WEBP:', this.src);
+             this.src = this.src.replace('.avif', '.webp');
+             return;
+          }
+
           this.alt = '图片加载失败: ' + imgInfo.alt;
           this.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTEyIDJjLTUuNSAyLTkgNi41LTkgMTFzMy41IDExIDkgMTExIDktMy41IDktMTEtMy41LTExLTktMTF6bTAgMTZjLTMuMyAwLTYtMi43LTYtNnMzLjcgMiA2IDIgNi0zLjMgNi02LTMuMy02LTYtNnoiLz48cGF0aCBmaWxsPSIjRjRBNEEwIiBkPSJNMTIgMTVoLjAxdjEuOTlsLS4wMS4wMUwxMiAxOWwtMS4wMS0xLjA5LS4wMS0uMDFWMTVoLjAxeiIvPjwvc3ZnPg==';
         };

@@ -836,3 +836,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 })();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const hdrToggle = document.getElementById('hdrModeToggle');
+  if (hdrToggle) {
+    // 检查 localStorage，默认为 'false' (关闭)
+    const isHDREnabled = localStorage.getItem('enableHDR') === 'true';
+    hdrToggle.checked = isHDREnabled;
+  }
+});
+
+// 切换 HDR 模式函数
+function toggleHDRMode() {
+  const hdrToggle = document.getElementById('hdrModeToggle');
+  const isChecked = hdrToggle.checked;
+  localStorage.setItem('enableHDR', isChecked);
+  
+  // 如果有 toast 函数，提示用户
+  if (typeof showToast === 'function') {
+    showToast(isChecked ? '已开启 HDR 模式 (AVIF)' : '已关闭 HDR 模式 (WEBP)');
+  }
+}

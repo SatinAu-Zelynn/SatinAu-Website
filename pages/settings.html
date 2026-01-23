@@ -80,6 +80,17 @@
       </div>
 
       <div class="setting-item">
+        <label for="hdrModeToggle">
+          HDR 图片模式 (Beta)
+          <span class="tooltip">开启后加载 AVIF 高动态范围图片，色彩更艳丽。若显示异常或黑屏，请关闭此项（默认使用 WEBP）。</span>
+        </label>
+        <div class="toggle-switch">
+          <input type="checkbox" id="hdrModeToggle" onchange="toggleHDRMode()">
+          <label for="hdrModeToggle" class="switch-slider"></label>
+        </div>
+      </div>
+
+      <div class="setting-item">
         <label for="performanceModeToggle">
           性能模式
           <span class="tooltip">启用后，限制部分模糊和动画以提升流畅度（默认禁用）</span>
