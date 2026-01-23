@@ -939,3 +939,78 @@ function toggleHDRMode() {
     showToast(isChecked ? '已开启 HDR 模式 (AVIF)' : '已关闭 HDR 模式 (WEBP)');
   }
 }
+
+/* ========== 颜色模式切换逻辑 (Light/System/Dark) ========== */
+const THEME_MODE_KEY = 'setting_theme_mode';
+
+// 1. 核心应用函数
+function applyThemeMode(mode) {
+  const root = document.documentElement;
+  // 移除之前的属性
+  root.removeAttribute('data-theme');
+
+  if (mode === 'light') {
+    root.setAttribute('data-theme', 'light');
+    // 如果有 light-dark() CSS 支持，这会强制触发 light 颜色
+  } else if (mode === 'dark') {
+    root.setAttribute('data-theme', 'dark');
+  } else {
+    // System 模式：移除 data-theme 属性，CSS 中的 color-scheme: light dark 会自动生效
+    // 并自动清理 localStorage 以保持“跟随系统”的逻辑
+    localStorage.removeItem(THEME_MODE_KEY); 
+  }
+}
+
+// 2. 初始化逻辑
+document.addEventListener('DOMContentLoaded', () => {
+  // 读取当前设置（默认为 null，即 System）
+  const savedMode = localStorage.getItem(THEME_MODE_KEY) || 'system';
+  
+  // 立即应用（其实为了防止闪烁，applyThemeMode 最好在 head script 中也同步执行一次，但这里放在 DOMLoaded 统一管理）
+  if (savedMode !== 'system') {
+      applyThemeMode(savedMode);
+  }
+
+  // 如果存在 UI 控件（设置页面），则初始化交互
+  const control = document.getElementById('themeModeControl');
+  if (control) {
+    const buttons = control.querySelectorAll('button');
+    
+    // 更新 UI 选中状态
+    buttons.forEach(btn => {
+      if (btn.dataset.value === savedMode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+
+      // 绑定点击事件
+      btn.addEventListener('click', () => {
+        // 1. 视觉切换
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // 2. 逻辑应用
+        const selectedMode = btn.dataset.value;
+        
+        if (selectedMode === 'system') {
+          localStorage.removeItem(THEME_MODE_KEY);
+          showToast('已切换为：跟随系统');
+        } else {
+          localStorage.setItem(THEME_MODE_KEY, selectedMode);
+          const text = selectedMode === 'light' ? '明亮模式' : '深色模式';
+          showToast(`已切换为：${text}`);
+        }
+        
+        applyThemeMode(selectedMode);
+      });
+    });
+  }
+});
+
+(function preApplyTheme() {
+    const saved = localStorage.getItem('setting_theme_mode');
+    if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+    }
+})();
