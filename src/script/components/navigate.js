@@ -101,6 +101,43 @@ class NavigateBar extends HTMLElement {
         </div>
       </nav>
     `;
+    // 初始化滚动监听
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    window.addEventListener('scroll', () => {
+      // 检查自动隐藏开关是否开启
+      const isAutohide = localStorage.getItem('setting_autohide_nav_enabled') === 'true';
+      if (!isAutohide) return;
+
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const nav = this.querySelector('.bottom-nav');
+          if (!nav) return;
+
+          const currentScrollY = window.scrollY;
+          
+          // 1. 向下滚动：隐藏
+          if (currentScrollY > lastScrollY && currentScrollY > 50) {
+            nav.classList.add('nav-hidden');
+            // 顺便关闭可能打开的移动端菜单
+            const mobileMenu = document.querySelector('.mobile-more-menu');
+            if (mobileMenu && mobileMenu.classList.contains('show')) {
+              mobileMenu.classList.remove('show');
+              nav.classList.remove('menu-open');
+            }
+          } 
+          // 2. 向上滚动：显示
+          else if (currentScrollY < lastScrollY) {
+            nav.classList.remove('nav-hidden');
+          }
+          
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
   }
 }
 

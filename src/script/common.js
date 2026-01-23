@@ -1014,3 +1014,33 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.setAttribute('data-theme', saved);
     }
 })();
+
+/* ========== 导航栏自动隐藏 ========== */
+const AUTOHIDE_NAV_KEY = 'setting_autohide_nav_enabled';
+
+function isAutoHideNavEnabled() {
+  return localStorage.getItem(AUTOHIDE_NAV_KEY) === 'true'; // 默认 false
+}
+
+// 切换开关（供 settings.html 调用）
+window.toggleAutoHideNav = function() {
+  const checkbox = document.getElementById('autoHideNavToggle');
+  const enabled = checkbox.checked;
+  localStorage.setItem(AUTOHIDE_NAV_KEY, enabled);
+
+  // 如果关闭了该功能，立即移除隐藏类，确保导航栏显示出来
+  if (!enabled) {
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) nav.classList.remove('nav-hidden');
+  }
+
+  showToast(enabled ? "自动隐藏导航栏：已启用" : "自动隐藏导航栏：已禁用");
+};
+
+// 页面加载时自动应用 checkbox 状态
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('autoHideNavToggle');
+  if (toggle) {
+    toggle.checked = isAutoHideNavEnabled();
+  }
+});

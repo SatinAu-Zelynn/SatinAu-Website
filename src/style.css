@@ -767,6 +767,8 @@ body#index-page {
   z-index: 2001;
   /* 隔离动画 */
   animation: none !important;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform; /* 优化性能 */
 
   a{
     flex: 1;
@@ -806,6 +808,20 @@ body#index-page {
   .nav-en {
     font-size: 12px;
     opacity: 0.7;
+  }
+}
+
+/* 移动端隐藏状态 (默认向下移出) */
+.bottom-nav.nav-hidden {
+  /* 这里的 160% 是为了确保连同阴影一起藏好，translateX(-50%) 是为了保持居中 */
+  transform: translateX(-50%) translateY(160%);
+}
+
+/* 桌面端隐藏状态 (向上移出) */
+@media (min-width: 768px) {
+  .bottom-nav.nav-hidden {
+    /* 桌面端导航栏通常在顶部或特定位置，根据要求向上移动 */
+    transform: translateX(-50%) translateY(-200%);
   }
 }
 

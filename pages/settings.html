@@ -131,6 +131,17 @@
       <p>控制网站的一些额外功能和交互</p>
 
       <div class="setting-item">
+        <label for="autoHideNavToggle">
+          自动隐藏导航栏
+          <span class="tooltip">向下滚动时隐藏导航栏，向上滚动时显示（默认关闭）</span>
+        </label>
+        <div class="toggle-switch">
+          <input type="checkbox" id="autoHideNavToggle" onchange="toggleAutoHideNav()">
+          <label for="autoHideNavToggle" class="switch-slider"></label>
+        </div>
+      </div>
+
+      <div class="setting-item">
         <label for="chimeToggle">
           整点报时
           <span class="tooltip">整点自动弹窗并播放 Westminster 钟声（需保持网页开启）</span>
