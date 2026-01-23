@@ -100,6 +100,16 @@
 /* ========== 全局文字选中美化 ========== */
 ::selection {
   background: var(--primary-color);
+  color: #ffffff; /* 选中文字强制反白，提高对比度 */
+  -webkit-text-fill-color: #ffffff;
+  text-shadow: none; /* 去除可能存在的阴影，保持干净 */
+}
+
+/* 针对 Firefox 的兼容写法 */
+::-moz-selection {
+  background: var(--primary-color);
+  color: #ffffff;
+  text-shadow: none;
 }
 
 /* 替换手型光标 */
@@ -2501,4 +2511,75 @@ input:checked + .switch-slider {
   .segmented-control button {
     padding: 6px 12px;
   }
+}
+
+/* ========== 博客搜索框样式 ========== */
+.search-container {
+  margin: 10px 0 30px;
+  width: 100%;
+  opacity: 0;
+  /* 复用现有的进场动画 */
+  animation: blurFadeUp 1.2s ease forwards; 
+}
+
+.search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+}
+
+.search-wrapper input {
+  width: 100%;
+  box-sizing: border-box; /* 确保 padding 不会撑大宽度 */
+  padding: 14px 16px 14px 48px; /* 左侧留出图标空间 */
+  font-family: var(--global-font);
+  font-size: 16px;
+  color: var(--word-color);
+  
+  /* SatinAu Design 玻璃拟态背景 */
+  background: light-dark(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.05));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+  border-radius: var(--border-radius-lg);
+  backdrop-filter: var(--filter-blur);
+  -webkit-backdrop-filter: var(--filter-blur);
+  
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  
+  /* 移除默认外观 */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* 聚焦状态：轻微放大、提亮、主色描边 */
+.search-wrapper input:focus {
+  outline: none;
+  background: light-dark(rgba(255, 255, 255, 0.45), rgba(60, 60, 60, 0.4));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: scale(1.02);
+  border-color: var(--primary-color);
+}
+
+.search-wrapper input::placeholder {
+  color: light-dark(#888, #aaa);
+  font-weight: 500;
+}
+
+/* 搜索图标样式 */
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  color: light-dark(#666, #aaa);
+  pointer-events: none; /* 让点击穿透图标到 input */
+  transition: color 0.3s ease;
+  fill: none;
+}
+
+/* 当输入框聚焦时，高亮图标 */
+.search-wrapper:focus-within .search-icon {
+  color: var(--primary-color);
 }

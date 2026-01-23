@@ -92,11 +92,11 @@ function initBlog() {
         document.title = "博客Blog - 缎金SatinAu";
         // 显示头部和列表区域
         const header = document.querySelector('header');
-        const sectionTitle = document.querySelector('section h2');
+        const searchContainer = document.querySelector('.search-container');
         const blogList = document.getElementById('blogList');
         const momentsCard = document.getElementById('momentsCard');
         if (header) header.style.display = '';
-        if (sectionTitle) sectionTitle.style.display = '';
+        if (searchContainer) searchContainer.style.display = '';
         if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
         if (momentsCard) momentsCard.style.display = '';
         postView.style.display = "none";
@@ -110,11 +110,11 @@ function initBlog() {
         document.title = "博客Blog - 缎金SatinAu";
         // 显示头部和列表区域
         const header = document.querySelector('header');
-        const sectionTitle = document.querySelector('section h2');
+        const searchContainer = document.querySelector('.search-container');
         const blogList = document.getElementById('blogList');
         const momentsCard = document.getElementById('momentsCard');
         if (header) header.style.display = '';
-        if (sectionTitle) sectionTitle.style.display = '';
+        if (searchContainer) searchContainer.style.display = '';
         if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
         if (momentsCard) momentsCard.style.display = '';
         postView.style.display = "none";
@@ -266,7 +266,7 @@ function renderPost(post, mdContent) {
     document.title = `${post.title} - 缎金SatinAu`;
     // 隐藏"最新文章"及其上方所有元素
     const header = document.querySelector('header');
-    const sectionTitle = document.querySelector('section h2'); // 最新文章标题
+    const searchContainer = document.querySelector('.search-container'); // 最新文章标题
     const blogList = document.getElementById('blogList');
     const emptyState = document.getElementById('emptyState');
     const errorState = document.getElementById('errorState');
@@ -274,7 +274,7 @@ function renderPost(post, mdContent) {
     
     // 隐藏头部和列表区域
     if (header) header.style.display = 'none';
-    if (sectionTitle) sectionTitle.style.display = 'none';
+    if (searchContainer) searchContainer.style.display = 'none';
     if (blogList) blogList.style.display = 'none';
     if (momentsCard) momentsCard.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
@@ -405,11 +405,11 @@ if (backToListBtn) {
     document.title = "博客Blog - 缎金SatinAu";
     // 显示头部和列表区域
     const header = document.querySelector('header');
-    const sectionTitle = document.querySelector('section h2');
+    const searchContainer = document.querySelector('.search-container');
     const blogList = document.getElementById('blogList');
     const momentsCard = document.getElementById('momentsCard');
     if (header) header.style.display = '';
-    if (sectionTitle) sectionTitle.style.display = '';
+    if (searchContainer) searchContainer.style.display = '';
     if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
     if (momentsCard) momentsCard.style.display = '';
     postView.style.display = 'none';
@@ -661,3 +661,19 @@ function renderGenerateButton(container, rawMarkdown, cacheKey) {
         }
     });
 }
+
+const searchInput = document.getElementById('blogSearchInput');
+searchInput.addEventListener('input', (e) => {
+    const keyword = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.contact-card'); // 假设文章卡片用的是这个类
+    
+    cards.forEach(card => {
+        // 获取标题或内容文本
+        const text = card.textContent.toLowerCase();
+        if(text.includes(keyword)) {
+            card.style.display = ''; // 显示
+        } else {
+            card.style.display = 'none'; // 隐藏
+        }
+    });
+});

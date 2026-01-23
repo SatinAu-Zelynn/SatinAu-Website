@@ -69,6 +69,14 @@
     </header>
 
     <section>
+      <div class="search-container">
+        <div class="search-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24">
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <input type="text" id="blogSearchInput" placeholder="搜索文章..." autocomplete="off">
+        </div>
+      </div>
       <div id="momentsCard" class="contact-wrapper" style="margin-bottom: 40px; grid-template-columns: 1fr;">
         <a href="pages/moments.html" class="contact-card" onclick="spaNavigate('pages/moments.html')">
           <div class="icon" style="background: linear-gradient(135deg, #FF9999, #fad0c4);">
@@ -85,7 +93,6 @@
           </svg>
         </a>
       </div>
-      <h2>最新文章</h2>
       <div id="blogList" class="contact-wrapper"></div>
       <div id="emptyState" style="display: none; text-align: center; padding: 40px 20px;">
         <p>没有找到文章，请稍后再试</p>
