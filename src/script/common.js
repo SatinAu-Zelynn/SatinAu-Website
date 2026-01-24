@@ -635,7 +635,11 @@ function applyFontMode(mode) {
   const root = document.documentElement;
   if (mode === 'serif') {
     root.style.setProperty('--global-font', 'var(--font-serif)');
+  } else if (mode === 'system') {
+    // 应用系统字体变量
+    root.style.setProperty('--global-font', 'var(--font-system)');
   } else {
+    // 默认为 sans
     root.style.setProperty('--global-font', 'var(--font-sans)');
   }
 }
