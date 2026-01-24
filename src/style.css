@@ -43,6 +43,19 @@
   color-scheme: dark;
 }
 
+/* 默认隐藏深色 Logo，显示浅色 Logo */
+.logo-dark { display: none; }
+.logo-light { display: block; }
+
+/* 当系统为深色，或手动设置为深色时 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .logo-light { display: none; }
+  :root:not([data-theme="light"]) .logo-dark { display: block; }
+}
+
+:root[data-theme="dark"] .logo-light { display: none; }
+:root[data-theme="dark"] .logo-dark { display: block; }
+
 /* ========== 全局字体设置 ========== */
 * {
   font-family: var(--global-font);
@@ -417,7 +430,7 @@ h1, h2 { text-wrap: balance; }
   display: flex; align-items: center; gap: 14px; padding: 20px 18px;
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
   border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
   border-radius: var(--border-radius-lg);
   box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
@@ -499,6 +512,19 @@ h1, h2 { text-wrap: balance; }
   svg{width:22px;height:22px;}
   img{width:30px;height:30px;border-radius:6px;}
 }
+
+/* 针对强制深色模式的特殊处理 */
+:root[data-theme="dark"] .contact-card .icon {
+  background: linear-gradient(135deg, #333, #444) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+}
+
+/* 确保强制明亮模式时恢复 */
+:root[data-theme="light"] .contact-card .icon {
+  background: linear-gradient(135deg, #e8f0fe, #f5f5f5) !important;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
 .text{display:flex;flex-direction:column;text-align:left;}
 .label{font-size:12px;color:light-dark(#666, #aaa);}
 .value{font-size:15px;font-weight:600;color:var(--word-color);}
@@ -1106,7 +1132,7 @@ body#index-page {
     width: min(90vw, 320px);
     max-height: 0;
     overflow: hidden;
-    background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.5));
+    background: light-dark(rgba(255, 255, 255, 0.3), rgba(30, 30, 30, 0.5));
     -webkit-backdrop-filter: var(--filter-blur);
     backdrop-filter: var(--filter-blur);
     border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
@@ -1355,7 +1381,7 @@ body#index-page {
 
 /* 登录按钮 - SatinAu Design 风格 */
 #loginBtn {
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(40, 40, 40, 0.6));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(40, 40, 40, 0.6));
   -webkit-backdrop-filter: var(--filter-blur);
   backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
@@ -1379,7 +1405,7 @@ body#index-page {
 }
 
 #logoutBtn {
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(40, 40, 40, 0.6));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(40, 40, 40, 0.6));
   -webkit-backdrop-filter: var(--filter-blur);
   backdrop-filter: var(--filter-blur);
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -1483,7 +1509,7 @@ body#index-page {
   padding: 16px;
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
   border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
   border-radius: var(--border-radius-lg);
   box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
@@ -1647,7 +1673,7 @@ input:checked + .switch-slider {
 
 /* 工具栏 */
 .viewer-toolbar {
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.5));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(30, 30, 30, 0.5));
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
   border-radius:var(--border-radius-md);
@@ -1764,7 +1790,7 @@ input:checked + .switch-slider {
   color: var(--word-color);
   line-height: 1.3;
   
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(40, 40, 40, 0.6));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(40, 40, 40, 0.6));
   -webkit-backdrop-filter: var(--filter-blur);
   backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
@@ -1877,7 +1903,7 @@ input:checked + .switch-slider {
 
 /* 评论输入框容器 */
 .comment-input-wrapper {
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.05));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
@@ -2577,7 +2603,7 @@ input:checked + .switch-slider {
   color: var(--word-color);
   
   /* SatinAu Design 玻璃拟态背景 */
-  background: light-dark(rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.05));
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
   border-radius: var(--border-radius-lg);
   backdrop-filter: var(--filter-blur);
