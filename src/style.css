@@ -48,13 +48,11 @@
   font-family: var(--global-font);
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
 html, body {
+  /* 使用 clip 代替 hidden，既能防止横向抖动，又不破坏粘性动画 */
+  overflow-x: clip; 
+  /* 确保宽度正确 */
   width: 100%;
-  overflow-x: hidden; /* 强制禁止水平溢出 */
   position: relative;
 }
 
@@ -140,8 +138,6 @@ body {
   color: var(--word-color);
   opacity: 0;
   transition: opacity 0.8s ease;
-  overflow-x: hidden; /* 禁止横向滚动 */
-  width: 100%;
   box-sizing: border-box;
   background: transparent !important; /* 透明背景，让色块直接作为底层 */
 }
