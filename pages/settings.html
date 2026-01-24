@@ -107,7 +107,10 @@
       <div class="setting-item">
         <label for="hdrModeToggle">
           HDR 图片模式 (Beta)
-          <span class="tooltip">开启后加载 AVIF 高动态范围图片，色彩更艳丽。若显示异常或黑屏，请关闭此项（默认使用 WEBP）。</span>
+          <span class="tooltip">
+            开启后加载 AVIF 高动态范围图片，色彩更艳丽<br>
+            若显示异常或黑屏，请关闭此项（默认使用 WEBP）
+          </span>
         </label>
         <div class="toggle-switch">
           <input type="checkbox" id="hdrModeToggle" onchange="toggleHDRMode()">
@@ -134,11 +137,22 @@
       <div class="setting-item">
         <label for="autoHideNavToggle">
           自动隐藏导航栏
-          <span class="tooltip">向下滚动时隐藏导航栏，向上滚动时显示（默认关闭）</span>
+          <span class="tooltip">向下滚动时隐藏导航栏，向上滚动时显示（默认禁用）</span>
         </label>
         <div class="toggle-switch">
           <input type="checkbox" id="autoHideNavToggle" onchange="toggleAutoHideNav()">
           <label for="autoHideNavToggle" class="switch-slider"></label>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label for="customRightClickMenuToggle">
+          替换默认右键菜单
+          <span class="tooltip">启用后，将使用自带右键菜单替换浏览器默认菜单（默认启用）</span>
+        </label>
+        <div class="toggle-switch">
+          <input type="checkbox" id="customRightClickMenuToggle" onchange="toggleCustomRightClickMenu()">
+          <label for="customRightClickMenuToggle" class="switch-slider"></label>
         </div>
       </div>
 
@@ -159,17 +173,6 @@
             <input type="checkbox" id="chimeToggle" onchange="toggleHourlyChime()">
             <label for="chimeToggle" class="switch-slider"></label>
           </div>
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <label for="customRightClickMenuToggle">
-          替换默认右键菜单
-          <span class="tooltip">启用后，将使用自带右键菜单替换浏览器默认菜单（默认启用）</span>
-        </label>
-        <div class="toggle-switch">
-          <input type="checkbox" id="customRightClickMenuToggle" onchange="toggleCustomRightClickMenu()">
-          <label for="customRightClickMenuToggle" class="switch-slider"></label>
         </div>
       </div>
     </section>
