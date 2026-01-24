@@ -157,6 +157,31 @@
       </div>
 
       <div class="setting-item">
+        <label for="nativeNotificationToggle">
+          系统原生通知
+          <span class="tooltip">
+            允许网站推送重要公告和协议更新<br>
+            Windows 显示在通知中心，Android 显示在状态栏
+          </span>
+        </label>
+        
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- 测试按钮 -->
+          <button class="more-btn" 
+                  onclick="sendNativeNotification('来自 SatinAu 的问候', { body: '这是一条测试通知，点击可以回到网站。' }); if(!isNativeNotificationEnabled()) showToast('请先开启右侧开关并授权');" 
+                  style="width:auto; height:auto; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight:600; text-decoration:none; background:rgba(128,128,128,0.2); margin:0;">
+            测试
+          </button>
+          
+          <!-- 开关 -->
+          <div class="toggle-switch">
+            <input type="checkbox" id="nativeNotificationToggle" onchange="toggleNativeNotifications()">
+            <label for="nativeNotificationToggle" class="switch-slider"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-item">
         <label for="chimeToggle">
           整点报时
           <span class="tooltip">整点自动弹窗并播放 Westminster 钟声（需保持网页开启）</span>

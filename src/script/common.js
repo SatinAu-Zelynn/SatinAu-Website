@@ -408,6 +408,14 @@ document.addEventListener('DOMContentLoaded', function() {
       document.body.style.overflow = '';
     });
   });
+
+  // 初始化原生通知开关状态
+  const notifyToggle = document.getElementById('nativeNotificationToggle');
+  if (notifyToggle) {
+    // 只有当 localStorage 为 true 且 浏览器权限确实为 granted 时，UI才显示开启
+    // 这样如果用户在浏览器层面清理了权限，网页开关也会自动变回关闭
+    notifyToggle.checked = isNativeNotificationEnabled();
+  }
 });
 
 /* ========== 自定义右键菜单逻辑 ========== */
@@ -1047,4 +1055,128 @@ document.addEventListener('DOMContentLoaded', () => {
   if (toggle) {
     toggle.checked = isAutoHideNavEnabled();
   }
+});
+
+/* ========== 原生系统通知逻辑 ========== */
+const NATIVE_NOTIFY_KEY = 'setting_native_notifications_enabled';
+
+// 判断是否可以使用原生通知 (设置开启且浏览器已授权)
+function isNativeNotificationEnabled() {
+  const setting = localStorage.getItem(NATIVE_NOTIFY_KEY);
+  // 默认为 false (关闭)
+  return setting === 'true' && ("Notification" in window) && Notification.permission === 'granted';
+}
+
+// 发送原生通知的通用函数
+// 参数: title (标题), options (body, icon, tag, data 等)
+// url (可选): 点击通知后跳转的链接
+window.sendNativeNotification = function(title, options = {}, url = null) {
+  if (!isNativeNotificationEnabled()) return;
+
+  // 默认配置
+  const defaultOptions = {
+    icon: '/public/favicon.ico', // 建议换成你的 logo 图片路径
+    badge: '/public/favicon.ico', // 安卓状态栏小图标
+    vibrate: [200, 100, 200],     // 移动端震动模式
+    ...options
+  };
+
+  try {
+    const notification = new Notification(title, defaultOptions);
+
+    // 点击通知的交互
+    notification.onclick = function(event) {
+      event.preventDefault();
+      notification.close();
+      
+      // 如果提供了URL，点击跳转
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        window.focus();
+      }
+    };
+  } catch (e) {
+    console.warn("发送原生通知失败:", e);
+  }
+};
+
+// 切换开关（供 settings.html 调用）
+window.toggleNativeNotifications = function() {
+  const checkbox = document.getElementById('nativeNotificationToggle');
+  const wantEnabled = checkbox.checked;
+
+  if (!("Notification" in window)) {
+    showToast("您的浏览器不支持原生通知功能");
+    checkbox.checked = false;
+    return;
+  }
+
+  if (wantEnabled) {
+    // 用户想要开启
+    if (Notification.permission === "granted") {
+      // 已经有权限，直接开启
+      localStorage.setItem(NATIVE_NOTIFY_KEY, 'true');
+      showToast("系统通知：已启用");
+      // 发送一条测试通知确认
+      sendNativeNotification("通知已开启", { body: "以后您将收到重要的公告和更新提醒。" });
+    } else if (Notification.permission !== "denied") {
+      // 从未询问过，请求权限
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          localStorage.setItem(NATIVE_NOTIFY_KEY, 'true');
+          showToast("系统通知：授权成功并已启用");
+          sendNativeNotification("通知已开启", { body: "以后您将收到重要的公告和更新提醒。" });
+        } else {
+          // 用户拒绝
+          checkbox.checked = false;
+          showToast("您拒绝了通知权限，无法开启");
+        }
+      });
+    } else {
+      // 之前已经被拒绝过，需要手动去浏览器设置开启
+      checkbox.checked = false;
+      showToast("权限曾被拒绝，请在浏览器设置中手动允许通知");
+    }
+  } else {
+    // 用户想要关闭
+    localStorage.setItem(NATIVE_NOTIFY_KEY, 'false');
+    showToast("系统通知：已禁用");
+  }
+};
+
+/* ========== 自动获取远程通知逻辑 ========== */
+function fetchRemoteNotice() {
+  // 仅在开启了通知权限时才去请求后端，节省流量
+  if (!isNativeNotificationEnabled()) return;
+
+  const NOTICE_URL = 'https://blog.satinau.cn/data/notice.json';
+  const LAST_ID_KEY = 'last_processed_notice_id';
+
+  fetch(NOTICE_URL, { cache: 'no-cache' })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.active) return;
+
+      const lastId = localStorage.getItem(LAST_ID_KEY);
+      // 如果当前的 ID 大于本地记录的 ID，说明是新通知
+      if (!lastId || parseInt(data.id) > parseInt(lastId)) {
+        
+        // 调用你现有的接口
+        window.sendNativeNotification(data.title, {
+          body: data.content,
+          tag: 'remote-notice', // 使用固定 tag 确保新通知覆盖旧的
+          requireInteraction: true // 通知不自动消失，直到用户点击
+        }, data.url);
+
+        // 更新本地 ID，防止重复弹出
+        localStorage.setItem(LAST_ID_KEY, data.id);
+      }
+    })
+    .catch(err => console.error('获取远程通知失败:', err));
+}
+
+// 页面加载 3 秒后检查一次通知（避开启动峰值）
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(fetchRemoteNotice, 3000);
 });
