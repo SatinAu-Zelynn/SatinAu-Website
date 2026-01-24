@@ -60,20 +60,27 @@ html, body {
 
 /* Webkit 核心浏览器 (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-  width: 14px;  /* 设置较宽的触控/点击区域 */
-  height: 14px; /* 横向滚动条高度 */
-}
-
-::-webkit-scrollbar-track {
-  background: transparent; 
+  width: 12px;  /* 调整为斜纹样式中的宽度 */
+  height: 12px; /* 调整横向滚动条高度 */
 }
 
 ::-webkit-scrollbar-thumb {
-  /* 默认状态：半透明灰色/白色，融入背景 */
-  background-color: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.15));
-  border-radius: 999px; /* 胶囊圆角 */
+  /* 斜纹拼色样式 */
+  background-color: var(--primary-color);
+  background-image: -webkit-linear-gradient(
+    45deg, 
+    rgba(255, 255, 255, .4) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255, 255, 255, .4) 50%, 
+    rgba(255, 255, 255, .4) 75%, 
+    transparent 75%, 
+    transparent
+  );
+  border-radius: 2em; /* 胶囊圆角 */
   
-  border: 5px solid transparent; 
+  /* 保持原有边框和背景裁剪 */
+  border: 2px solid light-dark(#f7f9fe, #212121); /* 边框颜色与轨道匹配 */
   background-clip: content-box; /* 让背景色仅填充在内盒，不覆盖边框区域 */
   
   transition: background-color 0.3s ease, border-width 0.2s ease;
@@ -81,27 +88,38 @@ html, body {
 
 /* 鼠标悬停在滚动条上时 */
 ::-webkit-scrollbar-thumb:hover {
-  /* 加深颜色，增加可视度 */
-  background-color: light-dark(rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.4));
-  /* 边框变窄，视觉上滑块变粗，提示可点击 */
-  border-width: 3px; 
+  display: block !important;
+  
+  /* 边框变窄，视觉上滑块变粗 */
+  border-width: 1px;
 }
 
 /* 正在拖拽滚动条时 */
 ::-webkit-scrollbar-thumb:active {
   background-color: var(--primary-color);
-  border-width: 3px;
+  border-width: 1px;
+  background-color: color-mix(in srgb, var(--primary-color), black 20%);
+  background-image: -webkit-linear-gradient(
+    45deg, 
+    rgba(255, 255, 255, .2) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255, 255, 255, .2) 50%, 
+    rgba(255, 255, 255, .2) 75%, 
+    transparent 75%, 
+    transparent
+  );
 }
 
 /* 横竖滚动条交接处 */
 ::-webkit-scrollbar-corner {
-  background: transparent;
+  background: light-dark(#f7f9fe, #212121);
 }
 
-@supports (scrollbar-color: auto) {
-  * {
-    scrollbar-width: thin; /* 细滚动条 */
-    scrollbar-color: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2)) transparent;
+/* 减少动效偏好设置 */
+@media (prefers-reduced-motion: reduce) {
+  ::-webkit-scrollbar-thumb {
+    transition: none;
   }
 }
 
