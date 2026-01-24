@@ -1180,3 +1180,33 @@ function fetchRemoteNotice() {
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(fetchRemoteNotice, 3000);
 });
+
+/* ========== 恢复默认设置 ========== */
+window.restoreDefaultSettings = function() {
+  // 使用简单的确认框，或者后续可以用 GlobalModal 替换
+  if (confirm('确定要恢复所有设置到默认状态吗？\n页面将会刷新，您的自定义选项将丢失。')) {
+    
+    // 定义所有在 common.js 中使用的设置 Key
+    const settingsKeys = [
+      'setting_font_mode',                  // 字体
+      'setting_theme_color',                // 主题色
+      'setting_theme_mode',                 // 颜色模式
+      'setting_performance_mode_enabled',   // 性能模式
+      'setting_autohide_nav_enabled',       // 导航栏隐藏
+      'setting_native_notifications_enabled', // 系统通知
+      'setting_hourly_chime_enabled',       // 整点报时
+      'setting_custom_context_menu_enabled', // 右键菜单
+      'enableHDR'                           // HDR 模式
+    ];
+
+    // 移除这些 Key
+    settingsKeys.forEach(key => localStorage.removeItem(key));
+
+    showToast("正在重置...");
+    
+    // 延迟一小会儿刷新，让用户看到提示
+    setTimeout(() => {
+      location.reload();
+    }, 500);
+  }
+};

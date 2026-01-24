@@ -39,7 +39,7 @@ if [ -n "$CF_PAGES" ]; then
     fi
 
     # 拼接 Cloudflare 专用 HTML
-    FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态托管和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
+    FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 elif [ -n "$VERCEL" ]; then
     # --- Vercel 环境 ---
@@ -54,7 +54,7 @@ elif [ -n "$VERCEL" ]; then
     fi
 
     # 拼接 Vercel 专用 HTML
-    FINAL_INFO="${SVG_VERCEL} Vercel 提供静态托管服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
+    FINAL_INFO="${SVG_VERCEL} Vercel 提供静态部署服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 else
     # --- 本地/其他环境 (回退方案) ---

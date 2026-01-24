@@ -109,3 +109,7 @@
         }
     }
 }
+
+.viewer-canvas {
+  background-color: light-dark(rgba(0, 0, 0, 0.35), rgba(20, 20, 20, 0.35)) !important;
+}

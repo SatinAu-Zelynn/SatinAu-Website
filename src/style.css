@@ -2649,3 +2649,57 @@ input:checked + .switch-slider {
 .search-wrapper:focus-within .search-icon {
   color: var(--primary-color);
 }
+
+/* ========== 设置页面 - 顶部操作区 ========== */
+.action-container {
+  max-width: 960px;
+  margin: 0 auto 10px;
+  display: flex;
+  justify-content: center;
+  /* 进场动画复用 */
+  opacity: 0;
+  animation: blurFadeUp 1.2s ease forwards;
+  animation-delay: 0.1s;
+}
+
+.reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  
+  /* 红色半透明玻璃态背景 */
+  background: light-dark(rgba(255, 59, 48, 0.1), rgba(255, 69, 58, 0.15));
+  border: 1px solid light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.2));
+  color: light-dark(#ff3b30, #ff453a);
+  
+  border-radius: 99px; /* 全圆角胶囊形 */
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.1);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reset-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.4s ease;
+}
+
+.reset-btn:hover {
+  background: light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.3));
+  box-shadow: 0 6px 16px rgba(255, 59, 48, 0.2);
+  transform: translateY(-2px);
+}
+
+.reset-btn:hover svg {
+  transform: rotate(-180deg);
+}
+
+.reset-btn:active {
+  transform: scale(0.96);
+}
