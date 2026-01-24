@@ -48,6 +48,16 @@
   font-family: var(--global-font);
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden; /* 强制禁止水平溢出 */
+  position: relative;
+}
+
 /* ========== 全局滚动条美化 ========== */
 
 /* Webkit 核心浏览器 (Chrome, Safari, Edge) */
