@@ -614,16 +614,16 @@ function initCustomSelect(wrapper) {
     option.addEventListener('click', (e) => {
       e.stopPropagation();
       
-      // 1. 移除其他选项的 selected 类
+      // 移除其他选项的 selected 类
       options.forEach(o => o.classList.remove('selected'));
-      // 2. 给当前选项添加 selected 类
+      // 给当前选项添加 selected 类
       option.classList.add('selected');
-      // 3. 更新触发器文字
+      // 更新触发器文字
       triggerText.textContent = option.textContent;
-      // 4. 关闭菜单
+      // 关闭菜单
       wrapper.classList.remove('open');
       
-      // 5. 执行实际功能
+      // 执行实际功能
       const mode = option.dataset.value;
       localStorage.setItem(FONT_KEY, mode);
       applyFontMode(mode);
@@ -638,7 +638,7 @@ function initCustomSelect(wrapper) {
   });
 }
 
-// 3. 核心功能：应用字体变量
+// 应用字体变量
 function applyFontMode(mode) {
   const root = document.documentElement;
   if (mode === 'serif') {
@@ -666,7 +666,7 @@ const THEME_PRESETS = {
   'cyan':    ['#00C7BE', '#59DAC6']  // 青色
 };
 
-// 1. 初始化逻辑 (页面加载时执行)
+// 初始化逻辑 (页面加载时执行)
 document.addEventListener('DOMContentLoaded', () => {
   // 无论在哪个页面，都要应用当前保存的主题色
   const savedColorKey = localStorage.getItem(THEME_COLOR_KEY) || 'default';
@@ -679,7 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// 2. 核心功能：应用主题色变量
+// 核心功能：应用主题色变量
 function applyThemeColor(key) {
   const colors = THEME_PRESETS[key] || THEME_PRESETS['default'];
   const root = document.documentElement;
@@ -691,7 +691,7 @@ function applyThemeColor(key) {
   root.style.setProperty('--primary-color', colorValue);
 }
 
-// 3. 初始化 UI
+// 初始化 UI
 function initThemeColorSelector(wrapper, currentKey) {
   // 清空现有内容（防止重复初始化）
   wrapper.innerHTML = '';
@@ -713,15 +713,15 @@ function initThemeColorSelector(wrapper, currentKey) {
 
     // 点击事件
     swatch.addEventListener('click', () => {
-      // 1. 移除其他选中状态
+      // 移除其他选中状态
       wrapper.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-      // 2. 选中当前
+      // 选中当前
       swatch.classList.add('selected');
-      // 3. 保存设置
+      // 保存设置
       localStorage.setItem(THEME_COLOR_KEY, key);
-      // 4. 立即应用
+      // 立即应用
       applyThemeColor(key);
-      // 5. 提示
+      // 提示
       // 简单的中文映射
       const nameMap = {
         'default': '默认蓝', 'purple': '霓虹紫', 'pink': '活力粉',
@@ -955,7 +955,7 @@ function toggleHDRMode() {
 /* ========== 颜色模式切换逻辑 (Light/System/Dark) ========== */
 const THEME_MODE_KEY = 'setting_theme_mode';
 
-// 1. 核心应用函数
+// 核心应用函数
 function applyThemeMode(mode) {
   const root = document.documentElement;
   // 移除之前的属性
@@ -973,7 +973,7 @@ function applyThemeMode(mode) {
   }
 }
 
-// 2. 初始化逻辑
+// 初始化逻辑
 document.addEventListener('DOMContentLoaded', () => {
   // 读取当前设置（默认为 null，即 System）
   const savedMode = localStorage.getItem(THEME_MODE_KEY) || 'system';
@@ -998,11 +998,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 绑定点击事件
       btn.addEventListener('click', () => {
-        // 1. 视觉切换
+        // 视觉切换
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         
-        // 2. 逻辑应用
+        // 逻辑应用
         const selectedMode = btn.dataset.value;
         
         if (selectedMode === 'system') {
@@ -1075,7 +1075,7 @@ window.sendNativeNotification = function(title, options = {}, url = null) {
 
   // 默认配置
   const defaultOptions = {
-    icon: '/public/favicon.ico', // 建议换成你的 logo 图片路径
+    icon: '/public/favicon.ico', // logo 图片
     badge: '/public/favicon.ico', // 安卓状态栏小图标
     vibrate: [200, 100, 200],     // 移动端震动模式
     ...options
@@ -1162,7 +1162,7 @@ function fetchRemoteNotice() {
       // 如果当前的 ID 大于本地记录的 ID，说明是新通知
       if (!lastId || parseInt(data.id) > parseInt(lastId)) {
         
-        // 调用你现有的接口
+        // 调用现有的接口
         window.sendNativeNotification(data.title, {
           body: data.content,
           tag: 'remote-notice', // 使用固定 tag 确保新通知覆盖旧的
