@@ -46,7 +46,14 @@ function fetchJSON(url) {
             reject(new Error(`请求超时: ${url}`));
         }, CONFIG.timeout);
 
-        https.get(url, (res) => {
+        const options = {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json'
+            }
+        };
+
+        https.get(url, options, (res) => {
             let data = '';
 
             if (res.statusCode !== 200) {
