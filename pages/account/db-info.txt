@@ -1,0 +1,221 @@
+DB代码如下
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+email TEXT UNIQUE NOT NULL,
+password_hash TEXT NOT NULL,
+nickname TEXT,
+avatar TEXT,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+Worker代码如下
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    
+    // 设置 CORS 头，允许你的前端访问
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*", // 生产环境请改为 "https://satinau.cn"
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    };
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    try {
+      if (path === "/api/auth/register" && request.method === "POST") {
+        return await register(request, env, corsHeaders);
+      } 
+      else if (path === "/api/auth/login" && request.method === "POST") {
+        return await login(request, env, corsHeaders);
+      } 
+      else if (path === "/api/user/me" && request.method === "GET") {
+        return await getUserProfile(request, env, corsHeaders);
+      }
+      else if (path === "/api/user/avatar" && request.method === "POST") {
+        return await updateAvatar(request, env, corsHeaders);
+      }
+
+      return new Response("Not Found", { status: 404, headers: corsHeaders });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+  }
+};
+
+/* ===== 业务逻辑 ===== */
+
+async function register(req, env, cors) {
+  const { email, password, nickname } = await req.json();
+  
+  if (!email || !password || !nickname) 
+    return error(cors, "Missing fields");
+
+  // 1. 检查邮箱是否存在
+  const exists = await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
+  if (exists) return error(cors, "Email already exists", 409);
+
+  // 2. 密码哈希 (PBKDF2)
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await hashPassword(password, salt);
+  const storedPass = `${toHex(salt)}:${toHex(hash)}`; // 格式: salt:hash
+
+  // 3. 插入数据库
+  await env.DB.prepare(
+    "INSERT INTO users (email, password_hash, nickname) VALUES (?, ?, ?)"
+  ).bind(email, storedPass, nickname).run();
+
+  return json(cors, { success: true });
+}
+
+async function login(req, env, cors) {
+  const { email, password } = await req.json();
+  
+  const user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
+  if (!user) return error(cors, "User not found", 401);
+
+  // 验证密码
+  const [saltHex, hashHex] = user.password_hash.split(':');
+  const salt = fromHex(saltHex);
+  const verifyHash = await hashPassword(password, salt);
+  
+  if (toHex(verifyHash) !== hashHex) {
+    return error(cors, "Invalid password", 401);
+  }
+
+  // 生成 Token (这里简单用 Base64 模拟 JWT，生产环境请引入 jose 库签发真实 JWT)
+  // 格式: userId.expiryTimestamp.signature(fake)
+  const token = btoa(JSON.stringify({ uid: user.id, exp: Date.now() + 86400000 })); 
+
+  return json(cors, { 
+    token, 
+    user: { id: user.id, nickname: user.nickname, email: user.email, avatar: user.avatar } 
+  });
+}
+
+async function getUserProfile(req, env, cors) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return error(cors, "Unauthorized", 401);
+
+  try {
+    const token = authHeader.split(" ")[1];
+    const payload = JSON.parse(atob(token)); // 解析 Token
+    
+    if (payload.exp < Date.now()) return error(cors, "Token expired", 401);
+
+    const user = await env.DB.prepare(
+      "SELECT id, nickname, email, avatar, created_at FROM users WHERE id = ?"
+    ).bind(payload.uid).first();
+
+    return json(cors, user);
+  } catch (e) {
+    return error(cors, "Invalid token", 401);
+  }
+}
+
+/* ===== 工具函数 ===== */
+
+function json(cors, data) {
+  return new Response(JSON.stringify(data), {
+    headers: { ...cors, "Content-Type": "application/json" }
+  });
+}
+
+function error(cors, msg, status = 400) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" }
+  });
+}
+
+// 密码加密逻辑 (Web Crypto API)
+async function hashPassword(password, salt) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveBits", "deriveKey"]
+  );
+  return await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+    key, 256
+  );
+}
+
+function toHex(buffer) {
+  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function fromHex(hex) {
+  return new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+}
+
+async function updateAvatar(req, env, cors) {
+  // 1. 验证 Token (与 getUserProfile 逻辑相同)
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return error(cors, "Unauthorized", 401);
+
+  let userId;
+  try {
+    const token = authHeader.split(" ")[1];
+    const payload = JSON.parse(atob(token));
+    if (payload.exp < Date.now()) return error(cors, "Token expired", 401);
+    userId = payload.uid;
+  } catch (e) {
+    return error(cors, "Invalid token", 401);
+  }
+
+  // 2. 解析 FormData 获取文件
+  const formData = await req.formData();
+  const file = formData.get('avatar');
+
+  if (!file || !(file instanceof File)) {
+    return error(cors, "No file uploaded");
+  }
+
+  // 3. 校验大小 (后端二次校验，例如限制 2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    return error(cors, "File too large (Max 2MB)");
+  }
+
+  // 4. 将文件转换为 Base64 DataURI
+  // 注意：在生产环境中，大文件建议存入 Cloudflare R2，Base64 存数据库仅适合小文件
+  const arrayBuffer = await file.arrayBuffer();
+  
+  // 防止堆栈溢出的 Base64 转换方式
+  let binary = '';
+  const bytes = new Uint8Array(arrayBuffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+  
+  const mimeType = file.type || 'image/png';
+  const avatarUrl = `data:${mimeType};base64,${base64}`;
+
+  // 5. 更新数据库
+  try {
+    const result = await env.DB.prepare(
+      "UPDATE users SET avatar = ? WHERE id = ?"
+    ).bind(avatarUrl, userId).run();
+
+    if (result.meta.changes === 0) {
+      return error(cors, "User not found or update failed", 404);
+    }
+
+    // 6. 返回成功及新的头像地址
+    return json(cors, { success: true, avatar: avatarUrl });
+
+  } catch (e) {
+    return error(cors, "Database error: " + e.message, 500);
+  }
+}

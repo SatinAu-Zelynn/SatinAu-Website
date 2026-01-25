@@ -143,6 +143,9 @@ async function initProfilePage() {
         renderProfile(JSON.parse(cachedUser));
     }
 
+    // 初始化头像上传监听
+    initAvatarUpload(token);
+
     try {
         // 从服务器获取最新数据
         const res = await fetch(`${API_BASE}/api/user/me`, {
@@ -188,11 +191,84 @@ async function initProfilePage() {
     });
 }
 
+// 头像上传逻辑
+function initAvatarUpload(token) {
+    const avatarWrapper = document.getElementById('avatarWrapper');
+    const avatarInput = document.getElementById('avatarInput');
+
+    if (!avatarWrapper || !avatarInput) return;
+
+    // 点击头像触发文件选择
+    avatarWrapper.addEventListener('click', () => {
+        avatarInput.click();
+    });
+
+    // 监听文件选择变化
+    avatarInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 校验文件类型
+        if (!file.type.startsWith('image/')) {
+            showToast('请选择图片文件');
+            return;
+        }
+
+        // 校验文件大小 (例如限制 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('图片大小不能超过 2MB');
+            return;
+        }
+
+        // 准备上传
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        showToast('正在上传头像...', 0); // 0 表示不自动消失
+
+        try {
+            // 假设后端接口为 /api/user/avatar，接收 multipart/form-data
+            const res = await fetch(`${API_BASE}/api/user/avatar`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                    // 注意：Fetch 使用 FormData 时不需要手动设置 Content-Type，浏览器会自动设置 boundary
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || '头像上传失败');
+
+            // 上传成功，更新页面显示
+            const newAvatarUrl = data.avatar || data.url; // 根据后端返回字段调整
+            document.getElementById('userAvatar').src = newAvatarUrl;
+            
+            // 更新本地缓存
+            const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+            userInfo.avatar = newAvatarUrl;
+            localStorage.setItem('user_info', JSON.stringify(userInfo));
+
+            showToast('头像修改成功！');
+
+        } catch (err) {
+            console.error(err);
+            showToast(err.message || '上传出错');
+        } finally {
+            // 清空 input，允许重复上传同一张图
+            avatarInput.value = '';
+        }
+    });
+}
+
 function renderProfile(user) {
     document.getElementById('userNickname').textContent = user.nickname;
     document.getElementById('userEmail').textContent = user.email;
     document.getElementById('userId').textContent = user.id;
-    document.getElementById('userAvatar').src = user.avatar || `/public/guest.png`;
+    // 增加时间戳防止缓存导致头像不更新
+    const avatarSrc = user.avatar ? user.avatar : `/public/guest.png`;
+    document.getElementById('userAvatar').src = avatarSrc;
     
     if(user.created_at) {
         const date = new Date(user.created_at);
