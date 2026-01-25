@@ -20,7 +20,10 @@ class NavigateBar extends HTMLElement {
   }
 
   connectedCallback() {
-    let filename = window.location.pathname.split('/').pop();
+    // --- 定义 pathname 变量 ---
+    const pathname = window.location.pathname;
+    
+    let filename = pathname.split('/').pop();
     let currentPath;
 
     // 移除可能的 .html 扩展名，得到用于匹配的基础路径名
@@ -30,8 +33,20 @@ class NavigateBar extends HTMLElement {
         currentPath = filename; // 如果没有 .html，直接使用文件名
     }
 
-    if (currentPath === '' || currentPath.toLowerCase() === 'index.html') {
-        currentPath = 'index';
+    // 如果当前路径解析为 'index' 或为空（默认页），需进一步判断是根目录还是子目录
+    if (currentPath === '' || currentPath.toLowerCase() === 'index') {
+        // 只有当路径严格等于根目录时，才认定为导航栏的 "index" (主页)
+        if (pathname === '/' || pathname === '/index.html') {
+            currentPath = 'index';
+        } else {
+            const pathParts = pathname.split('/').filter(p => p);
+            if (pathParts.length >= 2) {
+                // 取倒数第二个元素作为标识 (例如 /pages/account/index.html -> account)
+                currentPath = pathParts[pathParts.length - 2];
+            } else {
+                currentPath = 'subpage'; // 兜底
+            }
+        }
     }
     
     // 主导航项数据
