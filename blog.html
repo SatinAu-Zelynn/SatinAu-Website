@@ -61,11 +61,6 @@
         <h1>博客 Blog</h1>
       </div>
       <div class="greeting" id="greeting"></div>
-      <div class="auth-controls">
-        <button id="loginBtn" style="display: none;">登录</button>
-        <div id="userInfo" style="display: none;"></div>
-        <button id="logoutBtn" style="display: none;">退出</button>
-      </div>
     </header>
 
     <section>
@@ -151,33 +146,6 @@
     <script src="src/script/components/footer.js"></script>
     <site-footer></site-footer>
   </main>
-
-  <!-- 登录弹窗 -->
-  <div id="authOverlay" class="overlay"></div>
-
-  <div id="authModal" class="modal" style="min-width:300px">
-    <h3>用户登录</h3>
-    <div class="auth-tabs">
-      <button class="tab-btn active" data-tab="email">邮箱登录</button>
-      <button class="tab-btn" data-tab="oauth">第三方登录</button>
-    </div>
-  
-    <!-- 邮箱登录表单 -->
-    <div id="emailTab" class="auth-tab">
-      <input type="email" id="email" placeholder="邮箱" required>
-      <input type="password" id="password" placeholder="密码" required>
-      <button id="emailLoginBtn">登录</button>
-      <button id="signupBtn">注册</button>
-      <p id="authError" style="color: red;"></p>
-    </div>
-  
-    <!-- 第三方登录 -->
-    <div id="oauthTab" class="auth-tab" style="display: none;">
-      <button id="githubLoginBtn">GitHub 登录</button>
-      <button id="googleLoginBtn">Google 登录</button>
-    </div>
-    <button id="closeAuthModal">关闭</button>
-  </div>
 
   <!-- 加载动画 -->
   <div id="loadingOverlay" class="loading-overlay">
