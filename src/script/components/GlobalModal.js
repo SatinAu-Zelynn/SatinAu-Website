@@ -105,6 +105,30 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
+  // 通用确认操作
+  // ==========================================
+  confirmAction(message, onConfirm) {
+    this.modal.className = 'modal ios-alert';
+    
+    // 使用 pre-line 保留换行符，并设置危险操作的红色按钮
+    this.content.innerHTML = `
+      <p style="white-space: pre-line;">${message}</p>
+      <div class="actions">
+        <button class="cancel" id="modalCancel">取消</button>
+        <button class="confirm" id="modalConfirm" style="color: #ff3b30; font-weight: 600;">确认恢复</button>
+      </div>
+    `;
+
+    this.querySelector('#modalCancel').onclick = () => this.close();
+    this.querySelector('#modalConfirm').onclick = () => {
+      if (onConfirm) onConfirm();
+      this.close();
+    };
+
+    this.show();
+  }
+
+  // ==========================================
   // 微信二维码
   // ==========================================
   wechat() {

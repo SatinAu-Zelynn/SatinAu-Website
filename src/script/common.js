@@ -1183,9 +1183,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ========== 恢复默认设置 ========== */
 window.restoreDefaultSettings = function() {
-  // 使用简单的确认框，或者后续可以用 GlobalModal 替换
-  if (confirm('确定要恢复所有设置到默认状态吗？\n页面将会刷新，您的自定义选项将丢失。')) {
-    
+  // 查找或创建 GlobalModal 实例
+  let modal = document.querySelector('global-modal');
+  if (!modal) {
+    modal = document.createElement('global-modal');
+    document.body.appendChild(modal);
+  }
+
+  // 定义具体的重置逻辑
+  const doReset = () => {
     // 定义所有在 common.js 中使用的设置 Key
     const settingsKeys = [
       'setting_font_mode',                  // 字体
@@ -1208,5 +1214,14 @@ window.restoreDefaultSettings = function() {
     setTimeout(() => {
       location.reload();
     }, 500);
+  };
+
+  // 优先使用 GlobalModal，如果组件未加载则降级使用原生 confirm
+  if (modal.confirmAction) {
+    modal.confirmAction('确定要恢复所有设置到默认状态吗？\n页面将会刷新，您的自定义选项将丢失。', doReset);
+  } else {
+    if (confirm('确定要恢复所有设置到默认状态吗？\n页面将会刷新，您的自定义选项将丢失。')) {
+      doReset();
+    }
   }
 };
