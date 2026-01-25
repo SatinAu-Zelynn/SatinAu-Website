@@ -8,7 +8,7 @@ echo "[BUILD] 开始生成构建信息..."
 
 echo "[BUILD] 正在生成Sitemap..."
 if command -v node &> /dev/null; then
-    node src/script/generate-sitemap.js
+    node src/script/generate-sitemap.js || echo "[BUILD] 警告：Sitemap生成遇到错误，跳过生成..."
     if [ $? -eq 0 ]; then
         echo "[BUILD] Sitemap生成成功"
     else
