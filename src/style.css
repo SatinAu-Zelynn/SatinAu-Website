@@ -1240,8 +1240,8 @@ body#index-page {
 }
 
 /* ======== 博客 Markdown 正文排版（轻量） ======== */
-.md-article { max-width: 860px; margin: 0 auto; text-align: left; 
-  .post-meta { margin-bottom: 18px; }}
+.md-article { max-width: 860px; margin: 0 auto; text-align: left; padding-top: 40px;
+  .post-meta { margin-bottom: 18px; margin-top: 0; padding-top: 20px; }}
 
 /* 返回按钮样式 */
 .back-button {
@@ -1259,7 +1259,8 @@ body#index-page {
   box-shadow: 0 8px 24px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  margin-top: 0;
   svg {
     width: 20px;
     height: 20px;
