@@ -1,0 +1,25 @@
+{
+  "buildCommand": "bash build.sh",
+  "outputDirectory": ".",
+  "installCommand": "npm install",
+  "env": {
+    "NODE_VERSION": "18.x"
+  },
+  "rewrites": [
+    {
+      "source": "/blog",
+      "destination": "/blog.html"
+    },
+    {
+      "source": "/blog/",
+      "destination": "/blog.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/blog.html(\\?title=.*)?",
+      "destination": "/blog/",
+      "permanent": true
+    }
+  ]
+}

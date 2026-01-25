@@ -1,0 +1,32 @@
+name = "satinau-website"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# 构建配置
+[build]
+command = "bash build.sh"
+cwd = "./"
+watch_paths = ["src/**/*.ts", "src/**/*.js", "pages/**/*.html", "blog.html", "index.html", "zelynn.html"]
+
+# Cloudflare Pages 构建输出
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[env.staging]
+vars = { ENVIRONMENT = "staging" }
+
+# 路由规则
+[[routes]]
+pattern = "/blog.html"
+status_code = 301
+redirect = "/blog/"
+
+[[routes]]
+pattern = "/blog"
+status_code = 301
+redirect = "/blog/"
+
+[[routes]]
+pattern = "/blog/index.json"
+zone_id = "auto"
+custom_domain = true
