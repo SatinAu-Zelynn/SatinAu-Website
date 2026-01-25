@@ -1218,7 +1218,11 @@ window.restoreDefaultSettings = function() {
 
   // 优先使用 GlobalModal，如果组件未加载则降级使用原生 confirm
   if (modal.confirmAction) {
-    modal.confirmAction('确定要恢复所有设置到默认状态吗？\n页面将会刷新，您的自定义选项将丢失。', doReset);
+    modal.confirmAction(
+      '确定要恢复所有设置到默认状态吗？\n页面将会刷新，您的自定义选项将丢失。', 
+      doReset, 
+      '确认恢复'
+    );
   } else {
     if (confirm('确定要恢复所有设置到默认状态吗？\n页面将会刷新，您的自定义选项将丢失。')) {
       doReset();

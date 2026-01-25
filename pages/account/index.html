@@ -1,0 +1,167 @@
+<!--
+  Copyright 2025 缎金SatinAu
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人中心 - 缎金SatinAu</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <script src="/src/script/config.js"></script>
+  <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/CRCMenu.v2.js"></script>
+  <script src="/src/script/components/GlobalModal.js" defer></script>
+  <script src="/src/script/account.js" defer></script>
+  <style>
+    .profile-container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+
+      /* 进场动画 */
+      animation: blurFadeUp 0.8s ease forwards;
+
+      /* 玻璃拟态样式 */
+      background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+      border-radius: var(--border-radius-lg);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
+    }
+
+    .profile-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 3px solid var(--primary-color);
+      margin-bottom: 16px;
+      object-fit: cover;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.05));
+    }
+    .info-label { font-weight: 500; color: #888; }
+    .info-value { font-weight: 600; }
+    
+    .danger-zone {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px dashed light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+    }
+    
+    .logout-btn {
+      width: 100%;
+      padding: 12px;
+      background: light-dark(rgba(255, 59, 48, 0.1), rgba(255, 69, 58, 0.15));
+      color: light-dark(#ff3b30, #ff453a);
+      border: 1px solid currentColor;
+      border-radius: var(--border-radius-md);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .logout-btn:hover {
+      background: light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.25));
+    }
+
+    .logout-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body id="account-page">
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+
+  <main class="page">
+    <header>
+      <div class="title-row">
+        <h1>个人中心</h1>
+      </div>
+    </header>
+
+    <section>
+      <!-- 加载中状态 -->
+      <div id="loadingState">
+        <div class="spinner"></div>
+        <p>正在获取用户信息...</p>
+      </div>
+
+      <!-- 用户信息卡片 -->
+      <div id="profileCard" class="profile-container" style="display: none;">
+        <div class="profile-header">
+          <img id="userAvatar" src="/public/guest.png" alt="Avatar" class="profile-avatar">
+          <h2 id="userNickname" style="margin: 0; font-size: 1.5rem;">加载中...</h2>
+          <p id="userEmail" style="color: #888; font-size: 0.9rem; margin-top: 4px;"></p>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">用户 ID</span>
+          <span class="info-value" id="userId">...</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">注册时间</span>
+          <span class="info-value" id="userJoinDate">...</span>
+        </div>
+
+        <div class="danger-zone">
+          <button id="logoutBtn" class="logout-btn">退出登录</button>
+        </div>
+      </div>
+    </section>
+
+    <script src="/src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+
+  <!-- 加载动画 -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- 弹窗组件 -->
+  <global-modal id="globalModal"></global-modal>
+
+  <!-- 导航栏 -->
+  <script src="/src/script/components/navigate.js"></script>
+  <navigate-bar></navigate-bar>
+</body>
+</html>

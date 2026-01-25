@@ -107,7 +107,7 @@ class GlobalModal extends HTMLElement {
   // ==========================================
   // 通用确认操作
   // ==========================================
-  confirmAction(message, onConfirm) {
+  confirmAction(message, onConfirm, confirmBtnText = '确认') {
     this.modal.className = 'modal ios-alert';
     
     // 使用 pre-line 保留换行符，并设置危险操作的红色按钮
@@ -115,7 +115,7 @@ class GlobalModal extends HTMLElement {
       <p style="white-space: pre-line;">${message}</p>
       <div class="actions">
         <button class="cancel" id="modalCancel">取消</button>
-        <button class="confirm" id="modalConfirm" style="color: #ff3b30; font-weight: 600;">确认恢复</button>
+        <button class="confirm" id="modalConfirm" style="color: #ff3b30; font-weight: 600;">${confirmBtnText}</button>
       </div>
     `;
 

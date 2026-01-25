@@ -50,6 +50,33 @@ class NavigateBar extends HTMLElement {
       { label: '网站设置', href: 'settings' }
     ];
 
+    // --- 用户信息逻辑 ---
+    const token = localStorage.getItem('auth_token');
+    const userInfoRaw = localStorage.getItem('user_info');
+    let userHtml = '';
+
+    // 判断是否登录并生成对应HTML
+    if (token && userInfoRaw) {
+        try {
+            const user = JSON.parse(userInfoRaw);
+            const avatarUrl = user.avatar || '/public/guest.png';
+            userHtml = `
+              <div class="nav-user-card" onclick="window.location.href='/pages/account/index.html'">
+                <img src="${avatarUrl}" class="nav-user-avatar-small" alt="Avatar">
+                <div class="nav-user-info">
+                  <span class="nav-user-name">${user.nickname}</span>
+                  <span class="nav-user-status">个人中心</span>
+                </div>
+              </div>
+            `;
+        } catch (e) {
+            // 解析失败回退到登录
+            userHtml = this.getLoginHtml();
+        }
+    } else {
+        userHtml = this.getLoginHtml();
+    }
+
     // 构建HTML结构
     this.innerHTML = `
       <style>
@@ -59,7 +86,68 @@ class NavigateBar extends HTMLElement {
         .more-btn-svg {
           fill: light-dark(#111, #f5f5f5);
         }
+        
+        /* --- 分体式菜单分割线 --- */
+        .nav-separator {
+          height: 1px;
+          background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+          margin: 8px 12px;
+        }
+
+        /* --- 用户卡片区域 --- */
+        .nav-user-card {
+          display: flex;
+          align-items: center;
+          padding: 10px 12px;
+          margin: 4px 8px 8px 8px; /* 底部留点空隙 */
+          border-radius: var(--border-radius-md, 8px);
+          cursor: pointer;
+          transition: background 0.2s;
+          text-decoration: none;
+          color: inherit;
+        }
+        
+        .nav-user-card:hover {
+          background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+        }
+
+        .nav-user-avatar-small {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          margin-right: 12px;
+          object-fit: cover;
+          border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.2));
+        }
+
+        .nav-user-info {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.2;
+        }
+
+        .nav-user-name {
+          font-weight: 600;
+          font-size: 14px;
+          max-width: 120px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .nav-user-status {
+          font-size: 11px;
+          opacity: 0.6;
+        }
+
+        /* 未登录时的样式调整 */
+        .nav-login-btn {
+          justify-content: center;
+          font-weight: 600;
+          color: var(--primary-color, #007aff);
+        }
       </style>
+
       <nav class="bottom-nav">
         <div class="nav-avatar" onclick="window.location.href='/'">
           <img src="/public/favicon.ico" alt="Avatar">
@@ -97,6 +185,12 @@ class NavigateBar extends HTMLElement {
                 ${item.label}
               </a>
             `;}).join('')}
+
+            <!-- 分体式菜单：分割线 -->
+            <div class="nav-separator"></div>
+
+            <!-- 分体式菜单：用户区域 -->
+            ${userHtml}
           </div>
         </div>
       </nav>
@@ -138,6 +232,15 @@ class NavigateBar extends HTMLElement {
         ticking = true;
       }
     }, { passive: true });
+  }
+  
+  // 辅助方法：生成未登录HTML
+  getLoginHtml() {
+    return `
+      <div class="nav-user-card nav-login-btn" onclick="window.location.href='/pages/account/login.html'">
+        <span>登录 / 注册</span>
+      </div>
+    `;
   }
 }
 

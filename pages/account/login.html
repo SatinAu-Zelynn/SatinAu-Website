@@ -1,0 +1,191 @@
+<!--
+  Copyright 2025 缎金SatinAu
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>登录 - 缎金SatinAu</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&display=swap" as="style" onload='this.onload=null,this.rel="stylesheet"'>
+  <script src="/src/script/config.js"></script>
+  <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/CRCMenu.v2.js"></script>
+  <script src="/src/script/components/GlobalModal.js" defer></script>
+  <script src="/src/script/account.js" defer></script>
+  <!-- 引入样式补丁以适配表单 -->
+  <style>
+    .auth-container {
+      max-width: 400px;
+      margin: 100px auto 40px;
+      padding: 30px;
+      /* 进场动画 */
+      animation: blurFadeUp 0.8s ease forwards;
+      
+      background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+      border-radius: var(--border-radius-lg);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
+    }
+    
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 24px;
+      background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+      padding: 4px;
+      border-radius: var(--border-radius-md);
+    }
+    
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: var(--border-radius-sm);
+      font-weight: 600;
+      transition: all 0.3s ease;
+      color: var(--word-color);
+      opacity: 0.6;
+    }
+    
+    .auth-tab.active {
+      background: light-dark(#fff, #444);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      opacity: 1;
+      color: var(--primary-color);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      box-sizing: border-box;
+      border-radius: var(--border-radius-md);
+      border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.15));
+      background: light-dark(rgba(255,255,255,0.5), rgba(0,0,0,0.2));
+      color: var(--word-color);
+      font-size: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      background: light-dark(rgba(255,255,255,0.8), rgba(0,0,0,0.4));
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: var(--border-radius-md);
+      background: var(--primary-color);
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: opacity 0.3s ease, transform 0.2s ease;
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body id="login-page">
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+  
+  <main class="page">
+    <header>
+      <div class="title-row">
+        <h1>通行证</h1>
+      </div>
+    </header>
+
+    <div class="auth-container">
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="login">登录</div>
+        <div class="auth-tab" data-tab="register">注册</div>
+      </div>
+
+      <!-- 登录表单 -->
+      <form id="loginForm">
+        <div class="form-group">
+          <input type="email" class="form-input" placeholder="电子邮箱" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <input type="password" class="form-input" placeholder="密码" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="submit-btn">立即登录</button>
+      </form>
+
+      <!-- 注册表单 -->
+      <form id="registerForm" style="display: none;">
+        <div class="form-group">
+          <input type="text" id="reg-nickname" class="form-input" placeholder="昵称" required maxlength="12">
+        </div>
+        <div class="form-group">
+          <input type="email" id="reg-email" class="form-input" placeholder="电子邮箱" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <input type="password" id="reg-pwd" class="form-input" placeholder="密码 (至少6位)" required autocomplete="new-password" minlength="6">
+        </div>
+        <div class="form-group">
+          <input type="password" id="reg-pwd-confirm" class="form-input" placeholder="确认密码" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="submit-btn">注册账号</button>
+      </form>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="/" class="back-button" style="text-decoration: none;">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
+      </a>
+    </div>
+  </main>
+
+  <!-- 加载动画 -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- 弹窗组件 -->
+  <global-modal id="globalModal"></global-modal>
+</body>
+</html>
