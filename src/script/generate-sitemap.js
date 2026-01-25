@@ -154,8 +154,10 @@ async function main() {
         console.log('[Sitemap] Sitemap生成完成！');
     } catch (error) {
         console.error('[Sitemap] ✗ 生成Sitemap失败:');
-        console.error(`[Sitemap] ${error.message}`);
-        process.exit(1);
+        console.log('[Sitemap] 正在回退到生成仅含静态页面的Sitemap...');
+        const fallbackXML = generateSitemapXML(DEFAULT_PAGES, []); 
+        fs.writeFileSync(CONFIG.sitemapPath, fallbackXML, 'utf8');
+        process.exit(0); 
     }
 }
 

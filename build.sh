@@ -8,15 +8,16 @@ echo "[BUILD] 开始生成构建信息..."
 
 echo "[BUILD] 正在生成Sitemap..."
 if command -v node &> /dev/null; then
-    node src/script/generate-sitemap.js || echo "[BUILD] 警告：Sitemap生成遇到错误，跳过生成..."
-    if [ $? -eq 0 ]; then
-        echo "[BUILD] Sitemap生成成功"
+    if node src/script/generate-sitemap.js; then
+        echo "[BUILD] ✓ Sitemap生成成功"
     else
-        echo "[BUILD] 警告：Sitemap生成失败，继续构建..."
+        echo "[BUILD] ⚠️ 警告：Sitemap生成失败，将跳过此步继续构建..."
     fi
 else
-    echo "[BUILD] 警告：未检测到Node.js，跳过Sitemap生成"
+    echo "[BUILD] ⚠️ 警告：未检测到Node.js，跳过Sitemap生成"
 fi
+
+set -e
 
 # ==========================================
 # 定义 SVG 图标资源
