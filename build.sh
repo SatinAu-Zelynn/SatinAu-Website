@@ -84,29 +84,3 @@ sed -e "/__BUILD_INFO__/{
     }" src/script/config.template.js > src/script/config.js
 
 echo "[BUILD] 配置文件 src/script/config.js 生成成功"
-
-# ==========================================
-# SSR 博客页面生成
-# ==========================================
-
-echo "[BUILD] 开始生成SSR博客页面..."
-
-# 检查 Node.js 是否安装
-if ! command -v node &> /dev/null; then
-    echo "[BUILD] ⚠️  Node.js 未安装，跳过SSR生成"
-    echo "[BUILD] 请确保 Node.js 已安装或在部署环境中配置"
-else
-    # 运行SSR生成脚本
-    node build-ssr.js
-    if [ $? -eq 0 ]; then
-        echo "[BUILD] ✅ SSR博客页面生成完成"
-        
-        # 更新sitemap
-        echo "[BUILD] 更新sitemap.xml..."
-        node update-sitemap.js
-    else
-        echo "[BUILD] ⚠️  SSR生成遇到问题，但构建继续"
-    fi
-fi
-
-echo "[BUILD] ✅ 构建完成"

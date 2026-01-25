@@ -14,8 +14,7 @@
 <a href="#️-技术栈">技术栈</a> &nbsp;&bull;&nbsp;
 <a href="#-兼容性">兼容性</a> &nbsp;&bull;&nbsp;
 <a href="#-环境变量配置">环境变量配置</a> &nbsp;&bull;&nbsp;
-<a href="#-本地运行">本地运行</a> &nbsp;&bull;&nbsp;
-<a href="#-ssr博客系统">SSR博客</a>
+<a href="#-本地运行">本地运行</a>
 </p>
 
 ## 🛠️ 技术栈
@@ -72,58 +71,6 @@
    ```
 
 2. 进入项目目录，使用Live Server或其他本地服务器软件运行
-
-## 📖 SSR博客系统
-
-### 概述
-
-2026年1月，博客系统已升级为**SSR（服务器端渲染）**架构，带来显著的SEO改善：
-
-- ✅ **URL优化**: `/blog/?title=xxx` → `/blog/article-slug/`
-- ✅ **SEO友好**: 完整HTML内容，搜索引擎直接可爬取
-- ✅ **性能提升**: 首屏无需等待JavaScript执行
-- ✅ **社交分享**: 完善的Open Graph和Twitter Card支持
-
-### 快速开始
-
-```bash
-# 安装依赖
-npm install
-
-# 本地构建和测试
-npm run build
-
-# 验证改造
-node test-ssr.js
-```
-
-### 文档
-
-- 📚 [SSR完成总结](SSR-COMPLETION.md) - 改造概览
-- 🚀 [快速入门指南](SSR-QUICKSTART.md) - 部署和测试
-- 📖 [技术文档](SSR-MIGRATION.md) - 完整技术细节
-- ✅ [部署检查清单](DEPLOYMENT-CHECKLIST.md) - 部署前验证
-
-### 新增脚本
-
-| 脚本 | 功能 |
-|------|------|
-| `build-ssr.js` | SSR页面生成 |
-| `update-sitemap.js` | Sitemap自动更新 |
-| `test-ssr.js` | 改造验证 |
-| `src/script/pages/blog-list.js` | 列表页前端逻辑 |
-| `src/script/compat-redirect.js` | 向后兼容性 |
-
-### 验证状态
-
-✅ **所有检查通过** (33/33)
-```
-[1] 关键文件存在性: 9/9 ✅
-[2] 文件内容检查: 11/11 ✅
-[3] 部署配置检查: 6/6 ✅
-[4] URL结构验证: 3/3 ✅
-[5] SEO优化检查: 4/4 ✅
-```
 
 <div align="right">
 <table><td>
