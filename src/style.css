@@ -1578,6 +1578,7 @@ body#index-page {
   max-width: 400px;
   margin: 20px auto;
   box-sizing: border-box;
+  scroll-margin-top: 50vh;
 }
 
 .setting-label {
