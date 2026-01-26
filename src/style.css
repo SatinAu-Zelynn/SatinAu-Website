@@ -601,10 +601,49 @@ h1, h2 { text-wrap: balance; }
       }
       
       /* 调整交互效果适配小卡片 */
+      &:active { transform: scale(0.95) !important; }
+
       &:hover {
         transform: translateY(-6px) scale(1.05);
       }
     }
+  }
+
+  /* 泽凌页面 - 设定总览卡片移动端定制 */
+  body#zelynn-page .lang-wrapper {
+    /* 强制一行显示三个，不换行 */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  body#zelynn-page .lang-wrapper .contact-card {
+    padding: 16px 4px;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    min-height: auto;
+  }
+
+  /* 隐藏图标 */
+  body#zelynn-page .lang-wrapper .contact-card .icon {
+    display: none;
+  }
+
+  /* 隐藏 "语言/Language" 标签 */
+  body#zelynn-page .lang-wrapper .contact-card .label {
+    display: none;
+  }
+
+  /* 调整文本容器居中 */
+  body#zelynn-page .lang-wrapper .contact-card .text {
+    align-items: center;
+    width: 100%;
+  }
+
+  /* 保持主要文字大小 */
+  body#zelynn-page .lang-wrapper .contact-card .value {
+    font-size: 15px;
+    font-weight: 600;
   }
 }
 
