@@ -1,13 +1,28 @@
 /*
-  src/script/components/GlobalModal.js
-  统一弹窗组件 - 缎金SatinAu
+  Copyright 2025 缎金SatinAu
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
 */
 
 class GlobalModal extends HTMLElement {
   constructor() {
     super();
-    this.pendingAction = null; // 用于存储弹窗确认后的操作
-    this.audioInstance = null; // 用于存储音频实例
+    this.pendingAction = null;
+    this.audioInstance = null;
+    
+    // 存储触发动画的源元素
+    this.triggerElement = null;
+    this.triggerRect = null;
   }
 
   connectedCallback() {
@@ -15,12 +30,11 @@ class GlobalModal extends HTMLElement {
     this.bindEvents();
   }
 
-  // 1. 渲染基础骨架 (遮罩 + 容器)
   renderStructure() {
     this.innerHTML = `
       <div class="overlay" id="modalOverlay"></div>
       <div class="modal" id="modalContainer">
-        <div id="modalContent"></div>
+        <div id="modalContent" class="modal-content-wrapper"></div>
       </div>
     `;
     this.overlay = this.querySelector('#modalOverlay');
@@ -28,12 +42,8 @@ class GlobalModal extends HTMLElement {
     this.content = this.querySelector('#modalContent');
   }
 
-  // 2. 绑定基础关闭事件
   bindEvents() {
-    // 点击遮罩关闭
     this.overlay.addEventListener('click', () => this.close());
-    
-    // 监听 ESC 键关闭
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.overlay.classList.contains('show')) {
         this.close();
@@ -41,32 +51,164 @@ class GlobalModal extends HTMLElement {
     });
   }
 
-  // === 通用方法：显示/隐藏 ===
+  // === 核心接口：设置触发源 ===
+  // 使用方法：document.getElementById('globalModal').with(this).email()
+  with(element) {
+    this.triggerElement = element;
+    return this; // 返回 this 实现链式调用
+  }
+
+  // === 动画核心：显示 ===
   show() {
-    // 强制重绘以触发动画
+    // 如果没有触发源，降级为默认淡入动画
+    if (!this.triggerElement) {
+      requestAnimationFrame(() => {
+        this.overlay.classList.add('show');
+        this.modal.classList.add('show');
+      });
+      return;
+    }
+
+    // 准备 Hero 动画
+    // 记录源元素位置 (First)
+    this.triggerRect = this.triggerElement.getBoundingClientRect();
+    
+    // 临时隐藏源元素 (占位)
+    this.triggerElement.style.opacity = '0';
+    this.triggerElement.classList.add('hero-hidden'); // 标记类，防止冲突
+
+    // 准备模态框状态
+    this.overlay.classList.add('show');
+    this.modal.classList.add('hero-animating'); // 添加动画控制类
+    
+    // 为了计算 Final 状态，先让模态框渲染但不可见
+    this.modal.style.visibility = 'hidden';
+    this.modal.style.display = 'block';
+    this.modal.classList.add('show');
+
+    // 获取模态框最终位置 (Last)
+    const modalRect = this.modal.getBoundingClientRect();
+
+    // 计算 Invert (差值)
+    // 模态框默认是 translate(-50%, -50%) 居中的
+    // 我们需要计算从 center 到 trigger 的偏移量
+    
+    // 目标中心点
+    const modalCenterX = modalRect.left + modalRect.width / 2;
+    const modalCenterY = modalRect.top + modalRect.height / 2;
+    
+    // 源中心点
+    const triggerCenterX = this.triggerRect.left + this.triggerRect.width / 2;
+    const triggerCenterY = this.triggerRect.top + this.triggerRect.height / 2;
+
+    const deltaX = triggerCenterX - modalCenterX;
+    const deltaY = triggerCenterY - modalCenterY;
+    const scaleX = this.triggerRect.width / modalRect.width;
+    const scaleY = this.triggerRect.height / modalRect.height;
+
+    // 应用初始状态 (Start at Trigger position)
+    // 注意：保留原本的 translate(-50%, -50%) 并叠加偏移
+    this.modal.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(${scaleX}, ${scaleY})`;
+    this.modal.style.transformOrigin = 'center center'; // 确保缩放中心正确
+    this.modal.style.opacity = '1'; // 确保可见（背景色过渡）
+    
+    // 内容先透明，防止拉伸变形太难看，或者让它随容器淡入
+    this.content.style.opacity = '0';
+    this.content.style.transition = 'none';
+
+    // Play (执行动画)
+    this.modal.style.visibility = 'visible';
+    
+    // 强制重绘
+    void this.modal.offsetHeight;
+
+    // 切换到动画状态
     requestAnimationFrame(() => {
-      this.overlay.classList.add('show');
-      this.modal.classList.add('show');
+      // 恢复 CSS 定义的 transition
+      this.modal.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, border-radius 0.4s ease';
+      this.content.style.transition = 'opacity 0.3s ease 0.15s'; // 内容稍微延迟显示
+
+      // 移动到最终位置
+      this.modal.style.transform = 'translate(-50%, -50%) scale(1)';
+      this.modal.style.opacity = '1';
+      this.content.style.opacity = '1';
     });
   }
 
+  // === 动画核心：关闭 ===
   close() {
-    this.overlay.classList.remove('show');
-    this.modal.classList.remove('show');
     this.pendingAction = null;
-
-    // 如果有正在播放的音频，停止并销毁
     if (this.audioInstance) {
       this.audioInstance.pause();
-      this.audioInstance.currentTime = 0;
       this.audioInstance = null;
     }
+
+    // 如果没有触发源，降级为默认关闭 (普通淡出)
+    if (!this.triggerElement) {
+      this.overlay.classList.remove('show');
+      this.modal.classList.remove('show');
+      
+      // 增加延迟，等待 CSS transition (0.4s) 完成后再清理内容
+      // 否则内容会瞬间消失，导致动画看起来像闪退
+      setTimeout(() => {
+        this.cleanup();
+      }, 350); 
+      return;
+    }
+
+    // 执行反向 Hero 动画
+    const modalRect = this.modal.getBoundingClientRect();
+    const currentTriggerRect = this.triggerElement.getBoundingClientRect();
+
+    const modalCenterX = modalRect.left + modalRect.width / 2;
+    const modalCenterY = modalRect.top + modalRect.height / 2;
+    const triggerCenterX = currentTriggerRect.left + currentTriggerRect.width / 2;
+    const triggerCenterY = currentTriggerRect.top + currentTriggerRect.height / 2;
+
+    const deltaX = triggerCenterX - modalCenterX;
+    const deltaY = triggerCenterY - modalCenterY;
+    const scaleX = currentTriggerRect.width / modalRect.width;
+    const scaleY = currentTriggerRect.height / modalRect.height;
+
+    this.content.style.opacity = '0'; 
+    this.content.style.transition = 'opacity 0.2s ease';
     
-    // 动画结束后清空内容，防止下次打开闪烁
+    this.modal.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease';
+    this.modal.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(${scaleX}, ${scaleY})`;
+    this.modal.style.opacity = '0'; 
+    
+    this.overlay.classList.remove('show');
+    
     setTimeout(() => {
-      this.content.innerHTML = '';
-      this.modal.className = 'modal'; // 重置附加类名
-    }, 300);
+      this.modal.classList.remove('show');
+      this.modal.classList.remove('hero-animating');
+      
+      if (this.triggerElement) {
+        this.triggerElement.style.opacity = '';
+        this.triggerElement.classList.remove('hero-hidden');
+      }
+      
+      this.cleanup();
+    }, 400); 
+  }
+
+  // 清理状态
+  cleanup() {
+    this.triggerElement = null;
+    this.triggerRect = null;
+    
+    this.modal.style.transform = '';
+    this.modal.style.transition = '';
+    this.modal.style.transformOrigin = '';
+    this.modal.style.display = '';
+    this.modal.style.visibility = '';
+    this.modal.style.opacity = ''; 
+    
+    this.content.style.opacity = '';
+    this.content.style.transition = '';
+    
+    this.content.innerHTML = '';
+    this.modal.className = 'modal'; 
   }
 
   // ==========================================

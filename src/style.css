@@ -2822,3 +2822,27 @@ input:checked + .switch-slider {
 body.hero-open {
   overflow: hidden; /* 锁住滚动条，防止动画期间用户乱滚 */
 }
+
+/* 优化 Modal 基础样式，使其默认居中 */
+.modal {
+  /* 保持原有样式... */
+  transform-origin: center center; /* 关键：确保缩放从中心开始 */
+  will-change: transform, opacity; /* 性能优化 */
+}
+
+/* Hero 动画激活时的状态 */
+.modal.hero-animating {
+  /* 移除默认的 transition，改由 JS 控制 */
+  transition: none; 
+  /* 确保 overflow hidden，防止内容在缩放时溢出容器圆角 */
+  overflow: hidden; 
+}
+
+/* 内容容器 */
+.modal-content-wrapper {
+  width: 100%;
+  height: 100%;
+  /* 确保内容也能平滑淡入 */
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}

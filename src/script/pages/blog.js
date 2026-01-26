@@ -641,7 +641,7 @@ if (shareBtn) {
   shareBtn.addEventListener('click', handleShare);
 }
 
-function handleShare() {
+function handleShare(e) {
   // 1. 获取文章信息
   const title = postTitle ? postTitle.textContent.trim() : '未命名文章';
   
@@ -663,7 +663,8 @@ function handleShare() {
   // 2. 调用 GlobalModal 生成分享卡片
   const modal = document.getElementById('globalModal');
   if (modal && modal.share) {
-    modal.share(title, plainText, url, date);
+    const trigger = e ? e.currentTarget : document.getElementById('shareArticleBtn');
+    modal.with(trigger).share(title, plainText, url, date);
   } else {
     // 降级处理：如果没有加载 html2canvas 或 modal 异常，直接复制链接
     const tempInput = document.createElement('input');

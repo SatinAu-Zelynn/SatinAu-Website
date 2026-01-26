@@ -34,7 +34,7 @@ function initFriendLinks() {
         a.href = "javascript:void(0);";
         a.setAttribute(
           "onclick",
-          `document.getElementById('globalModal').alert('是否跳转到 ${item.name}？','${item.link}')`
+          `document.getElementById('globalModal').with(this).alert('是否跳转到 ${item.name}？','${item.link}')`
         );
 
         a.innerHTML = `
