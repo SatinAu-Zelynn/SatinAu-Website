@@ -33,6 +33,11 @@ const postCache = new Map();
 let postsData = [];
 let currentPost = null;
 
+// 存储动画状态
+let activeCardElement = null; // 当前点击的卡片 DOM 元素
+let activeCardRect = null;    // 卡片点击时的位置尺寸信息
+let listScrollY = 0;
+
 // 初始化
 function initBlog() {
     // 先隐藏错误状态，显示加载状态
@@ -89,37 +94,29 @@ function initBlog() {
         }
     } else {
         // 恢复默认页面 title
-        document.title = "博客Blog - 缎金SatinAu";
-        // 显示头部和列表区域
-        const header = document.querySelector('header');
-        const searchContainer = document.querySelector('.search-container');
-        const blogList = document.getElementById('blogList');
-        const momentsCard = document.getElementById('momentsCard');
-        if (header) header.style.display = '';
-        if (searchContainer) searchContainer.style.display = '';
-        if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
-        if (momentsCard) momentsCard.style.display = '';
-        postView.style.display = "none";
-        listEl.style.display = "grid";
-    }
+            document.title = "博客Blog - 缎金SatinAu";
+            
+            // 如果当前有激活的卡片（说明是从文章页退回来的），执行收缩动画
+            if (activeCardElement) {
+                animateHeroClose(() => {
+                    resetBlogView();
+                });
+            } else {
+                // 否则直接重置视图（防止卡片消失）
+                resetBlogView();
+            }
+        }
     });
 
-    // 返回列表按钮事件
+    // 返回列表按钮事件 (保持之前的逻辑，它会调用 animateHeroClose)
     backToList.addEventListener("click", () => {
-        // 恢复默认页面 title
-        document.title = "博客Blog - 缎金SatinAu";
-        // 显示头部和列表区域
-        const header = document.querySelector('header');
-        const searchContainer = document.querySelector('.search-container');
-        const blogList = document.getElementById('blogList');
-        const momentsCard = document.getElementById('momentsCard');
-        if (header) header.style.display = '';
-        if (searchContainer) searchContainer.style.display = '';
-        if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
-        if (momentsCard) momentsCard.style.display = '';
-        postView.style.display = "none";
-        listEl.style.display = "grid";
-        history.pushState({}, "博客列表", "blog.html");
+        if (activeCardElement) {
+            animateHeroClose(() => {
+                resetBlogView();
+            });
+        } else {
+            resetBlogView();
+        }
     });
 
     // 重试按钮事件
@@ -133,11 +130,60 @@ function initBlog() {
     });
 }
 
+function resetBlogView() {
+    document.title = "博客Blog - 缎金SatinAu";
+    const header = document.querySelector('header');
+    const searchContainer = document.querySelector('.search-container');
+    const blogList = document.getElementById('blogList');
+    const momentsCard = document.getElementById('momentsCard');
+    
+    if (header) header.style.display = '';
+    if (searchContainer) searchContainer.style.display = '';
+    if (blogList) blogList.style.display = 'grid';
+    if (momentsCard) momentsCard.style.display = '';
+    
+    postView.style.display = "none";
+    postView.classList.remove('hero-enter', 'show');
+    
+    // === 直接返回时也标记为已恢复，防止闪烁 ===
+    listEl.classList.add('list-restored');
+    listEl.style.display = "grid";
+
+    // 清理 body 锁定
+    document.body.classList.remove('hero-open');
+    
+    // === 确保所有卡片的隐藏状态被移除 ===
+    // 防止浏览器后退时卡片 opacity: 0
+    document.querySelectorAll('.contact-card').forEach(card => {
+        card.classList.remove('is-animating');
+    });
+
+    // 如果不是通过动画关闭的（比如异常重置），尝试恢复滚动
+    if (!activeCardElement && listScrollY > 0) {
+        window.scrollTo(0, listScrollY);
+    }
+    
+    // 只有在手动点击返回按钮时才 pushState，浏览器后退(popstate)不需要
+    // 这里需要根据调用来源区分，但简化起见，popstate 触发时通常 URL 已经变了
+    // 如果 URL 还是 blog.html，就不 push
+    if (!window.location.search) {
+       // 已经是列表页 URL，不做操作
+    } else {
+       history.pushState({}, "博客列表", "blog.html");
+    }
+
+    activeCardElement = null;
+    activeCardRect = null;
+}
+
 // 加载文章列表
 function loadPostsList() {
 // 显示加载状态
 showLoading(true);
 listEl.style.display = "none";
+// === 重新加载列表时，允许播放进场动画 ===
+listEl.classList.remove('list-restored');
+
 emptyState.style.display = "none";
 errorState.style.display = "none";
 
@@ -178,6 +224,7 @@ listEl.innerHTML = "";
 posts.forEach((post, index) => {
     const card = document.createElement("a");
     card.className = "contact-card";
+    card.dataset.title = post.title; // 方便查找
     card.href = "javascript:void(0);";
     card.innerHTML = `
     <div class="text">
@@ -186,18 +233,25 @@ posts.forEach((post, index) => {
     </div>
     `;
     
-    // 点击事件 - 使用防抖处理
-    card.addEventListener("click", debounce(() => {
-    // 保存当前文章到缓存
-    currentPost = post;
-    postCache.set(post.title, post);
-    
-    // 更新URL，添加标题参数（使用encodeURIComponent处理特殊字符）
-    const encodedTitle = encodeURIComponent(post.title);
-    history.pushState({ title: post.title }, post.title, `?title=${encodedTitle}`);
-    
-    // 加载文章内容
-    loadPost(post);
+    // 点击事件 - 增加动画逻辑
+    card.addEventListener("click", debounce((e) => {
+        // === 修复 Issue 2: 记录当前滚动位置 ===
+        listScrollY = window.scrollY;
+        
+        activeCardElement = card;
+        activeCardRect = card.getBoundingClientRect(); // 记录相对于视口的位置
+
+        currentPost = post;
+        postCache.set(post.title, post);
+        
+        // 锁定 body 防止滚动
+        document.body.classList.add('hero-open');
+
+        animateHeroOpen(card, post, () => {
+            const encodedTitle = encodeURIComponent(post.title);
+            history.pushState({ title: post.title }, post.title, `?title=${encodedTitle}`);
+            loadPost(post);
+        });
     }, 300));
     
     listEl.appendChild(card);
@@ -226,6 +280,154 @@ posts.forEach((post, index) => {
 });
 }
 
+// Hero 展开动画逻辑
+function animateHeroOpen(card, post, onAnimationStart) {
+    // 创建替身元素 (Hero Overlay)
+    const overlay = document.createElement('div');
+    overlay.className = 'hero-overlay';
+    
+    // 设置初始位置（与卡片完全重合）
+    const rect = activeCardRect;
+    overlay.style.top = `${rect.top}px`;
+    overlay.style.left = `${rect.left}px`;
+    overlay.style.width = `${rect.width}px`;
+    overlay.style.height = `${rect.height}px`;
+    
+    // 填充内容以实现平滑过渡
+    overlay.innerHTML = `
+        <div class="text-container">
+            <div class="hero-title">${post.title}</div>
+            <div class="hero-date">${post.date}</div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+
+    // 隐藏原卡片
+    requestAnimationFrame(() => {
+        card.classList.add('is-animating');
+        
+        // 强制重绘后执行动画到全屏
+        requestAnimationFrame(() => {
+            overlay.classList.add('expanded');
+            
+            // 目标位置：全屏覆盖
+            overlay.style.top = '0px';
+            overlay.style.left = '0px';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            
+            // 回调：开始加载数据
+            if (onAnimationStart) onAnimationStart();
+            
+            // 动画结束后处理
+            setTimeout(() => {
+                // 显示真正的文章容器，但内容由 loadPost 控制 fade in
+                // 这里的 500ms 对应 CSS transition 时间
+                overlay.remove(); 
+            }, 500);
+        });
+    });
+}
+
+// Hero 收起动画逻辑
+function animateHeroClose(callback) {
+    // 创建全屏替身 (从当前全屏状态开始)
+    const overlay = document.createElement('div');
+    overlay.className = 'hero-overlay expanded';
+    overlay.style.top = '0px';
+    overlay.style.left = '0px';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    
+    const title = postTitle.textContent;
+    const dateText = postDate.textContent ? postDate.textContent.split('·')[0] : '';
+    
+    overlay.innerHTML = `
+        <div class="text-container" style="opacity: 0;">
+            <div class="hero-title">${title}</div>
+            <div class="hero-date">${dateText}</div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // 隐藏文章视图，恢复列表环境
+    postView.style.display = 'none';
+    
+    const header = document.querySelector('header');
+    const searchContainer = document.querySelector('.search-container');
+    const blogList = document.getElementById('blogList');
+    const momentsCard = document.getElementById('momentsCard');
+    
+    if (header) header.style.display = '';
+    if (searchContainer) searchContainer.style.display = '';
+    if (momentsCard) momentsCard.style.display = '';
+    
+    // === 标记列表为“已恢复”状态 ===
+    // 这会让 CSS 跳过 staggerFade 动画，直接显示卡片
+    listEl.classList.add('list-restored');
+
+    // 禁止动画（用于过渡期间的绝对静止）
+    listEl.classList.add('disable-animation');
+    listEl.style.display = "grid";
+
+    // 恢复滚动位置
+    window.scrollTo(0, listScrollY);
+    
+    // 解锁 body 滚动
+    document.body.classList.remove('hero-open');
+
+    // === 强制浏览器重排 (Force Reflow) ===
+    // 这行代码迫使浏览器立刻计算布局，确保卡片回到了正确位置，且没有动画干扰
+    void listEl.offsetHeight; 
+
+    // 重新计算目标位置
+    // 此时卡片是静止的，获取的坐标是 100% 准确的
+    let targetRect = activeCardRect; 
+    if (activeCardElement) {
+        targetRect = activeCardElement.getBoundingClientRect();
+    }
+
+    // 执行收缩动画
+    requestAnimationFrame(() => {
+        // 移除 expanded 类，触发 CSS transition
+        overlay.classList.remove('expanded');
+        
+        const textContainer = overlay.querySelector('.text-container');
+        if (textContainer) textContainer.style.opacity = '1';
+
+        // 飞回目标位置
+        // 增加容错：如果 targetRect 异常，淡出销毁
+        if (!targetRect || targetRect.width === 0) {
+             overlay.style.opacity = 0;
+        } else {
+            overlay.style.top = `${targetRect.top}px`;
+            overlay.style.left = `${targetRect.left}px`;
+            overlay.style.width = `${targetRect.width}px`;
+            overlay.style.height = `${targetRect.height}px`;
+        }
+
+        // 动画结束后清理
+        setTimeout(() => {
+            // 移除替身
+            overlay.remove();
+            
+            if (activeCardElement) {
+                activeCardElement.classList.remove('is-animating');
+            }
+            
+            // 移除“禁止动画”锁，恢复鼠标 Hover 效果
+            // 注意：此时 .list-restored 依然保留，所以不会触发进场动画
+            requestAnimationFrame(() => {
+                listEl.classList.remove('disable-animation');
+            });
+
+            if (callback) callback();
+        }, 500);
+    });
+}
+
 // 加载单篇文章
 function loadPost(post, forceRefresh = false) {
 currentPost = post;
@@ -237,27 +439,37 @@ showLoading(true);
 
 // 检查缓存
 if (!forceRefresh && postCache.has(post.file)) {
-    renderPost(post, postCache.get(post.file));
-    showLoading(false);
+    // 稍微延迟渲染，等待 Hero 动画遮盖住屏幕
+    setTimeout(() => {
+        renderPost(post, postCache.get(post.file));
+    }, 300); // 稍微延迟一点点，让 Hero 动画先跑起来，体验更流畅
     return;
 }
 
 // 从网络加载
 fetch(`https://blog.satinau.cn/blog/${post.file}`)
     .then(res => {
-    if (!res.ok) throw new Error("文章加载失败");
-    return res.text();
+        if (!res.ok) throw new Error("文章加载失败");
+        return res.text();
     })
     .then(md => {
-    // 存入缓存
-    postCache.set(post.file, md);
-    renderPost(post, md);
+        postCache.set(post.file, md);
+        renderPost(post, md);
     })
     .catch(err => {
-    console.error("加载文章失败:", err);
-    showLoading(false);
-    postContent.innerHTML = "";
-    postError.style.display = "block";
+        console.error("加载文章失败:", err);
+        showLoading(false);
+        postContent.innerHTML = "";
+        postError.style.display = "block";
+        // 如果出错，也要显示视图容器以便显示错误信息
+        postView.style.display = "block";
+        // 隐藏列表等
+        const header = document.querySelector('header');
+        const searchContainer = document.querySelector('.search-container');
+        const blogList = document.getElementById('blogList');
+        if (header) header.style.display = 'none';
+        if (searchContainer) searchContainer.style.display = 'none';
+        if (blogList) blogList.style.display = 'none';
     });
 }
 
@@ -364,16 +576,16 @@ function renderPost(post, mdContent) {
     listEl.style.display = "none";
     postView.style.display = "block";
 
-    // 触发文章淡入动画
-    postView.classList.remove("animate");
-    void postView.offsetWidth; // 强制重绘
-    postView.classList.add("animate");
+    // 添加 hero-enter 类，配合 CSS 实现内容淡入 (替代原本的 BlurFadeUp)
+    postView.classList.add("hero-enter");
+    
+    // 稍微延迟让 display:block 生效，然后添加 show 触发淡入
+    requestAnimationFrame(() => {
+        postView.classList.add("show");
+    });
 
-    // 隐藏加载动画
     showLoading(false);
-
-    // 滚动到顶部
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' }); // 瞬间滚到顶部，避免动画时看到半截
 }
 
 // 显示/隐藏加载动画
@@ -401,22 +613,14 @@ function initBlogButtons() {
 const backToListBtn = document.getElementById('backToListBtn');
 if (backToListBtn) {
     backToListBtn.addEventListener('click', () => {
-    // 恢复默认页面 title
-    document.title = "博客Blog - 缎金SatinAu";
-    // 显示头部和列表区域
-    const header = document.querySelector('header');
-    const searchContainer = document.querySelector('.search-container');
-    const blogList = document.getElementById('blogList');
-    const momentsCard = document.getElementById('momentsCard');
-    if (header) header.style.display = '';
-    if (searchContainer) searchContainer.style.display = '';
-    if (blogList) blogList.style.display = 'grid'; // 恢复列表显示
-    if (momentsCard) momentsCard.style.display = '';
-    postView.style.display = 'none';
-    listEl.style.display = 'grid';
-    history.pushState({}, "博客列表", "blog.html");
-    emptyState.style.display = 'none';
-    window.scrollTo(0, 0);
+            // 复用动画关闭逻辑
+        if (activeCardRect && activeCardElement) {
+            animateHeroClose(() => {
+                resetBlogView();
+            });
+        } else {
+            resetBlogView();
+        }
     });
 }
 

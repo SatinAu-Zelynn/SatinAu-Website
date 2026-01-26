@@ -443,10 +443,32 @@ h1, h2 { text-wrap: balance; }
               box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
               background 0.5s ease;
   will-change: transform, box-shadow;
+}
 
-  &.visible {
-    animation: staggerFade 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
+/* ========== 卡片进场动画逻辑 ========== */
+
+/* 通用规则：任何页面只要卡片进入视野并获得 visible 类，就播放淡入动画 */
+.contact-card.visible {
+  animation: staggerFade 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* 特例：仅在博客列表处于“已恢复”状态时，强制禁止动画并直接显示 */
+/* 利用更高的优先级覆盖上面的通用规则 */
+.contact-wrapper.list-restored .contact-card {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  animation: none;
+  /* 保留 transition 以允许鼠标 Hover 效果 */
+}
+
+/* 3. 动画过程中的绝对静止 */
+.contact-wrapper.disable-animation .contact-card {
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+  transform: translate(0, 0) scale(1) !important;
+  filter: none !important;
 }
 
 @keyframes staggerFade {
@@ -814,7 +836,7 @@ body#index-page {
   backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255,255,255,0.35),rgba(255,255,255,0.12));
   box-shadow: 0 18px 40px rgba(0,0,0,0.25), inset 0 0 30px rgba(255,255,255,0.12);
-  z-index: 2001;
+  z-index: 9900;
   /* 隔离动画 */
   animation: none !important;
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1324,7 +1346,7 @@ body#index-page {
   background: light-dark(rgba(255,255,255,0.6), rgba(0,0,0,0.55));
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  z-index: 2000;
+  z-index: 3000;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -2702,4 +2724,101 @@ input:checked + .switch-slider {
 
 .reset-btn:active {
   transform: scale(0.96);
+}
+
+/* ========== Hero Animation (卡片放大转场) ========== */
+
+/* ========== 列表动画冲突 (强制静止) ========== */
+/* 当列表容器有 disable-animation 类时，强制所有卡片瞬间显示且无动画 */
+.contact-wrapper.disable-animation .contact-card {
+  animation: none !important;       /* 禁止关键帧动画 */
+  transition: none !important;      /* 禁止过渡效果 */
+  opacity: 1 !important;            /* 强制不透明 */
+  transform: translate(0, 0) scale(1) !important; /* 强制归位 */
+  filter: none !important;          /* 去除模糊 */
+}
+
+/* Hero Overlay 基础样式微调 */
+.hero-overlay {
+  position: fixed;
+  z-index: 9000;
+  background: light-dark(rgba(255, 255, 255, 0.65), rgba(30, 30, 30, 0.6));
+  backdrop-filter: blur(28px) saturate(220%);
+  -webkit-backdrop-filter: blur(28px) saturate(220%);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+  transform-origin: top left;
+  pointer-events: none;
+  overflow: hidden;
+  
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* 确保收起状态下文字左对齐，与卡片一致 */
+  align-items: flex-start; 
+  /* 这里的 padding 对应卡片的 padding: 20px 18px */
+  padding: 20px 18px; 
+  box-sizing: border-box;
+
+  transition: 
+    top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-radius 0.5s ease,
+    opacity 0.3s ease,
+    padding-top 0.5s ease; /* 增加 padding 的过渡，让文字上移更自然 */
+}
+
+/* 替身层内的文字样式 */
+.hero-overlay .text-container {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.hero-overlay .hero-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--word-color);
+  margin-bottom: 4px;
+}
+.hero-overlay .hero-date {
+  font-size: 12px;
+  color: light-dark(#666, #aaa);
+}
+
+/* 确保 Hero 展开后的样式与上面完全一致，避免跳动 */
+.hero-overlay.expanded {
+  border-radius: 0;
+  background: light-dark(rgba(255, 255, 255, 0.95), rgba(20, 20, 20, 0.95));
+  box-shadow: none;
+  justify-content: flex-start;
+  /* 关键：必须与 #postView 的 padding-top 完全一致 */
+  padding-top: max(30px, calc(env(safe-area-inset-top) + 20px)) !important;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* 展开时隐藏替身层内的文字（因为文章页原本有标题） */
+.hero-overlay.expanded .text-container {
+  opacity: 0; 
+}
+
+/* 原卡片在动画时隐藏 */
+.contact-card.is-animating {
+  opacity: 0 !important;
+}
+
+.md-article.hero-enter {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.3s; /* 延迟等待 Hero 动画完成 */
+}
+.md-article.hero-enter.show {
+  opacity: 1;
+}
+
+body.hero-open {
+  overflow: hidden; /* 锁住滚动条，防止动画期间用户乱滚 */
 }
