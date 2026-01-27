@@ -933,7 +933,7 @@ body#index-page {
   backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255,255,255,0.35),rgba(255,255,255,0.12));
   box-shadow: 0 18px 40px rgba(0,0,0,0.25), inset 0 0 30px rgba(255,255,255,0.12);
-  z-index: 9900;
+  z-index: 2001;
   /* 隔离动画 */
   animation: none !important;
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1443,7 +1443,7 @@ body#index-page {
   background: light-dark(rgba(255,255,255,0.6), rgba(0,0,0,0.55));
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  z-index: 3000;
+  z-index: 2000;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -1801,6 +1801,84 @@ input:checked + .switch-slider {
   box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.12);
   z-index: 2000;
   transition: background 0.3s ease;
+  width: 320px;
+  margin: 0 auto;
+}
+
+:root[data-theme="light"] .viewer-toolbar > ul > li::before,
+:root[data-theme="light"] .viewer-button::before {
+  filter: invert(0.85);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .viewer-toolbar > ul > li::before,
+  :root:not([data-theme="dark"]) .viewer-button::before {
+    filter: invert(0.85);
+  }
+}
+
+.viewer-toolbar>ul {
+  margin: 0 !important;
+}
+
+.viewer-toolbar>ul>li {
+  background-color: light-dark(rgba(255, 255, 255, 0.3), rgba(40, 40, 40, 0.3)) !important;
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.viewer-navbar {
+  background: none !important;
+  margin: 10px 0;
+}
+
+.viewer-list {
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(30, 30, 30, 0.5));
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  padding: 1px !important;
+  border-radius: 7px;
+}
+
+.viewer-list>li {
+  border-radius: 6px;
+}
+
+.viewer-button.viewer-close {
+  width: 44px;
+  height: 44px;
+  top: 30px;
+  right: 30px;
+  border-radius: 50%;
+  background-color: light-dark(rgba(255, 255, 255, 0.5), rgba(40, 40, 40, 0.5));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: var(--custom-cursor, pointer);
+}
+
+.viewer-button.viewer-close::before {
+  bottom: auto;
+  left: auto;
+  position: relative;
+  transform: scale(0.9);
+}
+
+.viewer-button.viewer-close:hover {
+  background-color: light-dark(#ff3b30, #ff453a); /* 悬停变红 */
+  border-color: transparent;
+  transform: rotate(90deg) scale(1.1);
+}
+.viewer-button.viewer-close:hover::before {
+  filter: invert(0) !important; /* 悬停变红后图标变白 */
+}
+.viewer-button.viewer-close:active {
+  transform: scale(0.9);
 }
 
 /* 图片画廊样式 */
