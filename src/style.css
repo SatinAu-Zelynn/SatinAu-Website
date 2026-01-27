@@ -443,6 +443,7 @@ h1, h2 { text-wrap: balance; }
               box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
               background 0.5s ease;
   will-change: transform, box-shadow;
+  isolation: isolate;
 }
 
 /* ========== 卡片进场动画逻辑 ========== */
@@ -516,6 +517,63 @@ h1, h2 { text-wrap: balance; }
   gap: 18px;
   margin-top: 30px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.card-cover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 60%; /* 图片占据卡片右侧 60% 的区域 */
+  
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  /* 层级控制：在背景之上，但在文字之下 */
+  z-index: 0; 
+  
+  /* 视觉调整：降低不透明度，防止图片太花干扰文字阅读 */
+  opacity: 0.5; 
+  
+  /* 从左(透明)到右(黑/可见)，实现图片边缘柔和消失 */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 80%);
+  mask-image: linear-gradient(to right, transparent 0%, black 80%);
+  
+  /* 鼠标穿透，确保点击事件能传给卡片 */
+  pointer-events: none;
+  
+  /* 悬停动画 */
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+}
+
+/* 文字层：提升层级，确保压在图片上面 */
+.contact-card .text {
+  position: relative;
+  z-index: 1; /* 比 .card-cover 高 */
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .card-cover {
+    opacity: 0.4; /* 深色模式下图片稍微暗一点 */
+  }
+}
+
+/* 交互：悬停时图片微动且变亮 */
+.contact-card:hover .card-cover {
+  transform: scale(1.05);
+  opacity: 0.7; /* 悬停时稍微清晰一点 */
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .card-cover {
+    width: 55%; /* 移动端稍微收窄图片区域 */
+    opacity: 0.4;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 90%);
+    mask-image: linear-gradient(to right, transparent 0%, black 90%);
+  }
 }
 
 /* Icon */

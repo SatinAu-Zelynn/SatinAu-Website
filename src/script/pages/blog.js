@@ -187,15 +187,25 @@ listEl.classList.remove('list-restored');
 emptyState.style.display = "none";
 errorState.style.display = "none";
 
-// 显式返回 fetch 的 Promise 链
-return fetch("https://blog.satinau.cn/blog/index.json")
-    .then(res => {
-    if (!res.ok) throw new Error("网络响应异常");
-    return res.json();
-    })
-    .then(posts => {
-    postsData = posts;
-    renderPostsList(posts);
+// 使用 Promise.all 并行请求文章列表和封面索引
+return Promise.all([
+    fetch("https://blog.satinau.cn/blog/index.json").then(res => {
+        if (!res.ok) throw new Error("文章列表加载失败");
+        return res.json();
+    }),
+    // 封面加载失败不应该阻断文章列表显示，所以 catch 住错误返回空对象
+    fetch("https://blog.satinau.cn/blog/covers.json")
+        .then(res => res.ok ? res.json() : {})
+        .catch(() => ({})) 
+])
+.then(([posts, covers]) => {
+    // 将封面数据合并到 post 对象中
+    postsData = posts.map(post => ({
+        ...post,
+        cover: covers[post.file] || null // 如果有封面则添加，否则为 null
+    }));
+
+    renderPostsList(postsData);
     
     // 隐藏加载状态，显示列表
     listEl.style.display = "grid";
@@ -224,9 +234,18 @@ listEl.innerHTML = "";
 posts.forEach((post, index) => {
     const card = document.createElement("a");
     card.className = "contact-card";
+    if (post.cover) card.classList.add("has-cover");
     card.dataset.title = post.title; // 方便查找
     card.href = "javascript:void(0);";
+    // 构建 HTML
+    let coverHtml = '';
+    if (post.cover) {
+        // 插入封面 div
+        coverHtml = `<div class="card-cover" style="background-image: url('${post.cover}')"></div>`;
+    }
+
     card.innerHTML = `
+    ${coverHtml}
     <div class="text">
         <div class="value">${post.title}</div>
         <div class="label">${post.date}</div>
