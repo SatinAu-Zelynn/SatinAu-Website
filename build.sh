@@ -41,67 +41,31 @@ SVG_VERCEL='<svg class="footer-icon-a" role="img" viewBox="0 0 24 24" xmlns="htt
 
 FINAL_INFO=""
 
-get_real_branch() {
-    # 1. 既然 Cloudflare 变量可能丢失，先尝试读一次
-    if [ -n "$CF_PAGES_BRANCH" ]; then
-        echo "$CF_PAGES_BRANCH"
-        return
-    fi
-
-    # 2. 尝试 Git 标准获取
-    local branch
-    if command -v git &> /dev/null; then
-        branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-    fi
-
-    # 3. 解决 Detached HEAD (显示为 HEAD 时)
-    if [ "$branch" == "HEAD" ] || [ -z "$branch" ]; then
-        # 技巧：查看当前 Commit 的 Ref 装饰 (例如: HEAD, origin/main)
-        # 提取 origin/ 之后的内容
-        branch=$(git show -s --pretty=%d HEAD 2>/dev/null | grep -o 'origin/[^, )]*' | head -n1 | sed 's/origin\///')
-    fi
-    
-    # 4. 还是空？给个默认值
-    if [ -z "$branch" ]; then
-        echo "unknown"
-    else
-        echo "$branch"
-    fi
-}
-
-# --- Cloudflare 环境判定 (兼容 LTS) ---
-# 只要有 CF_PAGES_LTS 或者 CI=true 且不是 Vercel，就认为是 Cloudflare
-if [ -n "$CF_PAGES" ] || [ "$CF_PAGES_LTS" = "true" ] || ([ "$CI" = "true" ] && [ -z "$VERCEL" ]); then
+if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "true" ]; then
+    # --- Cloudflare Pages 环境 ---
     echo "Detected Environment: Cloudflare Pages"
     
-    # 获取 Hash
-    if command -v git &> /dev/null; then
+    # 获取提交哈希：优先使用 CF 变量，若无则尝试 git 命令
+    if [ -n "$CF_PAGES_COMMIT_SHA" ]; then
+        COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
+    elif command -v git &> /dev/null; then
         COMMIT_HASH=$(git rev-parse --short HEAD)
     else
-        COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
+        COMMIT_HASH="cf-build"
     fi
-    # 如果还是空的 (极少情况)，给个占位符
-    [ -z "$COMMIT_HASH" ] && COMMIT_HASH="cf-build"
-
-    # 获取 Branch (使用增强函数)
-    BRANCH=$(get_real_branch)
-    # 清理可能存在的空格
-    BRANCH=$(echo "$BRANCH" | xargs)
     
-    echo "[DEBUG] 识别到的分支: $BRANCH"
-
-    # 版本后缀逻辑
+    # 获取分支名
+    BRANCH=${CF_PAGES_BRANCH:-"unknown"}
+    
+    # 构建版本后缀
     VERSION_SUFFIX=""
-    if [[ "$BRANCH" == *"test"* ]] || [[ "$BRANCH" == *"dev"* ]]; then
+    if [ "$BRANCH" == "test" ]; then
         VERSION_SUFFIX="（测试版）"
-    elif [[ "$BRANCH" == "main" ]] || [[ "$BRANCH" == "master" ]]; then
+    elif [ "$BRANCH" == "main" ]; then
         VERSION_SUFFIX="（正式版）"
-    else
-        # 其他分支显示分支名，或者保持为空
-        VERSION_SUFFIX=""
     fi
 
-    # 拼接 HTML
+    # 拼接 Cloudflare 专用 HTML
     FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 elif [ -n "$VERCEL" ]; then
