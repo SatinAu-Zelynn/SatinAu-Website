@@ -41,89 +41,67 @@ SVG_VERCEL='<svg class="footer-icon-a" role="img" viewBox="0 0 24 24" xmlns="htt
 
 FINAL_INFO=""
 
-get_current_branch() {
-    # 1. 优先使用 Cloudflare 注入的变量 (最准确)
+get_real_branch() {
+    # 1. 既然 Cloudflare 变量可能丢失，先尝试读一次
     if [ -n "$CF_PAGES_BRANCH" ]; then
         echo "$CF_PAGES_BRANCH"
         return
     fi
 
-    # 2. 尝试获取本地 Git 分支名
-    local git_branch
+    # 2. 尝试 Git 标准获取
+    local branch
     if command -v git &> /dev/null; then
-        git_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+        branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
     fi
 
-    # 3. 处理分离头指针 (HEAD) 情况
-    if [ "$git_branch" == "HEAD" ] || [ -z "$git_branch" ]; then
-        # 尝试从 commit 的引用装饰中提取分支名 (例如: HEAD -> origin/main)
-        # 输出格式通常为: (HEAD, origin/main, origin/HEAD)
-        # 我们尝试提取 origin/ 之后的部分
-        local parsed_branch=$(git show -s --pretty=%d HEAD 2>/dev/null | grep -o 'origin/[^, )]*' | head -n1 | sed 's/origin\///')
-        
-        if [ -n "$parsed_branch" ]; then
-            echo "$parsed_branch"
-            return
-        fi
-    else
-        echo "$git_branch"
-        return
+    # 3. 解决 Detached HEAD (显示为 HEAD 时)
+    if [ "$branch" == "HEAD" ] || [ -z "$branch" ]; then
+        # 技巧：查看当前 Commit 的 Ref 装饰 (例如: HEAD, origin/main)
+        # 提取 origin/ 之后的内容
+        branch=$(git show -s --pretty=%d HEAD 2>/dev/null | grep -o 'origin/[^, )]*' | head -n1 | sed 's/origin\///')
     fi
     
-    # 4. 如果 Git 也失败，尝试从 URL 反推 (兜底策略)
-    if [[ "$CF_PAGES_URL" == *"pages.dev" ]]; then
-        # 如果 URL 包含 commit hash，通常难以判断，但如果是主域名
-        echo "production" 
-    else
+    # 4. 还是空？给个默认值
+    if [ -z "$branch" ]; then
         echo "unknown"
+    else
+        echo "$branch"
     fi
 }
 
-# --- Cloudflare Pages 环境判定 ---
-# 判定依据：只要检测到 Cloudflare 特有变量，或者 CI 变量且不是 Vercel
-if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "true" ] || ([ "$CI" = "true" ] && [ -z "$VERCEL" ]); then
+# --- Cloudflare 环境判定 (兼容 LTS) ---
+# 只要有 CF_PAGES_LTS 或者 CI=true 且不是 Vercel，就认为是 Cloudflare
+if [ -n "$CF_PAGES" ] || [ "$CF_PAGES_LTS" = "true" ] || ([ "$CI" = "true" ] && [ -z "$VERCEL" ]); then
     echo "Detected Environment: Cloudflare Pages"
     
-    # 1. 获取 Hash
-    if [ -n "$CF_PAGES_COMMIT_SHA" ]; then
-        COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
-    elif command -v git &> /dev/null; then
+    # 获取 Hash
+    if command -v git &> /dev/null; then
         COMMIT_HASH=$(git rev-parse --short HEAD)
     else
-        COMMIT_HASH="cf-build"
+        COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
     fi
-    
-    # 2. 获取 Branch (调用上方定义的函数)
-    BRANCH=$(get_current_branch)
-    
-    # 清理分支名可能带有的换行符或空格
+    # 如果还是空的 (极少情况)，给个占位符
+    [ -z "$COMMIT_HASH" ] && COMMIT_HASH="cf-build"
+
+    # 获取 Branch (使用增强函数)
+    BRANCH=$(get_real_branch)
+    # 清理可能存在的空格
     BRANCH=$(echo "$BRANCH" | xargs)
-
-    echo "[DEBUG] 最终确认的分支: $BRANCH"
-
-    # 3. 构建版本后缀
-    VERSION_SUFFIX=""
-    # 转换为小写进行比较，增加兼容性
-    BRANCH_LOWER=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]')
     
-    case "$BRANCH_LOWER" in
-        *test*|*dev*)
-            VERSION_SUFFIX="（测试版）"
-            ;;
-        main|master|production|prod)
-            VERSION_SUFFIX="（正式版）"
-            ;;
-        *)
-            # 如果是 unknown 或者是其他特性分支，视情况而定，这里留空或标记
-            if [ "$BRANCH" == "unknown" ]; then
-                VERSION_SUFFIX="" 
-            else
-                VERSION_SUFFIX="（${BRANCH}）" # 显示特性分支名
-            fi
-            ;;
-    esac
+    echo "[DEBUG] 识别到的分支: $BRANCH"
 
-    # 4. 拼接 HTML
+    # 版本后缀逻辑
+    VERSION_SUFFIX=""
+    if [[ "$BRANCH" == *"test"* ]] || [[ "$BRANCH" == *"dev"* ]]; then
+        VERSION_SUFFIX="（测试版）"
+    elif [[ "$BRANCH" == "main" ]] || [[ "$BRANCH" == "master" ]]; then
+        VERSION_SUFFIX="（正式版）"
+    else
+        # 其他分支显示分支名，或者保持为空
+        VERSION_SUFFIX=""
+    fi
+
+    # 拼接 HTML
     FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 elif [ -n "$VERCEL" ]; then
