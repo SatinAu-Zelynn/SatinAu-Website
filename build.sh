@@ -2,12 +2,6 @@ set -e
 
 echo "[BUILD] 开始生成构建信息..."
 
-echo "[DEBUG] 正在排查环境变量..."
-echo "当前用户: $(whoami)"
-echo "当前路径: $(pwd)"
-# 打印所有以 CF_ 或 VERCEL_ 开头的变量
-env | grep -E "CF_|VERCEL_|CI" || echo "未找到任何匹配的 CI 环境变量"
-
 # ==========================================
 # 生成 Sitemap
 # ==========================================
@@ -47,11 +41,21 @@ SVG_VERCEL='<svg class="footer-icon-a" role="img" viewBox="0 0 24 24" xmlns="htt
 
 FINAL_INFO=""
 
-if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ]; then
+if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "true" ]; then
     # --- Cloudflare Pages 环境 ---
     echo "Detected Environment: Cloudflare Pages"
-    COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
-    BRANCH=$CF_PAGES_BRANCH
+    
+    # 获取提交哈希：优先使用 CF 变量，若无则尝试 git 命令
+    if [ -n "$CF_PAGES_COMMIT_SHA" ]; then
+        COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
+    elif command -v git &> /dev/null; then
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+    else
+        COMMIT_HASH="cf-build"
+    fi
+    
+    # 获取分支名
+    BRANCH=${CF_PAGES_BRANCH:-"unknown"}
     
     # 构建版本后缀
     VERSION_SUFFIX=""
