@@ -1110,6 +1110,41 @@ body#index-page {
   }
 }
 
+/* --- 桌面端：更多按钮激活状态 --- */
+.more-btn.active {
+  /* 背景色变为激活态背景 (与主导航项 active 保持一致) */
+  background: light-dark(rgba(255,255,255,0.6), rgba(255,255,255,0.18));
+  border-color: transparent;
+}
+
+.more-btn.active .more-btn-svg {
+  /* 图标变为主题色 */
+  fill: var(--primary-color);
+}
+
+/* --- 移动端：手势提示线激活状态 --- */
+@media (max-width: 767px) {
+  /* 当 bottom-nav 拥有 more-active 类时，修改伪元素样式 */
+  .bottom-nav.more-active::before {
+    /* 变为主题色 */
+    background: var(--primary-color);
+    /* 添加高亮边框 */
+    border: 1px solid light-dark(rgba(255,255,255,0.8), rgba(255,255,255,0.4));
+    /* 添加微弱的发光效果 */
+    box-shadow: 0 0 8px var(--primary-color);
+    /* 稍微加宽一点点以示强调 */
+    width: 40px; 
+  }
+
+  /* 确保当菜单打开变成箭头时，颜色也保持主题色 */
+  .bottom-nav.more-active.menu-open::before {
+    background: transparent;
+    border-color: var(--primary-color);
+    box-shadow: none;
+    width: 12px; 
+  }
+}
+
 /* 下拉菜单样式 */
 .more-dropdown {
   position: absolute;

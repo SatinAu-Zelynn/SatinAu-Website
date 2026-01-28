@@ -65,6 +65,11 @@ class NavigateBar extends HTMLElement {
       { label: '网站设置', href: 'settings' }
     ];
 
+    const isMoreActive = moreItems.some(item => {
+        const itemBaseName = item.href.split('/').pop().replace('.html', '');
+        return currentPath === itemBaseName;
+    });
+
     // --- 用户信息逻辑 ---
     const token = localStorage.getItem('auth_token');
     const userInfoRaw = localStorage.getItem('user_info');
@@ -163,7 +168,7 @@ class NavigateBar extends HTMLElement {
         }
       </style>
 
-      <nav class="bottom-nav">
+      <nav class="bottom-nav ${isMoreActive ? 'more-active' : ''}">
         <div class="nav-avatar" onclick="window.location.href='/'">
           <img src="/public/favicon.ico" alt="Avatar">
         </div>
@@ -177,7 +182,7 @@ class NavigateBar extends HTMLElement {
           </a>
         `).join('')}
         <div class="more-menu-container">
-          <button class="more-btn" onclick="toggleMoreMenu()">
+          <button class="more-btn ${isMoreActive ? 'active' : ''}" onclick="toggleMoreMenu()">
             <svg class="more-btn-svg" viewBox="0 0 24 24" width="24" height="24">
               <circle cx="6" cy="12" r="2" />
               <circle cx="12" cy="12" r="2" />
