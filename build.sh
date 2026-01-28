@@ -41,7 +41,7 @@ SVG_VERCEL='<svg class="footer-icon-a" role="img" viewBox="0 0 24 24" xmlns="htt
 
 FINAL_INFO=""
 
-if [ -n "$CF_PAGES" ]; then
+if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ]; then
     # --- Cloudflare Pages 环境 ---
     echo "Detected Environment: Cloudflare Pages"
     COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
