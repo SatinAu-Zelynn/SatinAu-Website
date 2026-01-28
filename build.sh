@@ -42,10 +42,9 @@ SVG_VERCEL='<svg class="footer-icon-a" role="img" viewBox="0 0 24 24" xmlns="htt
 FINAL_INFO=""
 
 if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "true" ]; then
-    # --- Cloudflare Pages 环境 ---
     echo "Detected Environment: Cloudflare Pages"
     
-    # 获取提交哈希：优先使用 CF 变量，若无则尝试 git 命令
+    # --- 获取提交哈希 (优先变量，后备 Git) ---
     if [ -n "$CF_PAGES_COMMIT_SHA" ]; then
         COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
     elif command -v git &> /dev/null; then
@@ -54,18 +53,32 @@ if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "t
         COMMIT_HASH="cf-build"
     fi
     
-    # 获取分支名
-    BRANCH=${CF_PAGES_BRANCH:-"unknown"}
-    
-    # 构建版本后缀
+    # --- 获取分支名 (优先变量，后备 Git) ---
+    if [ -n "$CF_PAGES_BRANCH" ]; then
+        BRANCH=$CF_PAGES_BRANCH
+    elif command -v git &> /dev/null; then
+        # 注意：在 CI 环境中可能处于 HEAD 分离状态，尝试获取准确分支名
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        # 如果拿到的是 HEAD，尝试从 Cloudflare 其他变量解析
+        if [ "$BRANCH" == "HEAD" ] && [ -n "$CF_PAGES_URL" ]; then
+             # 某些情况下可以从预览 URL 推断，但 Git 通常更准
+             BRANCH="production" 
+        fi
+    else
+        BRANCH="unknown"
+    fi
+
+    echo "[DEBUG] 最终确认的分支: $BRANCH"
+
+    # --- 构建版本后缀 ---
     VERSION_SUFFIX=""
     if [ "$BRANCH" == "test" ]; then
         VERSION_SUFFIX="（测试版）"
-    elif [ "$BRANCH" == "main" ]; then
+    elif [ "$BRANCH" == "main" ] || [ "$BRANCH" == "master" ]; then
         VERSION_SUFFIX="（正式版）"
     fi
 
-    # 拼接 Cloudflare 专用 HTML
+    # 拼接 HTML
     FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 elif [ -n "$VERCEL" ]; then
