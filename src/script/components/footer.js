@@ -70,8 +70,8 @@ class SiteFooter extends HTMLElement {
               </a>
             </span>
             <br>
-            <a href="https://icp.gov.moe/?keyword=20259950" target="_blank">萌ICP备20259950号</a>
-            <a href="https://www.travellings.cn/go.html" target="_blank" rel="noopener" title="开往-友链接力">
+            <a href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 萌国ICP备案？','https://icp.gov.moe/?keyword=20259950')">萌ICP备20259950号</a>
+            <a href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 随机友链（开往）？','https://www.travellings.cn/go.html')" title="开往-友链接力">
                 <svg class="footer-icon-a" style="width: 6em; height: 1.4em; margin-top: -3px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <style>.cls-1{stroke:light-dark(#f5f5f5,#aaa);}.cls-1,.cls-3{stroke-miterlimit:10;}.cls-2,.cls-3{fill:light-dark(#f5f5f5,#aaa);}</style>
@@ -95,7 +95,7 @@ class SiteFooter extends HTMLElement {
                   <path class="cls-3" d="M384.54,317.08a3.11,3.11,0,0,1-.41.28,6.13,6.13,0,0,1-.67.32,5.16,5.16,0,0,1-.91.27,5.1,5.1,0,0,1-1.15.11,6,6,0,0,1-2-.33,4.59,4.59,0,0,1-1.68-1.05,5.4,5.4,0,0,1-1.15-1.85,7.77,7.77,0,0,1-.43-2.76,7.37,7.37,0,0,1,.39-2.43,5.82,5.82,0,0,1,1.1-1.95,5.16,5.16,0,0,1,1.76-1.28,5.64,5.64,0,0,1,2.33-.47,12.29,12.29,0,0,1,2.63.23c.66.15,1.2.3,1.63.44v11.26a5,5,0,0,1-1.37,3.95,6.14,6.14,0,0,1-4.12,1.18,10.75,10.75,0,0,1-2.06-.18,10.45,10.45,0,0,1-1.58-.42l.29-1.4a7,7,0,0,0,1.49.45,9.45,9.45,0,0,0,1.91.19,4.47,4.47,0,0,0,3-.85,3.74,3.74,0,0,0,.94-2.9Zm0-9.4a8.24,8.24,0,0,0-1-.22,10,10,0,0,0-1.76-.11,4,4,0,0,0-1.69.34,3.71,3.71,0,0,0-1.27,1,4.35,4.35,0,0,0-.79,1.51,6.82,6.82,0,0,0,0,4,4.07,4.07,0,0,0,.83,1.42,3,3,0,0,0,1.18.8,3.66,3.66,0,0,0,1.34.25,5.09,5.09,0,0,0,1.83-.31,3.87,3.87,0,0,0,1.29-.71Z" transform="translate(-238 -290)"></path>
                 </svg>
             </a>
-            <a href="https://www.foreverblog.cn/go.html" target="_blank">十年之约</a>
+            <a href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 随机友链（十年之约）？','https://www.foreverblog.cn/go.html')">十年之约</a>
         </p>
       </footer>
       <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="229580" async="async" type="text/javascript"></script>

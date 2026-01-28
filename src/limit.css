@@ -111,5 +111,9 @@
 }
 
 .viewer-canvas {
-  background-color: light-dark(rgba(0, 0, 0, 0.35), rgba(20, 20, 20, 0.35)) !important;
+  background-color: light-dark(rgba(0, 0, 0, 0.5), rgba(20, 20, 20, 0.5)) !important;
+}
+
+.viewer-toolbar, .viewer-list, .viewer-button.viewer-close {
+  background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30));
 }
