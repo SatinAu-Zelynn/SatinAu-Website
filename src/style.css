@@ -1916,6 +1916,15 @@ input:checked + .switch-slider {
   transform: scale(0.9);
 }
 
+.viewer-tooltip {
+  background-color: light-dark(rgba(255,255,255,0.5), rgba(30,30,30,0.5)) !important;
+  color: var(--word-color) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
+  border: 1px solid light-dark(rgba(255,255,255,0.25), rgba(60,60,60,0.25));
+}
+
 /* 图片画廊样式 */
 .image-gallery {
   display: grid;

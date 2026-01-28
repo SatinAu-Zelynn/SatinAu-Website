@@ -117,3 +117,7 @@
 .viewer-toolbar, .viewer-list, .viewer-button.viewer-close {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30));
 }
+
+.viewer-tooltip {
+  background-color: light-dark(rgba(255,255,255), rgba(30,30,30)) !important;
+}
