@@ -1303,7 +1303,12 @@ body#index-page {
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     /* 确保内容不会在动画时被裁剪 */
-    padding: 0;
+    padding: 12px; /* 给容器加一点内边距 */
+    box-sizing: border-box;
+    display: grid; /* 启用网格布局 */
+    grid-template-columns: repeat(2, 1fr); /* 强制分为两列，等宽 */
+    gap: 10px; /* 两个按钮之间的间距 */
+    align-content: start; /* 内容靠上对齐 */
 
     a{
       flex: 1;
@@ -1317,14 +1322,6 @@ body#index-page {
       transition: background 0.3s ease, color 0.3s ease;
 
       &.active{
-        padding: 16px 24px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #333;
-        text-decoration: none;
-        display: block;
-        transition: all 0.3s ease;
-        text-align: center;
         background: light-dark(rgba(255,255,255,0.6), rgba(255,255,255,0.18));
         color: var(--primary-color);
       }
@@ -1333,7 +1330,6 @@ body#index-page {
     /* 菜单展开状态 - 流畅的弹出动画 */
     &.show {
       max-height: 80vh;
-      padding: 16px 0;
       opacity: 1;
       transform: translateX(-50%) translateY(0) scale(1);
       /* 添加轻微的弹性效果 */
@@ -1342,27 +1338,29 @@ body#index-page {
 
     /* 移动端菜单项样式 - 添加入场动画 */
     .dropdown-item {
-      padding: 16px 24px;
-      font-size: 16px;
+      padding: 12px 4px;
+      font-size: 15px;
       font-weight: 600;
       color: light-dark(#333, #f5f5f5);
       text-decoration: none;
-      display: block;
+      display: flex;
       transition: all 0.3s ease;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.05));
+      border-bottom: none;
+      border-radius: var(--border-radius-md);
+      background: light-dark(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+      border: 1px solid transparent;
       /* 初始状态为透明并向下偏移 */
       opacity: 0;
       transform: translateY(10px);
 
-      &:last-child {
-        border-bottom: none;
-      }
-
       /* 菜单项悬停效果 */
       &:hover {
-        background: light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.18));
+        background: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
         transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       }
     }
 
@@ -1391,6 +1389,21 @@ body#index-page {
       &:nth-child(6) {
         transition-delay: 0.6s;
       }
+    }
+
+    .nav-separator {
+      grid-column: 1 / -1; /* 从第一根网格线跨到最后一根 */
+      width: 100%;
+      margin: 4px 0;
+      height: 1px;
+      background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+    }
+
+    .nav-user-card {
+      grid-column: 1 / -1; /* 跨两列 */
+      width: auto;
+      margin: 0; /* 重置边距，由 grid gap 控制 */
+      background: light-dark(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
     }
   }
 
