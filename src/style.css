@@ -489,28 +489,32 @@ h1, h2 { text-wrap: balance; }
 }
 
 /* 光泽扫过效果 */
-.contact-card::after {
-  content: "";
-  position: absolute;
-  top: 0; left: -150%;
-  width: 150%; height: 100%;
-  background: linear-gradient(120deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.05) 100%);
-  transform: skewX(-20deg);
-  transition: all 0.8s ease;
-  opacity: 0;
+.contact-card {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -150%;
+    width: 150%; height: 100%;
+    background: linear-gradient(120deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.05) 100%);
+    transform: skewX(-20deg);
+    transition: all 0.8s ease;
+    opacity: 0;
+  }
+  
+  &:hover::after {
+    left: -20%;
+    opacity: 1;
+  }
+  
+  &:hover {
+    box-shadow: 0 32px 70px rgba(0,0,0,0.2);
+    background: light-dark(rgba(255,255,255,0.45), rgba(255,255,255,0.2));
+    -webkit-backdrop-filter: blur(28px) saturate(220%);
+    backdrop-filter: blur(28px) saturate(220%);
+  }
+  
+  &:active { transform: scale(0.98) !important; }
 }
-.contact-card:hover::after {
-  left: -20%;
-  opacity: 1;
-}
-
-.contact-card:hover {
-  box-shadow: 0 32px 70px rgba(0,0,0,0.2);
-  background: light-dark(rgba(255,255,255,0.45), rgba(255,255,255,0.2));
-  -webkit-backdrop-filter: blur(28px) saturate(220%);
-  backdrop-filter: blur(28px) saturate(220%);
-}
-.contact-card:active { transform: scale(0.98) !important; }
 
 .content-grid {
   display: grid;
@@ -553,22 +557,20 @@ h1, h2 { text-wrap: balance; }
   z-index: 1; /* 比 .card-cover 高 */
 }
 
-/* 深色模式适配 */
-@media (prefers-color-scheme: dark) {
-  .card-cover {
-    opacity: 0.4; /* 深色模式下图片稍微暗一点 */
-  }
-}
-
 /* 交互：悬停时图片微动且变亮 */
 .contact-card:hover .card-cover {
   transform: scale(1.05);
   opacity: 0.7; /* 悬停时稍微清晰一点 */
 }
 
-/* 移动端适配 */
-@media (max-width: 768px) {
-  .card-cover {
+.card-cover {
+  /* 深色模式适配 */
+  @media (prefers-color-scheme: dark) {
+    opacity: 0.4; /* 深色模式下图片稍微暗一点 */
+  }
+  
+  /* 移动端适配 */
+  @media (max-width: 768px) {
     width: 55%; /* 移动端稍微收窄图片区域 */
     opacity: 0.4;
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 90%);
@@ -580,13 +582,13 @@ h1, h2 { text-wrap: balance; }
 .icon { 
   width: 40px;
   height: 40px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:var(--border-radius-sm);
-  background:linear-gradient(135deg,#e8f0fe,#f5f5f5);
-  box-shadow:inset 0 0 0 1px light-dark(rgba(255,255,255,0.4), rgba(255,255,255,0.1));
-  flex-shrink:0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-sm);
+  background: linear-gradient(135deg, #e8f0fe, #f5f5f5);
+  box-shadow: inset 0 0 0 1px light-dark(rgba(255,255,255,0.4), rgba(255,255,255,0.1));
+  flex-shrink: 0;
   transition: transform 0.4s ease, background 0.5s ease;
   scrollbar-gutter: stable both-edges;
   svg{width:22px;height:22px;}
@@ -615,13 +617,16 @@ h1, h2 { text-wrap: balance; }
 .paw-cyan   { background: linear-gradient(135deg, #43e97b, #38f9d7); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 @media (prefers-color-scheme: dark) {
-  .contact-card .icon {
-    background: linear-gradient(135deg, #333, #444); /* 深色图标背景 */
-  }
-  .contact-card::after {
-    background: linear-gradient(120deg, rgba(255,255,255,0.03) 0%, 
-                                      rgba(255,255,255,0.2) 50%, 
-                                      rgba(255,255,255,0.03) 100%);
+  .contact-card {
+    .icon {
+      background: linear-gradient(135deg, #333, #444); /* 深色图标背景 */
+    }
+    
+    &::after {
+      background: linear-gradient(120deg, rgba(255,255,255,0.03) 0%, 
+                                        rgba(255,255,255,0.2) 50%, 
+                                        rgba(255,255,255,0.03) 100%);
+    }
   }
 }
 
@@ -745,7 +750,7 @@ footer{
   left: 50%;
   transform: translateX(-50%) translateY(20px) scale(0.95);
   padding: 12px 20px;
-  border-radius:var(--border-radius-md);
+  border-radius: var(--border-radius-md);
   font-size: 15px;
   font-weight: 500;
   background: light-dark(rgba(255,255,255,0.5), rgba(30,30,30,0.5));
@@ -788,7 +793,7 @@ footer{
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255,255,255,0.25);
-  border-radius:var(--border-radius-lg);
+  border-radius: var(--border-radius-lg);
   box-shadow: 0 12px 40px rgba(0,0,0,0.25), inset 0 0 30px rgba(255,255,255,0.12);
   padding: 20px;
   text-align: center;
@@ -797,7 +802,7 @@ footer{
   transition: all 0.4s cubic-bezier(0.22, 1.4, 0.36, 1);
   z-index: 9998;
   color: var(--word-color);
-
+  
   &.show {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
@@ -825,7 +830,7 @@ footer{
     font-size: 15px;
     font-weight: 600;
     border: none;
-    border-radius:var(--border-radius-md);
+    border-radius: var(--border-radius-md);
     background: light-dark(rgba(255,255,255,0.6), rgba(40,40,40,0.6));
     color: var(--primary-color);
     cursor: pointer;
@@ -846,12 +851,13 @@ body#index-page {
     gap: 12px;
     margin: 10px 0 16px;
   }
+  
   .email-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    border-radius:var(--border-radius-md);
+    border-radius: var(--border-radius-md);
     background: light-dark(rgba(255,255,255,0.35), rgba(30,30,30,0.45));
     -webkit-backdrop-filter: blur(12px) saturate(180%);
     backdrop-filter: blur(12px) saturate(180%);
@@ -895,13 +901,14 @@ body#index-page {
       color: light-dark(#ff3b30, #ff453a);
       background: light-dark(rgba(255,255,255,0.6), rgba(40,40,40,0.6));
       border: none;
-      border-radius:var(--border-radius-md);
+      border-radius: var(--border-radius-md);
       cursor: pointer;
       transition: transform 0.2s ease, filter 0.2s ease, background 0.3s ease;
 
       &:hover {
         background: light-dark(rgba(255,255,255,0.75), rgba(60,60,60,0.75));
       }
+      
       &:active {
         transform: scale(0.95);
         filter: brightness(0.9);
@@ -939,10 +946,10 @@ body#index-page {
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform; /* 优化性能 */
 
-  a{
+  a {
     flex: 1;
     text-align: center;
-    border-radius:var(--border-radius-md);
+    border-radius: var(--border-radius-md);
     font-size: 14px;
     font-weight: 600;
     color: light-dark(#333, #f5f5f5);
@@ -954,12 +961,12 @@ body#index-page {
     line-height: 1.2;
     padding: 8px 0;
 
-    &.active{
+    &.active {
       background: light-dark(rgba(255,255,255,0.6), rgba(255,255,255,0.18));
       color: var(--primary-color);
     }
 
-    &:hover{
+    &:hover {
       background: light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
     }
 
@@ -1041,11 +1048,9 @@ body#index-page {
 /* 头像基础样式 */
 .nav-avatar {
   display: none; /* 默认隐藏 */
-}
-
-/* 桌面端显示头像 */
-@media (min-width: 768px) {
-  .nav-avatar {
+  
+  /* 桌面端显示头像 */
+  @media (min-width: 768px) {
     display: block;
     margin: 0 8px -3px 0;
   
@@ -1108,40 +1113,42 @@ body#index-page {
     transform: scale(0.96);
     filter: brightness(0.95);
   }
-}
-
-/* --- 桌面端：更多按钮激活状态 --- */
-.more-btn.active {
-  /* 背景色变为激活态背景 (与主导航项 active 保持一致) */
-  background: light-dark(rgba(255,255,255,0.6), rgba(255,255,255,0.18));
-  border-color: transparent;
-}
-
-.more-btn.active .more-btn-svg {
-  /* 图标变为主题色 */
-  fill: var(--primary-color);
+  
+  /* 桌面端：更多按钮激活状态 */
+  &.active {
+    /* 背景色变为激活态背景 (与主导航项 active 保持一致) */
+    background: light-dark(rgba(255,255,255,0.6), rgba(255,255,255,0.18));
+    border-color: transparent;
+    
+    .more-btn-svg {
+      /* 图标变为主题色 */
+      fill: var(--primary-color);
+    }
+  }
 }
 
 /* --- 移动端：手势提示线激活状态 --- */
 @media (max-width: 767px) {
-  /* 当 bottom-nav 拥有 more-active 类时，修改伪元素样式 */
-  .bottom-nav.more-active::before {
-    /* 变为主题色 */
-    background: var(--primary-color);
-    /* 添加高亮边框 */
-    border: 1px solid light-dark(rgba(255,255,255,0.8), rgba(255,255,255,0.4));
-    /* 添加微弱的发光效果 */
-    box-shadow: 0 0 8px var(--primary-color);
-    /* 稍微加宽一点点以示强调 */
-    width: 40px; 
-  }
+  .bottom-nav {
+    /* 当 bottom-nav 拥有 more-active 类时，修改伪元素样式 */
+    &.more-active::before {
+      /* 变为主题色 */
+      background: var(--primary-color);
+      /* 添加高亮边框 */
+      border: 1px solid light-dark(rgba(255,255,255,0.8), rgba(255,255,255,0.4));
+      /* 添加微弱的发光效果 */
+      box-shadow: 0 0 8px var(--primary-color);
+      /* 稍微加宽一点点以示强调 */
+      width: 40px; 
+    }
 
-  /* 确保当菜单打开变成箭头时，颜色也保持主题色 */
-  .bottom-nav.more-active.menu-open::before {
-    background: transparent;
-    border-color: var(--primary-color);
-    box-shadow: none;
-    width: 12px; 
+    /* 确保当菜单打开变成箭头时，颜色也保持主题色 */
+    &.more-active.menu-open::before {
+      background: transparent;
+      border-color: var(--primary-color);
+      box-shadow: none;
+      width: 12px; 
+    }
   }
 }
 
