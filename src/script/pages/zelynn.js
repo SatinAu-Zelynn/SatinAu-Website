@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
         img.src = `https://blog.satinau.cn/zelynn/${imgInfo.filename}${imgExtension}`;
         
         img.alt = imgInfo.alt || '泽凌图片';
+        // [新增] 将跳转链接存储在 dataset 中，供 Viewer 读取
+        img.dataset.link = imgInfo.url || '';
+        
         img.loading = 'lazy'; // 懒加载
         
         // 添加错误处理
@@ -80,7 +83,39 @@ document.addEventListener('DOMContentLoaded', function() {
           scalable: true,
           transition: true,
           fullscreen: true,
-          keyboard: true
+          keyboard: true,
+          // 当图片显示完成时触发
+          viewed: function(event) {
+            // 获取当前显示的原始图片元素
+            const currentImg = event.detail.originalImage;
+            // 获取对应的链接
+            const linkUrl = currentImg.dataset.link;
+            // 获取 Viewer 生成的标题元素
+            // viewer.viewer 是 Viewer 生成的模态框 DOM 根节点
+            const titleElement = viewer.viewer.querySelector('.viewer-title');
+
+            if (titleElement) {
+              // 重置样式和事件（防止上一个图片的事件残留）
+              titleElement.style.cursor = '';
+              titleElement.style.textDecoration = '';
+              titleElement.style.color = '';
+              titleElement.onclick = null;
+              titleElement.title = '';
+
+              // 如果有链接，则绑定点击事件并修改样式
+              if (linkUrl && linkUrl.trim() !== '') {
+                titleElement.style.cursor = 'pointer';
+                titleElement.title = '点击访问 / Click to visit'; // 鼠标悬停提示
+                
+                // 绑定点击跳转
+                titleElement.onclick = function(e) {
+                  // 阻止冒泡防止关闭查看器
+                  e.stopPropagation(); 
+                  window.open(linkUrl, '_blank');
+                };
+              }
+            }
+          }
         });
       }
     })
