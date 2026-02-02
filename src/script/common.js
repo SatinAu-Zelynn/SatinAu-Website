@@ -433,15 +433,15 @@ function getCustomMenuSetting() {
 
 // 初始化菜单实例并根据设置挂载/卸载
 function initCustomRightClickMenu() {
-    // 检查 CustomRightClickMenu 类是否可用 (来自 CRCMenu.v2.js)
+    // 检查 CustomRightClickMenu 类是否可用 (来自 CRCMenu.js)
     if (typeof CustomRightClickMenu === 'undefined') {
-        console.warn('CRCMenu.v2.js 未加载或类名不正确。');
+        console.warn('CRCMenu.js 未加载或类名不正确。');
         return;
     }
 
     // 实例化菜单（CustomRightClickMenu是单例模式）
     if (!customMenuInstance) {
-        // 确保 Web Component 已定义（CRCMenu.v2.js 应该自行注册）
+        // 确保 Web Component 已定义（CRCMenu.js 应该自行注册）
         if (!customElements.get('custom-right-click-menu')) {
              customElements.define('custom-right-click-menu', CustomRightClickMenu);
         }
