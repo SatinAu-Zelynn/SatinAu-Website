@@ -33,14 +33,6 @@
   <script src="/src/script/common.js" defer></script>
   <script src="/src/script/components/CRCMenu.js"></script>
   <script src="/src/script/components/GlobalModal.js" defer></script>
-
-  <script type="text/javascript">
-      (function(c,l,a,r,i,t,y){
-          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-      })(window, document, "clarity", "script", "trwlkhxzch");
-  </script>
 </head>
 <body>
   <!-- 背景色块 -->
@@ -229,6 +221,15 @@
       </div>
       <div class="setting-item">
         <label>
+          更新 Cookie 首选项
+          <span class="tooltip">Cookie 首选项中心</span>
+        </label>
+        <button class="more-btn" href="#" id="open_preferences_center" style="width:auto; height:auto; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight:600; text-decoration:none; background:rgba(128,128,128,0.2);">
+          立即更新
+        </button>
+      </div>
+      <div class="setting-item">
+        <label>
           浏览器兼容性检测
           <span class="tooltip">查看当前浏览器对本网站技术的支持情况</span>
         </label>
@@ -257,4 +258,26 @@
   <script src="../src/script/components/navigate.js"></script>
   <navigate-bar></navigate-bar>
 </body>
+
+<!-- Cookie Consent by TermsFeed https://www.TermsFeed.com -->
+<script type="text/javascript" src="https://www.termsfeed.com/public/cookie-consent/4.2.0/cookie-consent.js" charset="UTF-8"></script>
+<script type="text/javascript" charset="UTF-8">
+document.addEventListener('DOMContentLoaded', function () {
+cookieconsent.run({"notice_banner_type":"simple","consent_type":"express","palette":"light","language":"en","page_load_consent_levels":["strictly-necessary"],"notice_banner_reject_button_hide":false,"preferences_center_close_button_hide":false,"page_refresh_confirmation_buttons":false,"website_name":"缎金SatinAu","website_privacy_policy_url":"https://satinau.cn/pages/agreement"});
+});
+</script>
+
+<!-- Microsoft Clarity -->
+<script type="text/plain" data-cookie-consent="tracking">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "trwlkhxzch");
+</script>
+<!-- end of Microsoft Clarity-->
+
+<noscript>Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a></noscript>
+<!-- End Cookie Consent by TermsFeed https://www.TermsFeed.com -->
+
 </html>
