@@ -395,11 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const isExternal = this.target === '_blank' || this.href.startsWith('http');
       if (!isExternal) {
         e.preventDefault();
-        if (typeof spaNavigate === 'function') {
-          spaNavigate(this.getAttribute('href'));
-        } else {
-          window.location.href = this.getAttribute('href');
-        }
+        window.location.href = this.getAttribute('href');
       }
       
       mobileMenu.classList.remove('show');
