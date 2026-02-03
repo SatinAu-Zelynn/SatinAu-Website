@@ -1152,21 +1152,37 @@ function fetchRemoteNotice() {
   fetch(NOTICE_URL, { cache: 'no-cache' })
     .then(response => response.json())
     .then(data => {
-      if (!data.active) return;
+      // 数据标准化：无论后端返回单个对象还是数组，统一转为数组处理
+      const notices = Array.isArray(data) ? data : [data];
 
-      const lastId = localStorage.getItem(LAST_ID_KEY);
-      // 如果当前的 ID 大于本地记录的 ID，说明是新通知
-      if (!lastId || parseInt(data.id) > parseInt(lastId)) {
-        
-        // 调用现有的接口
-        window.sendNativeNotification(data.title, {
-          body: data.content,
-          tag: 'remote-notice', // 使用固定 tag 确保新通知覆盖旧的
-          requireInteraction: true // 通知不自动消失，直到用户点击
-        }, data.url);
+      // 获取本地存储的最后一个已读 ID，默认为 0
+      let lastId = parseInt(localStorage.getItem(LAST_ID_KEY) || '0');
+      let maxIdFound = lastId; // 用于记录本次请求中发现的最大 ID
 
-        // 更新本地 ID，防止重复弹出
-        localStorage.setItem(LAST_ID_KEY, data.id);
+      // 遍历所有通知
+      notices.forEach(notice => {
+        const currentId = parseInt(notice.id);
+
+        // 核心逻辑：active 为 true 且 ID 比本地记录的新
+        if (notice.active && currentId > lastId) {
+          
+          window.sendNativeNotification(notice.title, {
+            body: notice.content,
+            // 使用带 ID 的 tag，确保多条通知不会互相覆盖
+            tag: `remote-notice-${currentId}`, 
+            requireInteraction: true 
+          }, notice.url);
+
+          // 记录当前批次中最大的 ID
+          if (currentId > maxIdFound) {
+            maxIdFound = currentId;
+          }
+        }
+      });
+
+      // 更新本地记录（只记录见过的最大 ID，避免下次重复弹窗）
+      if (maxIdFound > lastId) {
+        localStorage.setItem(LAST_ID_KEY, maxIdFound);
       }
     })
     .catch(err => console.error('获取远程通知失败:', err));
