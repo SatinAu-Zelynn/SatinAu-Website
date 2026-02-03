@@ -143,7 +143,7 @@ window.addEventListener('DOMContentLoaded', function() {
             observer.unobserve(e.target);
           }
         });
-      }, { threshold: 0.2, rootMargin: '0px 0px -100px 0px' }).observe(element);
+      }, { threshold: 0.2, rootMargin: '0px 0px -50px 0px' }).observe(element);
     }
   });
 

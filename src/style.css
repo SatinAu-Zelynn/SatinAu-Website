@@ -3088,3 +3088,105 @@ body.hero-open {
   opacity: 1;
   transition: opacity 0.3s ease;
 }
+
+/* ========== 首页 Featured 布局 ========== */
+
+/* 桌面端布局：左侧两小卡，右侧一大卡 */
+.featured-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr; /* 左侧占1份，右侧占1.6份 */
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.featured-left {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.featured-left .contact-card {
+  flex: 1;
+  margin-top: 0 !important;
+}
+
+/* 泽凌大卡片样式 */
+.big-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* 内容靠下 */
+  align-items: flex-start;
+  padding: 30px !important;
+  min-height: 200px;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* 增加阴影，保证文字在图片上可见 */
+}
+
+/* 强制白色文字 */
+.big-card .label, 
+.big-card .value {
+  color: #fff !important;
+  z-index: 2;
+  position: relative;
+}
+.big-card .label { opacity: 0.9; }
+
+.big-card .icon {
+  z-index: 2;
+  background: rgba(255,255,255,0.2) !important;
+  backdrop-filter: blur(10px);
+  margin-bottom: auto; /* 图标顶到上面 */
+}
+
+/* 背景轮播层 */
+.card-bg-slideshow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center 20%;
+  background-repeat: no-repeat;
+  transition: background-image 1s ease-in-out, transform 8s ease;
+  transform: scale(1);
+}
+
+.card-bg-slideshow.zooming {
+  transform: scale(1.1); /* 缓慢放大效果 */
+}
+
+/* 遮罩层 */
+.card-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
+  z-index: 1;
+}
+
+/* ========== 移动端适配 ========== */
+@media (max-width: 768px) {
+  .featured-grid {
+    grid-template-columns: 1fr; /* 改为单列布局 */
+    gap: 12px;
+  }
+  
+  /* 左侧变为第一行，两个小卡片并排显示 */
+  .featured-left {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 12px;
+  }
+
+  /* 泽凌大卡片变为第二行 */
+  .big-card {
+    min-height: 160px;
+  }
+  
+  /* 极窄屏幕下小卡片也改为堆叠 */
+  @media (max-width: 400px) {
+    .featured-left {
+      grid-template-columns: 1fr;
+    }
+  }
+}
