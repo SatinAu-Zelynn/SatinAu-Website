@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log(`Loading images with extension: ${imgExtension} (HDR: ${useHDR})`);
 
   // 加载图片列表
-  fetch('https://blog.satinau.cn/zelynn/list.json')
+  fetch(`${getCdnBaseUrl()}/zelynn/list.json`)
     .then(response => {
       if (!response.ok) {
         throw new Error('图片列表加载失败');
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const img = document.createElement('img');
         
         // 动态拼接后缀
-        img.src = `https://blog.satinau.cn/zelynn/${imgInfo.filename}${imgExtension}`;
+        img.src = `${getCdnBaseUrl()}/zelynn/${imgInfo.filename}${imgExtension}`;
         
         img.alt = imgInfo.alt || '泽凌图片';
         // [新增] 将跳转链接存储在 dataset 中，供 Viewer 读取

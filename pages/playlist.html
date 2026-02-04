@@ -240,7 +240,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       initPageComments('playlist-comments', 'playlist');
       const container = document.getElementById('bilibili-list');
-      const jsonUrl = 'https://blog.satinau.cn/data/playlist.json'; 
+      const jsonUrl = `${getCdnBaseUrl()}/data/playlist.json`; 
 
       fetch(jsonUrl)
         .then(response => {

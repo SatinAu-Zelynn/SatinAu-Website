@@ -16,6 +16,19 @@
 
 /* ========== 公用逻辑 ========== */
 
+/* ========== CDN 线路切换逻辑 ========== */
+const CDN_KEY = 'setting_cdn_source';
+
+// 获取当前 CDN 域名 (供全局调用)
+window.getCdnBaseUrl = function() {
+  const source = localStorage.getItem(CDN_KEY);
+  // 如果明确设置为 'cf' 则使用 Cloudflare，否则默认使用 EdgeOne ('eo' 或 null)
+  if (source === 'cf') {
+    return 'https://cdn-cf.satinau.cn';
+  }
+  return 'https://cdn-eo.satinau.cn';
+};
+
 /* ========== 整点报时逻辑 ========== */
 const CHIME_KEY = 'setting_hourly_chime_enabled';
 let serverTimeOffset = 0; // 服务器时间与本地时间的差值 (ms)
@@ -562,46 +575,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-/* ========== 字体切换逻辑 ========== */
+/* ========== 下拉菜单通用逻辑 ========== */
 const FONT_KEY = 'setting_font_mode';
 
 // 1. 初始化逻辑 (页面加载时执行)
 document.addEventListener('DOMContentLoaded', () => {
-  const wrapper = document.getElementById('fontSelectComponent');
-  if (!wrapper) {
+  // --- 字体选择器初始化 ---
+  const fontWrapper = document.getElementById('fontSelectComponent');
+  if (fontWrapper) {
+    initCustomSelect(fontWrapper, FONT_KEY, (mode) => {
+      applyFontMode(mode);
+      showToast(`字体已切换`);
+    });
+  } else {
     // 如果不在设置页，仅应用字体
     const savedMode = localStorage.getItem(FONT_KEY) || 'sans';
     applyFontMode(savedMode);
-    return;
   }
 
-  // 初始化设置页 UI
-  initCustomSelect(wrapper);
+  // --- CDN 选择器初始化 ---
+  const cdnWrapper = document.getElementById('cdnSelectComponent');
+  if (cdnWrapper) {
+    initCustomSelect(cdnWrapper, CDN_KEY, (mode) => {
+      const nameMap = { 'eo': 'EdgeOne', 'cf': 'Cloudflare' };
+      showToast(`线路已切换为：${nameMap[mode] || mode}，即将刷新...`);
+      // CDN 切换必须刷新页面才能生效
+      setTimeout(() => location.reload(), 1000);
+    });
+  }
 });
 
-// 2. 初始化自定义组件
-function initCustomSelect(wrapper) {
+// 2. 通用自定义 Select 组件初始化
+function initCustomSelect(wrapper, storageKey, callback) {
   const trigger = wrapper.querySelector('.custom-select-trigger');
   const triggerText = wrapper.querySelector('.selected-value');
   const options = wrapper.querySelectorAll('.custom-option');
   
   // 读取当前设置
-  const savedMode = localStorage.getItem(FONT_KEY) || 'sans';
-  applyFontMode(savedMode); // 确保 CSS 变量生效
+  const savedValue = localStorage.getItem(storageKey); 
 
   // 更新 UI 显示状态
+  let found = false;
   options.forEach(opt => {
-    if (opt.dataset.value === savedMode) {
+    // 如果有保存的值，按保存的值选中
+    if (savedValue && opt.dataset.value === savedValue) {
       opt.classList.add('selected');
       triggerText.textContent = opt.textContent;
+      found = true;
+    } else if (!savedValue) {
+      // 如果没有保存的值，保持 HTML 中默认的 selected 类不做变动
+      // 但需要移除其他项的 selected (防止 HTML 结构错误)
+      if (!opt.classList.contains('selected')) {
+        opt.classList.remove('selected');
+      }
     } else {
+      // 有保存值但当前项不匹配
       opt.classList.remove('selected');
     }
   });
 
+  // 如果没有找到匹配项且没有保存值，确保 triggerText 显示默认选中的文本
+  if (!found && !savedValue) {
+    const defaultSel = wrapper.querySelector('.custom-option.selected');
+    if(defaultSel) triggerText.textContent = defaultSel.textContent;
+  }
+
   // 点击触发器：切换开关
   trigger.addEventListener('click', (e) => {
-    e.stopPropagation(); // 防止冒泡触发 document 的关闭事件
+    e.stopPropagation(); 
     wrapper.classList.toggle('open');
   });
 
@@ -610,21 +651,17 @@ function initCustomSelect(wrapper) {
     option.addEventListener('click', (e) => {
       e.stopPropagation();
       
-      // 移除其他选项的 selected 类
       options.forEach(o => o.classList.remove('selected'));
-      // 给当前选项添加 selected 类
       option.classList.add('selected');
-      // 更新触发器文字
       triggerText.textContent = option.textContent;
-      // 关闭菜单
       wrapper.classList.remove('open');
       
-      // 执行实际功能
-      const mode = option.dataset.value;
-      localStorage.setItem(FONT_KEY, mode);
-      applyFontMode(mode);
+      const val = option.dataset.value;
+      localStorage.setItem(storageKey, val);
       
-      showToast(`字体已切换为：${option.textContent.trim()}`);
+      if (typeof callback === 'function') {
+        callback(val);
+      }
     });
   });
 
@@ -1146,7 +1183,7 @@ function fetchRemoteNotice() {
   // 仅在开启了通知权限时才去请求后端，节省流量
   if (!isNativeNotificationEnabled()) return;
 
-  const NOTICE_URL = 'https://blog.satinau.cn/data/notice.json';
+  const NOTICE_URL = `${getCdnBaseUrl()}/data/notice.json`;
   const LAST_ID_KEY = 'last_processed_notice_id';
 
   fetch(NOTICE_URL, { cache: 'no-cache' })
@@ -1214,7 +1251,8 @@ window.restoreDefaultSettings = function(triggerElement) {
       'setting_native_notifications_enabled', // 系统通知
       'setting_hourly_chime_enabled',       // 整点报时
       'setting_custom_context_menu_enabled', // 右键菜单
-      'enableHDR'                           // HDR 模式
+      'enableHDR',                           // HDR 模式
+      'setting_cdn_source'                  // 重置 CDN 设置
     ];
 
     // 移除这些 Key

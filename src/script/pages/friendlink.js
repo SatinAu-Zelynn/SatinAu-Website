@@ -22,7 +22,7 @@ function initFriendLinks() {
   const container = document.getElementById("friendlink-container");
   if (!container) return;
 
-  fetch("https://blog.satinau.cn/data/friendlink.json")
+  fetch(`${getCdnBaseUrl()}/data/friendlink.json`)
     .then(res => res.json())
     .then(data => {
       const list = data.friends || [];

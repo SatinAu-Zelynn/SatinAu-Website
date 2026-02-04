@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const imgExtension = '.webp';
   
   // 图片基础路径
-  const baseUrl = 'https://blog.satinau.cn/zelynn/';
-  const listUrl = 'https://blog.satinau.cn/zelynn/list.json';
+  const baseUrl = `${getCdnBaseUrl()}/zelynn/`;
+  const listUrl = `${getCdnBaseUrl()}/zelynn/list.json`;
   
   let images = [];
   let currentIndex = 0;

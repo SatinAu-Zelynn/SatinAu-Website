@@ -189,12 +189,12 @@ errorState.style.display = "none";
 
 // 使用 Promise.all 并行请求文章列表和封面索引
 return Promise.all([
-    fetch("https://blog.satinau.cn/blog/index.json").then(res => {
+    fetch(`${getCdnBaseUrl()}/blog/index.json`).then(res => {
         if (!res.ok) throw new Error("文章列表加载失败");
         return res.json();
     }),
     // 封面加载失败不应该阻断文章列表显示，所以 catch 住错误返回空对象
-    fetch("https://blog.satinau.cn/blog/covers.json")
+    fetch(`${getCdnBaseUrl()}/blog/covers.json`)
         .then(res => res.ok ? res.json() : {})
         .catch(() => ({})) 
 ])
@@ -466,7 +466,7 @@ if (!forceRefresh && postCache.has(post.file)) {
 }
 
 // 从网络加载
-fetch(`https://blog.satinau.cn/blog/${post.file}`)
+fetch(`${getCdnBaseUrl()}/blog/${post.file}`)
     .then(res => {
         if (!res.ok) throw new Error("文章加载失败");
         return res.text();

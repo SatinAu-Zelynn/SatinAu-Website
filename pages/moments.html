@@ -427,7 +427,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
       // 修改为 moments.json
-      const MOMENTS_API = 'https://blog.satinau.cn/data/moments.json';
+      const MOMENTS_API = `${getCdnBaseUrl()}/data/moments.json`;
       const momentsList = document.getElementById('momentsList');
       const statusMsg = document.getElementById('statusMsg');
       const loadingOverlay = document.getElementById('loadingOverlay');

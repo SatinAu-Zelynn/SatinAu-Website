@@ -195,6 +195,27 @@
           </div>
         </div>
       </div>
+
+      <div class="setting-item">
+        <label>
+          静态资源线路
+          <span class="tooltip">切换图片和数据的加载源，若加载缓慢可尝试切换</span>
+        </label>
+        
+        <div class="custom-select-wrapper" id="cdnSelectComponent">
+          <div class="custom-select-trigger" tabindex="0">
+            <!-- 默认显示文本为 EdgeOne -->
+            <span class="selected-value">线路一 (EdgeOne)</span>
+            <div class="arrow"></div>
+          </div>
+          
+          <div class="custom-options">
+            <!-- 默认给 EdgeOne 添加 selected 类 -->
+            <div class="custom-option selected" data-value="eo">线路一 (EdgeOne)</div>
+            <div class="custom-option" data-value="cf">线路二 (Cloudflare)</div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section>

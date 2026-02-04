@@ -212,7 +212,7 @@
 
       <!-- Scene 3: Zelynn -->
       <div class="intro-scene" id="scene-3">
-        <img src="https://blog.satinau.cn/zelynn/9.webp" class="scene-bg" alt="Zelynn">
+        <img src="https://cdn-cf.satinau.cn/zelynn/9.webp" class="scene-bg" alt="Zelynn">
         <div class="scene-content">
           <p>自设是一只雪狐</p>
           <h1 style="font-size: 4rem; margin: 10px 0;">泽凌 Zelynn</h1>
@@ -310,7 +310,7 @@
       const earthBg = document.getElementById('earth-bg'); // 特殊处理地球
 
       // 加载 Markdown 内容
-      fetch("https://blog.satinau.cn/data/aboutme.md")
+      fetch(`${getCdnBaseUrl()}/data/aboutme.md`)
         .then(res => res.ok ? res.text() : "加载失败")
         .then(md => {
             document.getElementById("aboutmeContent").innerHTML = marked.parse(md);
