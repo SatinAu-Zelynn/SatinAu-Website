@@ -22,11 +22,11 @@ const CDN_KEY = 'setting_cdn_source';
 // 获取当前 CDN 域名 (供全局调用)
 window.getCdnBaseUrl = function() {
   const source = localStorage.getItem(CDN_KEY);
-  // 如果明确设置为 'cf' 则使用 Cloudflare，否则默认使用 EdgeOne ('eo' 或 null)
-  if (source === 'cf') {
-    return 'https://cdn-cf.satinau.cn';
+  // 如果明确设置为 'eo' 则使用 EdgeOne，否则默认使用 Cloudflare ('cf' 或 null)
+  if (source === 'eo') {
+    return 'https://cdn-eo.satinau.cn';
   }
-  return 'https://cdn-eo.satinau.cn';
+  return 'https://cdn-cf.satinau.cn';
 };
 
 /* ========== 整点报时逻辑 ========== */
