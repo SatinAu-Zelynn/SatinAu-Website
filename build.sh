@@ -66,7 +66,7 @@ if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "t
     fi
 
     # 拼接 Cloudflare 专用 HTML
-    FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署和CDN服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
+    FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 elif [ -n "$VERCEL" ]; then
     # --- Vercel 环境 ---
@@ -84,7 +84,7 @@ elif [ -n "$VERCEL" ]; then
     FINAL_INFO="${SVG_VERCEL} Vercel 提供静态部署服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
 
 else
-    # --- 本地/其他环境 (回退方案) ---
+    # --- 其他环境 (回退方案) ---
     echo "Detected Environment: Local/Generic"
     
     # 尝试获取 Git 信息
@@ -94,7 +94,7 @@ else
         COMMIT_HASH="local-dev"
     fi
     
-    FINAL_INFO="本地环境构建 版本: ${COMMIT_HASH}"
+    FINAL_INFO="版本: ${COMMIT_HASH}"
 fi
 
 echo "[BUILD] 版本信息预览:"

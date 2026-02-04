@@ -1,0 +1,107 @@
+<!--
+  Copyright 2025 缎金SatinAu
+  
+  网络资源加载问题帮助页面
+-->
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>网络资源问题说明 - 缎金SatinAu</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <link rel="icon" type="image/x-icon" href="/public/favicon.ico">
+  <link rel="stylesheet" href="/src/style.css">
+  <script src="/src/script/config.js"></script>
+  <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/CRCMenu.js"></script>
+  <script src="/src/script/components/GlobalModal.js" defer></script>
+</head>
+<body id="network-help-page">
+  <!-- 背景色块 -->
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+
+  <main class="page container">
+    <header style="padding-top: 60px; padding-bottom: 20px;">
+      <!-- 返回按钮 -->
+      <a onclick="window.close()" class="back-button" aria-label="关闭页面">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </a>
+      <div class="title-row" style="justify-content: center; display: flex;">
+        <h1>网络资源加载说明</h1>
+      </div>
+    </header>
+
+    <section>
+      <div class="ai-summary-card" style="margin-top: 0; text-align: left;">
+        <div class="ai-header">
+          <span class="ai-icon">🚀</span>
+          <span>加速与故障排查</span>
+        </div>
+        <div class="ai-content">
+          <p>如果您在浏览本站时遇到以下问题，通常是因为当前网络环境连接默认的 CDN 节点不畅导致的：</p>
+          
+          <ul style="margin: 10px 0 15px 20px; padding: 0; font-size: 14px; line-height: 1.6; color: var(--word-color);">
+            <li>图片加载极其缓慢或无法显示（显示裂图图标）。</li>
+            <li>页面布局错乱，字体无法加载。</li>
+            <li>博客文章列表或“泽凌设定”数据无法刷新。</li>
+          </ul>
+
+          <!-- 解决方案提示块 -->
+          <div style="background: rgba(var(--primary-rgb), 0.08); padding: 16px; border-radius: 12px; border: 1px solid rgba(var(--primary-rgb), 0.15); margin-top: 20px;">
+            <p style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">
+              💡 解决方案：切换 CDN 线路
+            </p>
+            <p style="margin: 0 0 15px 0; font-size: 14px; opacity: 0.9;">
+              请前往设置页面，找到 <strong>“静态资源线路”</strong> 选项进行切换。切换后系统会自动刷新页面以应用新线路。
+            </p>
+            
+            <div style="text-align: center;">
+                <a href="/pages/settings.html#route-switching" target="_blank" class="ai-generate-btn" style="text-decoration: none;">
+                前往设置页面
+                </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <script src="/src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+  <!-- 弹窗组件 -->
+  <global-modal id="globalModal"></global-modal>
+
+</body>
+
+<!-- Cookie Consent by TermsFeed https://www.TermsFeed.com -->
+<script type="text/javascript" src="https://www.termsfeed.com/public/cookie-consent/4.2.0/cookie-consent.js" charset="UTF-8"></script>
+<script type="text/javascript" charset="UTF-8">
+document.addEventListener('DOMContentLoaded', function () {
+cookieconsent.run({"notice_banner_type":"simple","consent_type":"express","palette":"light","language":"en","page_load_consent_levels":["strictly-necessary"],"notice_banner_reject_button_hide":false,"preferences_center_close_button_hide":false,"page_refresh_confirmation_buttons":false,"website_name":"缎金SatinAu","website_privacy_policy_url":"https://satinau.cn/pages/agreement"});
+});
+</script>
+
+<!-- Microsoft Clarity -->
+<script type="text/plain" data-cookie-consent="tracking">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "trwlkhxzch");
+</script>
+<!-- end of Microsoft Clarity-->
+
+<noscript>Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a></noscript>
+<!-- End Cookie Consent by TermsFeed https://www.TermsFeed.com -->
+
+</html>
