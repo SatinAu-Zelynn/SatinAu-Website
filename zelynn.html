@@ -57,17 +57,20 @@
       <h2>设定总览 / Character Overview</h2>
       <p>文字描述和设定图</p>
       <div class="lang-wrapper">
-        <a class="contact-card" href="pages/character.html?lang=zh-cn">
+        <!-- 简体中文 -->
+        <a class="contact-card" href="javascript:void(0)" onclick="document.getElementById('globalModal').characterDocs('zh-cn')">
           <div class="icon"><span class="paw-pink">🐾</span></div>
           <div class="text"><div class="label">语言</div><div class="value">简体中文</div></div>
         </a>
 
-        <a class="contact-card" href="pages/character.html?lang=zh-tw">
+        <!-- 繁体中文 -->
+        <a class="contact-card" href="javascript:void(0)" onclick="document.getElementById('globalModal').characterDocs('zh-tw')">
           <div class="icon"><span class="paw-purple">🐾</span></div>
           <div class="text"><div class="label">語言</div><div class="value">繁體中文</div></div>
         </a>
 
-        <a class="contact-card" href="pages/character.html?lang=en">
+        <!-- English -->
+        <a class="contact-card" href="javascript:void(0)" onclick="document.getElementById('globalModal').characterDocs('en')">
           <div class="icon"><span class="paw-cyan">🐾</span></div>
           <div class="text"><div class="label">Language</div><div class="value">English</div></div>
         </a>

@@ -326,6 +326,81 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
+  // 角色设定文档弹窗
+  // ==========================================
+  characterDocs(lang = 'zh-cn') {
+    // 设置样式类
+    this.modal.className = 'modal character-doc-modal';
+    
+    // 链接映射
+    const docUrls = {
+      "zh-cn": "https://www.kdocs.cn/l/cbnmJFr498XG",
+      "zh-tw": "https://www.kdocs.cn/l/caB01lLIj8q2",
+      "en": "https://www.kdocs.cn/l/cjSN22oChlaT"
+    };
+    const targetUrl = docUrls[lang] || docUrls["zh-cn"];
+
+    // 渲染内容
+    this.content.innerHTML = `
+      <div class="doc-container">
+        <iframe id="docFrame" src="${targetUrl}" title="设定总览" allowfullscreen></iframe>
+        
+        <div class="doc-controls">
+          <!-- 全屏切换按钮 -->
+          <button id="docZoomBtn" class="doc-float-btn" title="全屏查看 / Fullscreen">
+            <svg id="icon-expand" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+            <svg id="icon-compress" viewBox="0 0 24 24" style="display: none;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5z"/></svg>
+          </button>
+          
+          <!-- 关闭按钮 -->
+          <button id="docCloseBtn" class="doc-float-btn close-btn" title="关闭 / Close">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // 绑定事件
+    const modalContainer = this.modal;
+    const zoomBtn = this.querySelector('#docZoomBtn');
+    const closeBtn = this.querySelector('#docCloseBtn');
+    const iconExpand = this.querySelector('#icon-expand');
+    const iconCompress = this.querySelector('#icon-compress');
+
+    // 关闭逻辑
+    closeBtn.onclick = () => {
+      // 如果处于全屏模式，先退出全屏再关闭，动画更自然
+      if (modalContainer.classList.contains('fullscreen-mode')) {
+        modalContainer.classList.remove('fullscreen-mode');
+        // 延迟一点点再执行真正的关闭动画
+        setTimeout(() => this.close(), 100);
+      } else {
+        this.close();
+      }
+    };
+
+    // 全屏切换逻辑
+    zoomBtn.onclick = () => {
+      // 切换 class
+      const isFullscreen = modalContainer.classList.toggle('fullscreen-mode');
+      
+      // 切换图标
+      if (isFullscreen) {
+        iconExpand.style.display = 'none';
+        iconCompress.style.display = 'block';
+        zoomBtn.title = "退出全屏 / Exit Fullscreen";
+      } else {
+        iconExpand.style.display = 'block';
+        iconCompress.style.display = 'none';
+        zoomBtn.title = "全屏查看 / Fullscreen";
+      }
+    };
+
+    // 显示弹窗
+    this.show();
+  }
+
+  // ==========================================
   // 整点报时
   // ==========================================
   showChime(hour) {

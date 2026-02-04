@@ -3190,3 +3190,132 @@ body.hero-open {
     }
   }
 }
+
+/* ========== 角色设定文档弹窗样式 ========== */
+
+/* 弹窗容器基础样式 */
+.modal.character-doc-modal {
+  /* 基础尺寸：使用 dvh 适配移动端动态高度 */
+  width: 90vw;
+  height: 85vh; 
+  height: 85dvh; /* 适配移动端浏览器工具栏 */
+  
+  max-width: 1200px;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  border-radius: var(--border-radius-lg);
+  
+  /* 确保过渡动画包含所有变化的属性 */
+  transition: 
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.4s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), /* 关键：平滑过渡 transform */
+    opacity 0.4s ease;
+}
+
+/* 内部 iframe */
+.doc-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+iframe#docFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #fff; /* 避免加载时透明 */
+}
+
+/* 悬浮按钮组 */
+.doc-controls {
+  position: absolute;
+  /* 适配 iPhone 底部横条 */
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 20; /* 保证在 iframe 之上 */
+}
+
+.doc-float-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.2));
+  background: light-dark(rgba(255,255,255,0.8), rgba(40,40,40,0.8));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: var(--word-color);
+  padding: 0;
+  /* 防止触摸时产生高亮背景块 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.doc-float-btn:hover {
+  transform: scale(1.1);
+  background: var(--primary-color);
+  color: white;
+  border-color: transparent;
+}
+
+.doc-float-btn:active {
+  transform: scale(0.95);
+}
+
+.doc-float-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.doc-float-btn.close-btn:hover {
+  background: light-dark(#ff3b30, #ff453a);
+}
+
+/* 全屏模式样式 (覆盖默认 Modal 样式) */
+.modal.character-doc-modal.fullscreen-mode {
+  /* 强制铺满屏幕 */
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important; /* 解决移动端遮挡 */
+  max-width: none !important;
+  
+  /* 强制定位到左上角 */
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  
+  /* 关键：移除 JS 计算出的居中偏移，防止位置错乱 */
+  transform: none !important; 
+  
+  border-radius: 0 !important;
+  border: none !important;
+  z-index: 10000; /* 极高层级，覆盖导航栏 */
+}
+
+/* 移动端适配微调 */
+@media (max-width: 768px) {
+  .modal.character-doc-modal {
+    /* 非全屏状态下，稍微留点边距 */
+    width: 92vw;
+    height: 80dvh; 
+  }
+  
+  .doc-controls {
+    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+}
