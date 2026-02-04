@@ -1303,6 +1303,8 @@ body#index-page {
     box-shadow: 0 0 40px light-dark(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.4)), inset 0 0 30px light-dark(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12));
     z-index: 5000;
     opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
     transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     /* 确保内容不会在动画时被裁剪 */
     padding: 12px; /* 给容器加一点内边距 */
@@ -1334,6 +1336,8 @@ body#index-page {
       max-height: 80vh;
       opacity: 1;
       transform: translateX(-50%) translateY(0) scale(1);
+      visibility: visible;
+      pointer-events: auto;
       /* 添加轻微的弹性效果 */
       transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1.2);
     }
