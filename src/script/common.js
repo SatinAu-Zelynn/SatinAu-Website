@@ -1090,39 +1090,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-/* ========== 原生系统通知逻辑 ========== */
+/* ========== 统一通知系统逻辑 (Native + In-App) ========== */
 const NATIVE_NOTIFY_KEY = 'setting_native_notifications_enabled';
 
 // 判断是否可以使用原生通知 (设置开启且浏览器已授权)
 function isNativeNotificationEnabled() {
   const setting = localStorage.getItem(NATIVE_NOTIFY_KEY);
-  // 默认为 false (关闭)
   return setting === 'true' && ("Notification" in window) && Notification.permission === 'granted';
 }
 
-// 发送原生通知的通用函数
-// 参数: title (标题), options (body, icon, tag, data 等)
-// url (可选): 点击通知后跳转的链接
-window.sendNativeNotification = function(title, options = {}, url = null) {
-  if (!isNativeNotificationEnabled()) return;
-
-  // 默认配置
+// 发送原生通知的底层函数
+function _sendNativeImplementation(title, options = {}, url = null) {
   const defaultOptions = {
-    icon: '/public/favicon.ico', // logo 图片
-    badge: '/public/favicon.ico', // 安卓状态栏小图标
-    vibrate: [200, 100, 200],     // 移动端震动模式
+    icon: '/public/favicon.ico',
+    badge: '/public/favicon.ico',
+    vibrate: [200, 100, 200],
     ...options
   };
 
   try {
     const notification = new Notification(title, defaultOptions);
-
-    // 点击通知的交互
     notification.onclick = function(event) {
       event.preventDefault();
       notification.close();
-      
-      // 如果提供了URL，点击跳转
       if (url) {
         window.open(url, '_blank');
       } else {
@@ -1132,92 +1122,172 @@ window.sendNativeNotification = function(title, options = {}, url = null) {
   } catch (e) {
     console.warn("发送原生通知失败:", e);
   }
+}
+
+// 发送应用内通知 (In-App) 的底层函数
+// 2. 发送应用内通知 (In-App) 的底层函数
+function _sendInAppImplementation(title, options = {}, url = null) {
+  // 查找或创建容器
+  let container = document.querySelector('.notification-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'notification-container';
+    document.body.appendChild(container);
+  }
+
+  // 创建卡片
+  const card = document.createElement('div');
+  card.className = 'satin-notify-card'; // 初始状态在 CSS 中定义为 max-height: 0
+  
+  // 默认图标
+  const iconSrc = options.icon || '/public/favicon.ico';
+  
+  card.innerHTML = `
+    <img src="${iconSrc}" class="notify-icon" alt="icon">
+    <div class="notify-content">
+      <div class="notify-title">${title}</div>
+      <div class="notify-body">${options.body || ''}</div>
+    </div>
+    <button class="notify-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  `;
+
+  // 点击主体跳转
+  if (url) {
+    card.style.cursor = 'pointer';
+    const content = card.querySelector('.notify-content');
+    content.addEventListener('click', () => {
+       window.open(url, '_blank');
+       closeCard();
+    });
+  }
+
+  // 关闭逻辑
+  const closeBtn = card.querySelector('.notify-close');
+  const closeCard = () => {
+    // 移除 show 类，添加 hiding 类，触发 CSS 中的折叠动画
+    card.classList.remove('show');
+    card.classList.add('hiding');
+    
+    // 等待动画结束后从 DOM 移除
+    card.addEventListener('transitionend', (e) => {
+      // 确保只在 max-height 动画结束时移除，或者任意一个结束均可
+      if (e.propertyName === 'max-height' && card.parentElement) {
+        card.remove();
+      }
+    });
+    // 设置一个超时移除，防止 transitionend 不触发
+    setTimeout(() => {
+      if(card.parentElement) card.remove();
+    }, 500);
+  };
+
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeCard();
+  });
+
+  // 插入到容器最前面
+  container.prepend(card);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      card.classList.add('show');
+    });
+  });
+
+  // 自动消失 (5秒)
+  if (!options.requireInteraction) {
+    setTimeout(closeCard, 5000);
+  }
+}
+
+// 统一对外接口：根据设置决定发送方式
+window.pushNotification = function(title, options = {}, url = null) {
+  if (isNativeNotificationEnabled()) {
+    _sendNativeImplementation(title, options, url);
+  } else {
+    _sendInAppImplementation(title, options, url);
+  }
 };
+
+// 兼容旧代码调用 (如果有其他地方用了 sendNativeNotification)
+window.sendNativeNotification = window.pushNotification;
+
 
 // 切换开关（供 settings.html 调用）
 window.toggleNativeNotifications = function() {
   const checkbox = document.getElementById('nativeNotificationToggle');
   const wantEnabled = checkbox.checked;
 
-  if (!("Notification" in window)) {
-    showToast("您的浏览器不支持原生通知功能");
-    checkbox.checked = false;
-    return;
-  }
-
   if (wantEnabled) {
-    // 用户想要开启
+    // 尝试开启原生
+    if (!("Notification" in window)) {
+      showToast("您的浏览器不支持原生通知");
+      checkbox.checked = false;
+      return;
+    }
+
     if (Notification.permission === "granted") {
-      // 已经有权限，直接开启
       localStorage.setItem(NATIVE_NOTIFY_KEY, 'true');
-      showToast("系统通知：已启用");
-      // 发送一条测试通知确认
-      sendNativeNotification("通知已开启", { body: "以后您将收到重要的公告和更新提醒。" });
+      showToast("系统原生通知：已启用");
+      pushNotification("通知模式已切换", { body: "现在您将收到系统级推送通知。" });
     } else if (Notification.permission !== "denied") {
-      // 从未询问过，请求权限
       Notification.requestPermission().then((permission) => {
         if (permission === "granted") {
           localStorage.setItem(NATIVE_NOTIFY_KEY, 'true');
-          showToast("系统通知：授权成功并已启用");
-          sendNativeNotification("通知已开启", { body: "以后您将收到重要的公告和更新提醒。" });
+          showToast("系统原生通知：授权成功");
+          pushNotification("通知模式已切换", { body: "现在您将收到系统级推送通知。" });
         } else {
-          // 用户拒绝
           checkbox.checked = false;
-          showToast("您拒绝了通知权限，无法开启");
+          showToast("授权被拒绝");
         }
       });
     } else {
-      // 之前已经被拒绝过，需要手动去浏览器设置开启
       checkbox.checked = false;
-      showToast("权限曾被拒绝，请在浏览器设置中手动允许通知");
+      showToast("权限曾被拒绝，请在浏览器设置中允许");
     }
   } else {
-    // 用户想要关闭
+    // 关闭原生 -> 转为 In-App 模式
     localStorage.setItem(NATIVE_NOTIFY_KEY, 'false');
-    showToast("系统通知：已禁用");
+    showToast("系统原生通知：已禁用 (已切换为应用内通知)");
+    // 立即测试一条 In-App
+    setTimeout(() => {
+        pushNotification("通知模式已切换", { body: "现在您将收到网站内悬浮通知。" });
+    }, 500);
   }
 };
 
 /* ========== 自动获取远程通知逻辑 ========== */
 function fetchRemoteNotice() {
-  // 仅在开启了通知权限时才去请求后端，节省流量
-  if (!isNativeNotificationEnabled()) return;
-
   const NOTICE_URL = `${getCdnBaseUrl()}/data/notice.json`;
   const LAST_ID_KEY = 'last_processed_notice_id';
 
   fetch(NOTICE_URL, { cache: 'no-cache' })
     .then(response => response.json())
     .then(data => {
-      // 数据标准化：无论后端返回单个对象还是数组，统一转为数组处理
       const notices = Array.isArray(data) ? data : [data];
-
-      // 获取本地存储的最后一个已读 ID，默认为 0
       let lastId = parseInt(localStorage.getItem(LAST_ID_KEY) || '0');
-      let maxIdFound = lastId; // 用于记录本次请求中发现的最大 ID
+      let maxIdFound = lastId;
 
-      // 遍历所有通知
       notices.forEach(notice => {
         const currentId = parseInt(notice.id);
-
-        // 核心逻辑：active 为 true 且 ID 比本地记录的新
         if (notice.active && currentId > lastId) {
           
-          window.sendNativeNotification(notice.title, {
+          // 使用统一接口
+          window.pushNotification(notice.title, {
             body: notice.content,
-            // 使用带 ID 的 tag，确保多条通知不会互相覆盖
             tag: `remote-notice-${currentId}`, 
             requireInteraction: true 
           }, notice.url);
 
-          // 记录当前批次中最大的 ID
           if (currentId > maxIdFound) {
             maxIdFound = currentId;
           }
         }
       });
 
-      // 更新本地记录（只记录见过的最大 ID，避免下次重复弹窗）
       if (maxIdFound > lastId) {
         localStorage.setItem(LAST_ID_KEY, maxIdFound);
       }

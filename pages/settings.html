@@ -157,13 +157,13 @@
       <div class="setting-item">
         <label for="nativeNotificationToggle">
           系统原生通知
-          <span class="tooltip">允许网站推送重要公告和协议更新</span>
+          <span class="tooltip">开启后使用系统推送，关闭时使用网站自带悬浮通知</span>
         </label>
         
         <div style="display: flex; align-items: center; gap: 12px;">
-          <!-- 测试按钮 -->
+          <!-- 测试按钮：调用统一接口 -->
           <button class="more-btn" 
-                  onclick="sendNativeNotification('来自 缎金SatinAu 的问候', { body: '这是一条测试通知，点击可以回到网站。' }); if(!isNativeNotificationEnabled()) showToast('请先开启右侧开关并授权');" 
+                  onclick="window.pushNotification('来自 缎金SatinAu 的问候', { body: '这是一条测试通知，无论是原生还是应用内样式都能正常显示。', requireInteraction: false });" 
                   style="width:auto; height:auto; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight:600; text-decoration:none; background:rgba(128,128,128,0.2); margin:0;">
             测试
           </button>

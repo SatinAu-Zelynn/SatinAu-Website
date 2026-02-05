@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           this.alt = '图片加载失败: ' + imgInfo.alt;
-          this.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTEyIDJjLTUuNSAyLTkgNi41LTkgMTFzMy41IDExIDkgMTExIDktMy41IDktMTEtMy41LTExLTktMTF6bTAgMTZjLTMuMyAwLTYtMi43LTYtNnMzLjcgMiA2IDIgNi0zLjMgNi02LTMuMy02LTYtNnoiLz48cGF0aCBmaWxsPSIjRjRBNEEwIiBkPSJNMTIgMTVoLjAxdjEuOTlsLS4wMS4wMUwxMiAxOWwtMS4wMS0xLjA5LS4wMS0uMDFWMTVoLjAxeiIvPjwvc3ZnPg==';
+          this.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NiA5NiI+PHJlY3QgeD0iMTIiIHk9IjE2IiB3aWR0aD0iNzIiIGhlaWdodD0iNTYiIHJ4PSI2IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtZGFzaGFycmF5PSI2IDQiLz48bGluZSB4MT0iMjIiIHkxPSI2MCIgeDI9Ijc0IiB5Mj0iMjgiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSI0OCIgeTE9IjM0IiB4Mj0iNDgiIHkyPSI1MCIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGNpcmNsZSBjeD0iNDgiIGN5PSI1OCIgcj0iMi41IiBmaWxsPSJjdXJyZW50Q29sb3IiLz48L3N2Zz4=';
         };
         
         wrapper.appendChild(img);

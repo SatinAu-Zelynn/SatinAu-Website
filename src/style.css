@@ -3352,3 +3352,183 @@ iframe#docFrame {
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ========== 网站应用内通知 (In-App Notification) ========== */
+.notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0; 
+  z-index: 10000;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  pointer-events: none;
+}
+
+.satin-notify-card {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  
+  /* === 初始状态 (折叠) === */
+  /* 高度与边距设为 0，实现“新卡片挤开旧卡片”的效果 */
+  max-height: 0;
+  padding: 0 16px; /* 上下内边距为0 */
+  margin-bottom: 0;
+  opacity: 0;
+  border-width: 0; /* 初始无边框，防止出现一条细线 */
+  transform: translateX(30px) scale(0.95);
+  
+  /* 基础样式 */
+  border-style: solid;
+  border-color: light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+  border-radius: var(--border-radius-lg);
+  background: light-dark(rgba(255, 255, 255, 0.65), rgba(30, 30, 30, 0.65));
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  color: var(--word-color);
+  overflow: hidden; /* 必须隐藏溢出，否则折叠时内容会露出来 */
+  cursor: default;
+  box-shadow: 0 0 0 rgba(0,0,0,0); /* 初始无阴影 */
+  
+  /* 所有布局属性都要参与过渡 */
+  transition: 
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), /* 弹性位移 */
+    max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), /* 高度展开 */
+    padding 0.4s ease,
+    margin-bottom 0.4s ease,
+    border-width 0.1s ease, /* 边框快速出现 */
+    box-shadow 0.4s ease;
+}
+
+/* === 显示状态 (展开) === */
+.satin-notify-card.show {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  
+  /* 恢复正常布局尺寸 */
+  max-height: 200px; /* 设置一个足够大的值以容纳内容 */
+  padding: 16px;
+  margin-bottom: 12px; /* 卡片之间的间距 */
+  border-width: 1px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), inset 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* === 隐藏/离场状态 (再次折叠) === */
+/* 这样当通知消失时，下方的通知会自动滑上来填补空位 */
+.satin-notify-card.hiding {
+  opacity: 0;
+  transform: translateX(30px) scale(0.95);
+  max-height: 0;
+  padding: 0 16px;
+  margin-bottom: 0;
+  border-width: 0;
+  box-shadow: none;
+}
+
+/* 装饰性光条 */
+.satin-notify-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 4px;
+  background: var(--primary-color);
+  opacity: 0.8;
+}
+
+.notify-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: light-dark(#f0f0f0, #444);
+  /* 防止在高度缩放时图片变形 */
+  min-height: 36px; 
+}
+
+.notify-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0; 
+  /* 确保文字在动画过程中不换行跳动 */
+  width: 100%; 
+}
+
+.notify-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notify-body {
+  font-size: 13px;
+  opacity: 0.8;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.notify-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--word-color);
+  opacity: 0.4;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  padding: 0;
+  z-index: 2;
+}
+
+.notify-close:hover {
+  opacity: 1;
+  background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+}
+
+.notify-close svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.5;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .notification-container {
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: 92vw;
+  }
+  
+  .satin-notify-card {
+    /* 移动端从上方淡入，而不是侧滑 */
+    transform: translateY(-20px) scale(0.95);
+  }
+  
+  .satin-notify-card.show {
+    transform: translateY(0) scale(1);
+  }
+  
+  .satin-notify-card.hiding {
+    transform: translateY(-20px) scale(0.9);
+  }
+}
