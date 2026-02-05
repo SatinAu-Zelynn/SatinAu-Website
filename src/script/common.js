@@ -1125,7 +1125,6 @@ function _sendNativeImplementation(title, options = {}, url = null) {
 }
 
 // 发送应用内通知 (In-App) 的底层函数
-// 2. 发送应用内通知 (In-App) 的底层函数
 function _sendInAppImplementation(title, options = {}, url = null) {
   // 查找或创建容器
   let container = document.querySelector('.notification-container');

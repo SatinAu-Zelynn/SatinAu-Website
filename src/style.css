@@ -2494,6 +2494,7 @@ input:checked + .switch-slider {
   width: 20px;
   height: 20px;
   animation: starPulse 2s infinite ease-in-out;
+  color: initial;
 }
 
 .ai-content {
