@@ -1977,6 +1977,35 @@ input:checked + .switch-slider {
   }
 }
 
+/* 图片外层容器 */
+.gallery-item {
+  position: relative;
+  display: inline-block;
+}
+
+/* HDR 角标 */
+.hdr-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color), black 30%));
+  border-radius: 6px;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  user-select: none;
+  z-index: 1;
+}
+
+/* Hover 时更明显 */
+.gallery-item:hover .hdr-badge {
+  transform: scale(1.05);
+}
+
 .loading-indicator {
   grid-column: 1 / -1;
   text-align: center;
