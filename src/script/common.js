@@ -1278,7 +1278,8 @@ function fetchRemoteNotice() {
           window.pushNotification(notice.title, {
             body: notice.content,
             tag: `remote-notice-${currentId}`, 
-            requireInteraction: true 
+            // 远程通知默认不要求用户交互，自动消失
+            requireInteraction: false
           }, notice.url);
 
           if (currentId > maxIdFound) {

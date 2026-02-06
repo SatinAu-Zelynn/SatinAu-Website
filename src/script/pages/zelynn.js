@@ -25,6 +25,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
   console.log(`HDR Mode: ${useGlobalHDR}`);
 
+  // === HDR 提示智能检测逻辑 ===
+  const tipsContainer = document.getElementById('gallery-tips');
+  // 检测设备屏幕是否支持 HDR (High Dynamic Range)
+  // 标准媒体查询: (dynamic-range: high)
+  const isHardwareHDR = window.matchMedia && window.matchMedia('(dynamic-range: high)').matches;
+  // 如果设备支持 HDR 但用户未开启 HDR 模式，提示开启
+  if (isHardwareHDR && !useGlobalHDR && tipsContainer) {
+    tipsContainer.innerHTML = '<span style="opacity: 0.9; font-weight: 500;">您的设备支持显示HDR图片</span> <a href="/pages/settings.html#hdr-setting-anchor" style="color: var(--primary-color); font-weight: 600; margin-left: 6px; text-decoration: none;"> 去开启 &rarr; </a>';
+  }
+
   // 加载图片列表
   fetch(`${getCdnBaseUrl()}/zelynn/list.json`)
     .then(response => {
