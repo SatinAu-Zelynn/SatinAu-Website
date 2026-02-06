@@ -23,6 +23,10 @@ class GlobalModal extends HTMLElement {
     // 存储触发动画的源元素
     this.triggerElement = null;
     this.triggerRect = null;
+
+    // 滚动锁定状态与清理定时器
+    this.isScrollLocked = false;
+    this.cleanupTimer = null;
   }
 
   connectedCallback() {
@@ -51,6 +55,43 @@ class GlobalModal extends HTMLElement {
     });
   }
 
+  // === 内部辅助：锁定/解锁页面滚动 ===
+  _lockScroll() {
+    // 避免重复锁定
+    if (this.isScrollLocked) return;
+
+    // 计算滚动条宽度 (窗口总宽 - 视口宽)
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    
+    // 补偿页面抖动：给 body 添加右内边距
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+      
+    }
+    
+    // 同时锁定 html 和 body
+    // 只锁定 body 在部分浏览器/CSS重置下无效
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    
+    // 移动端防止滚动穿透 (Overscroll Behavior)
+    document.body.style.overscrollBehavior = 'none';
+
+    this.isScrollLocked = true;
+  }
+
+  _unlockScroll() {
+    if (!this.isScrollLocked) return;
+
+    // 恢复样式：清空设置，让其回退到 CSS 文件中的默认值
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    document.body.style.overscrollBehavior = '';
+    
+    this.isScrollLocked = false;
+  }
+
   // === 核心接口：设置触发源 ===
   // 使用方法：document.getElementById('globalModal').with(this).email()
   with(element) {
@@ -60,6 +101,15 @@ class GlobalModal extends HTMLElement {
 
   // === 动画核心：显示 ===
   show() {
+    // 如果有正在进行的清理定时器（例如刚触发关闭动画又立刻打开），清除它以防止过早解锁滚动
+    if (this.cleanupTimer) {
+      clearTimeout(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+
+    // 锁定页面滚动
+    this._lockScroll();
+
     // 如果没有触发源，降级为默认淡入动画
     if (!this.triggerElement) {
       requestAnimationFrame(() => {
@@ -143,6 +193,9 @@ class GlobalModal extends HTMLElement {
       this.audioInstance = null;
     }
 
+    // 清除可能存在的旧定时器
+    if (this.cleanupTimer) clearTimeout(this.cleanupTimer);
+
     // 如果没有触发源，降级为默认关闭 (普通淡出)
     if (!this.triggerElement) {
       this.overlay.classList.remove('show');
@@ -152,6 +205,7 @@ class GlobalModal extends HTMLElement {
       // 否则内容会瞬间消失，导致动画看起来像闪退
       setTimeout(() => {
         this.cleanup();
+        this.cleanupTimer = null;
       }, 350); 
       return;
     }
@@ -189,11 +243,15 @@ class GlobalModal extends HTMLElement {
       }
       
       this.cleanup();
+      this.cleanupTimer = null;
     }, 400); 
   }
 
   // 清理状态
   cleanup() {
+    // 恢复页面滚动
+    this._unlockScroll();
+    
     this.triggerElement = null;
     this.triggerRect = null;
     
@@ -326,24 +384,16 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
-  // 角色设定文档弹窗
+  // 通用网页/Iframe 弹窗
   // ==========================================
-  characterDocs(lang = 'zh-cn') {
+  openWeb(url) {
     // 设置样式类
-    this.modal.className = 'modal character-doc-modal';
+    this.modal.className = 'modal web-modal';
     
-    // 链接映射
-    const docUrls = {
-      "zh-cn": "https://www.kdocs.cn/l/cbnmJFr498XG",
-      "zh-tw": "https://www.kdocs.cn/l/caB01lLIj8q2",
-      "en": "https://www.kdocs.cn/l/cjSN22oChlaT"
-    };
-    const targetUrl = docUrls[lang] || docUrls["zh-cn"];
-
     // 渲染内容
     this.content.innerHTML = `
       <div class="doc-container">
-        <iframe id="docFrame" src="${targetUrl}" title="设定总览" allowfullscreen></iframe>
+        <iframe id="webFrame" src="${url}" title="Web Content" allowfullscreen></iframe>
         
         <div class="doc-controls">
           <!-- 全屏切换按钮 -->

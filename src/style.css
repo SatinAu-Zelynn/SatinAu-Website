@@ -3225,10 +3225,10 @@ body.hero-open {
   }
 }
 
-/* ========== 角色设定文档弹窗样式 ========== */
+/* ========== 通用网页/Iframe 弹窗样式 ========== */
 
 /* 弹窗容器基础样式 */
-.modal.character-doc-modal {
+.modal.web-modal {
   /* 基础尺寸：使用 dvh 适配移动端动态高度 */
   width: 90vw;
   height: 85vh; 
@@ -3258,7 +3258,7 @@ body.hero-open {
   position: relative;
 }
 
-iframe#docFrame {
+iframe#webFrame {
   width: 100%;
   height: 100%;
   border: none;
@@ -3320,7 +3320,7 @@ iframe#docFrame {
 }
 
 /* 全屏模式样式 (覆盖默认 Modal 样式) */
-.modal.character-doc-modal.fullscreen-mode {
+.modal.web-modal.fullscreen-mode {
   /* 强制铺满屏幕 */
   width: 100vw !important;
   height: 100vh !important;
@@ -3331,10 +3331,7 @@ iframe#docFrame {
   top: 0 !important;
   left: 0 !important;
   margin: 0 !important;
-  
-  /* 关键：移除 JS 计算出的居中偏移，防止位置错乱 */
   transform: none !important; 
-  
   border-radius: 0 !important;
   border: none !important;
   z-index: 10000; /* 极高层级，覆盖导航栏 */
@@ -3342,7 +3339,7 @@ iframe#docFrame {
 
 /* 移动端适配微调 */
 @media (max-width: 768px) {
-  .modal.character-doc-modal {
+  .modal.web-modal {
     /* 非全屏状态下，稍微留点边距 */
     width: 92vw;
     height: 80dvh; 
