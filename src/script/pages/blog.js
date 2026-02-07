@@ -529,6 +529,16 @@ function renderPost(post, mdContent) {
         
         postContent.innerHTML = marked.parse(processedMd);
 
+        // === 给表格添加滚动容器 ===
+        postContent.querySelectorAll('table').forEach(table => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            // 将 wrapper 插入到 table 之前
+            table.parentNode.insertBefore(wrapper, table);
+            // 将 table 移入 wrapper 内部
+            wrapper.appendChild(table);
+        });
+
         // 创建容器
         const summaryContainer = document.createElement('div');
         summaryContainer.className = 'ai-summary-card';

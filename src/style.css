@@ -1486,6 +1486,52 @@ body#index-page {
     margin: 1em 0; padding: 0.6em 1em; border-left: 3px solid light-dark(#ccc, #666); opacity: 0.9;
     background: light-dark(rgba(255,255,255,0.5), rgba(40,40,40,0.4)); border-radius:var(--border-radius-sm);
   }
+  /* 表格容器 (JS生成) - 负责滚动、边框、背景和圆角 */
+  .table-wrapper {
+    width: 100%;
+    margin: 1.5em 0;
+    overflow-x: auto; /* 允许横向滚动 */
+    border-radius: var(--border-radius-md);
+    border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
+    background: light-dark(rgba(255,255,255,0.5), rgba(40,40,40,0.4));
+    -webkit-overflow-scrolling: touch; /* 移动端平滑滚动 */
+  }
+
+  /* 表格本体 - 恢复标准表格布局 */
+  table {
+    width: 100%;
+    min-width: 600px; /* 设置最小宽度，确保内容不换行，宽度不够时触发wrapper滚动 */
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0; /* margin 交给 wrapper */
+    border: none; /* 边框交给 wrapper */
+    background: transparent; /* 背景交给 wrapper */
+    
+    thead {
+      background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+    }
+    
+    th, td {
+      padding: 12px 15px;
+      line-height: 1.5;
+      text-align: left;
+      border-bottom: 1px solid light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.05));
+    }
+    
+    th {
+      font-weight: 600;
+      white-space: nowrap; /* 表头文字不换行 */
+      color: var(--word-color);
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    tbody tr:hover {
+      background: light-dark(rgba(0,0,0,0.03), rgba(255,255,255,0.05));
+    }
+  }
 }
 
 /* 二级页面淡入动画 */
