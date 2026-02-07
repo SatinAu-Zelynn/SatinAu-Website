@@ -97,6 +97,7 @@ class SiteFooter extends HTMLElement {
             </a>
             <a href="javascript:void(0);" onclick="document.getElementById('globalModal').alert('是否跳转到 随机友链（十年之约）？','https://www.foreverblog.cn/go.html')">十年之约</a>
         </p>
+        <p style="font-family: Kari;">To promote social progress and better standards of life in larger freedom</p>
       </footer>
       <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="229580" async="async" type="text/javascript"></script>
     `;

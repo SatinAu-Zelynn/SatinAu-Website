@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+@import url('https://cdn-cf.satinau.cn/fonts/cf.css');
 @import url('https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&display=swap');
@@ -715,7 +716,7 @@ h1, h2 { text-wrap: balance; }
 /* ========== Footer ========== */
 footer{
   text-align:center;
-  padding:30px 10px;
+  padding:20px;
   margin-top:60px;
   font-size:13px;
   color:light-dark(#888, #bbb);
@@ -2831,49 +2832,102 @@ input:checked + .switch-slider {
   flex: 1;
 }
 
-/* iOS 风格分段控制器 (Segmented Control) */
+/* ========== 统一的分段控制器 (Unified Segmented Control) ========== */
+
 .segmented-control {
-  display: flex;
-  background: light-dark(rgba(118, 118, 128, 0.12), rgba(118, 118, 128, 0.24));
-  padding: 3px;
-  border-radius: 9px; /* iOS 标准圆角 */
   position: relative;
-  border: none;
-  width: fit-content;
+  display: inline-flex; /* 改为 inline-flex 以便自适应内容 */
+  background: light-dark(rgba(118, 118, 128, 0.12), rgba(118, 118, 128, 0.24));
+  border-radius: 9px;
+  padding: 2px;
+  box-sizing: border-box;
+  isolation: isolate; /* 建立层叠上下文 */
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* 默认高度较小 (设置页风格) */
+  min-height: 32px; 
 }
 
+/* 滑动的背景块 (Glider) */
+.segment-glider {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0; 
+  width: 0; /* 由 JS 计算 */
+  background: light-dark(#ffffff, #636366);
+  border-radius: 7px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+  z-index: 1; 
+  pointer-events: none; /* 确保点击能穿透到按钮 */
+  
+  transition: 
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 按钮选项 */
 .segmented-control button {
   flex: 1;
+  position: relative;
+  z-index: 2; /* 文字在滑块之上 */
   border: none;
   background: transparent;
   color: var(--word-color);
-  padding: 6px 14px;
-  font-size: 13px;
+  font-family: inherit;
   font-weight: 500;
-  border-radius: 7px;
+  text-align: center;
   cursor: pointer;
-  position: relative;
-  z-index: 1;
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); /* 弹性过渡 */
-  min-width: 50px;
+  border-radius: 7px;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  
+  /* 默认尺寸 */
+  padding: 4px 12px;
+  font-size: 13px;
+  min-width: 60px;
 }
 
-/* 选中状态：模拟物理悬浮滑块 */
-.segmented-control button.active {
-  background: light-dark(#ffffff, #636366);
-  color: var(--word-color);
-  font-weight: 600;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
-}
-
+/* 悬停非激活项 */
 .segmented-control button:hover:not(.active) {
-  opacity: 0.7;
+  opacity: 0.6;
+}
+
+/* 激活状态 */
+.segmented-control button.active {
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* ========== 大尺寸 ========== */
+.segmented-control.large {
+  display: flex; /* 登录页通常需要撑满容器 */
+  width: 100%; 
+  padding: 4px; 
+  border-radius: var(--border-radius-md);
+  margin-bottom: 24px;
+  height: auto;
+  background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+}
+
+.segmented-control.large .segment-glider {
+  top: 4px; 
+  bottom: 4px;
+  border-radius: var(--border-radius-sm);
+  background: light-dark(#fff, #444);
+}
+
+.segmented-control.large button {
+  padding: 10px 0; 
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
 }
 
 /* 移动端适配 */
 @media (max-width: 768px) {
   .segmented-control button {
-    padding: 6px 12px;
+    padding: 6px 10px;
   }
 }
 

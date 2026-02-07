@@ -160,6 +160,33 @@
       width: 100vw;
     }
   </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabContainer = document.getElementById('authTabControl');
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+
+      // 利用事件委托监听点击
+      if(tabContainer) {
+          tabContainer.addEventListener('click', (e) => {
+            // 找到被点击的 button
+            const btn = e.target.closest('button');
+            if (!btn) return;
+        
+            const targetTab = btn.getAttribute('data-tab');
+        
+            // 切换表单显示逻辑
+            if (targetTab === 'login') {
+              loginForm.style.display = 'block';
+              registerForm.style.display = 'none';
+            } else if (targetTab === 'register') {
+              loginForm.style.display = 'none';
+              registerForm.style.display = 'block';
+            }
+          });
+      }
+    });
+  </script>
 </head>
 <body id="login-page">
   <div class="color-bg color-bg-1"></div>
@@ -169,9 +196,9 @@
   
   <main class="page">
     <div class="auth-container">
-      <div class="auth-tabs">
-        <div class="auth-tab active" data-tab="login">登录</div>
-        <div class="auth-tab" data-tab="register">注册</div>
+      <div class="segmented-control large" id="authTabControl">
+        <button class="active" data-tab="login">登录</button>
+        <button data-tab="register">注册</button>
       </div>
 
       <!-- 登录表单 -->

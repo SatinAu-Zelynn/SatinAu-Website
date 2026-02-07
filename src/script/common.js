@@ -1349,3 +1349,63 @@ window.restoreDefaultSettings = function(triggerElement) {
     }
   }
 };
+
+/* --- Segmented Control (分段控制器) 统一逻辑 --- */
+function initSegmentedControls() {
+  const controls = document.querySelectorAll('.segmented-control');
+
+  controls.forEach(control => {
+    // 检查是否已经初始化过滑块，防止重复添加
+    let glider = control.querySelector('.segment-glider');
+    if (!glider) {
+      glider = document.createElement('div');
+      glider.classList.add('segment-glider');
+      control.prepend(glider);
+    }
+
+    const buttons = control.querySelectorAll('button');
+
+    // 移动滑块到指定按钮
+    const moveGliderTo = (btn) => {
+      if (!btn) return;
+      
+      // 获取相对定位数据
+      const left = btn.offsetLeft;
+      const width = btn.offsetWidth;
+
+      glider.style.width = `${width}px`;
+      glider.style.transform = `translateX(${left}px)`;
+    };
+
+    // 初始化位置
+    // 优先找有 active 类的，否则默认第一个
+    const currentActive = control.querySelector('button.active') || buttons[0];
+    if (currentActive) {
+      currentActive.classList.add('active');
+      // 这里的 setTimeout 确保在 DOM 渲染完成后再计算位置，避免宽度为 0
+      requestAnimationFrame(() => moveGliderTo(currentActive));
+    }
+
+    // 绑定点击事件
+    buttons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // 视觉切换
+        buttons.forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        
+        // 移动滑块
+        moveGliderTo(e.currentTarget);
+      });
+    });
+
+    // 监听窗口调整，修正滑块位置
+    // 使用防抖或简单的 requestAnimationFrame 优化性能
+    window.addEventListener('resize', () => {
+      const activeBtn = control.querySelector('button.active');
+      if (activeBtn) moveGliderTo(activeBtn);
+    });
+  });
+}
+
+// 页面加载完成后立即初始化
+document.addEventListener('DOMContentLoaded', initSegmentedControls);
