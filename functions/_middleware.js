@@ -4,8 +4,8 @@
 */
 
 // 1. 配置 CDN 路径 (确保这个地址能访问到 list.json)
-const CDN_BASE = 'https://cdn-cf.satinau.cn'; // 或者 'https://cdn-eo.satinau.cn'
-const BLOG_LIST_URL = `${CDN_BASE}/blog/list.json`;
+const CDN_BASE = 'https://cdn-cf.satinau.cn';
+const BLOG_LIST_URL = `${CDN_BASE}/blog/index.json`;
 
 // 2. 爬虫 User-Agent 列表
 const BOT_AGENTS = [
