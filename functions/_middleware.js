@@ -1,10 +1,9 @@
 /*
-  Cloudflare Pages Function - SEO Middleware (Final)
-  适配 satinau.cn 的 index.json 结构 (file, title, date)
+  Cloudflare Pages Function - Full SEO Middleware
+  功能：拦截爬虫 -> 获取列表 -> 获取Markdown正文 -> 转换HTML -> 注入页面
 */
 
 const CDN_BASE = 'https://cdn-cf.satinau.cn';
-// ✅ 你的数据源
 const BLOG_LIST_URL = `${CDN_BASE}/blog/index.json`;
 
 // 爬虫 User-Agent 列表
@@ -21,6 +20,7 @@ function isBot(userAgent) {
   return BOT_AGENTS.some(bot => userAgent.toLowerCase().includes(bot));
 }
 
+// 1. 获取文章列表
 async function getBlogList() {
   try {
     const res = await fetch(BLOG_LIST_URL, {
@@ -31,6 +31,52 @@ async function getBlogList() {
     console.log('Error fetching blog list:', e);
   }
   return [];
+}
+
+// 2. 获取 Markdown 正文内容
+async function getMarkdownContent(filename) {
+  try {
+    // 确保文件名经过编码（处理中文）
+    const url = `${CDN_BASE}/blog/${encodeURIComponent(filename)}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Cloudflare-Pages-Worker-SEO' }
+    });
+    if (res.ok) return await res.text();
+  } catch (e) {
+    console.log(`Error fetching markdown for ${filename}:`, e);
+  }
+  return null;
+}
+
+// 3. 简单的 Markdown 转 HTML (为了 SEO，不需要完美样式，只需要结构)
+function simpleMarkdownToHtml(markdown) {
+  if (!markdown) return '';
+  
+  let html = markdown
+    // 移除 Frontmatter (--- ... ---)
+    .replace(/^---[\s\S]*?---/, '')
+    // 标题 (# -> h1-h6)
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    // 粗体 (**text**)
+    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+    // 图片 (![alt](url)) -> 转换为绝对路径，方便图片索引
+    .replace(/!\[(.*?)\]\((.*?)\)/gim, (match, alt, src) => {
+      // 如果图片是相对路径，加上 CDN 前缀
+      const fullSrc = src.startsWith('http') ? src : `${CDN_BASE}/blog/${src}`;
+      return `<img src="${fullSrc}" alt="${alt}">`;
+    })
+    // 链接 ([text](url))
+    .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2">$1</a>')
+    // 引用 (> text)
+    .replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>')
+    // 列表 (- item)
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    // 换行 -> 段落
+    .replace(/\n\n/g, '</p><p>');
+
+  return `<div class="seo-article-body"><p>${html}</p></div>`;
 }
 
 export const onRequest = async (context) => {
@@ -64,9 +110,7 @@ export const onRequest = async (context) => {
   if (queryId || queryTitle) {
     let post = null;
     
-    // 匹配逻辑：
-    // JSON里的 key 是 "file" (e.g. "文章.md")
-    // URL里的 id 可能是 "文章" (无后缀) 或 "文章.md" (有后缀)
+    // 匹配逻辑
     if (queryId) {
       post = posts.find(p => 
         p.file === queryId || 
@@ -79,45 +123,67 @@ export const onRequest = async (context) => {
     }
 
     if (post) {
-      // 找到了文章！开始注入 SEO 信息
+      // 🔥 核心步骤：获取并解析 Markdown 内容
+      const rawMarkdown = await getMarkdownContent(post.file);
+      const contentHtml = simpleMarkdownToHtml(rawMarkdown);
+      const cleanId = post.file.replace(/\.md$/, '');
+
+      // 构造当前页面的规范链接 (Canonical URL)
+      // 如果你的 Sitemap 用的是 title，这里最好也保持一致，或者统一用 title
+      const canonicalUrl = `https://satinau.cn/blog?title=${encodeURIComponent(post.title)}`;
+
       return new HTMLRewriter()
+        // 修改 Title
         .on('title', {
           element(el) { el.setInnerContent(`${post.title} - 缎金SatinAu`); }
         })
+        // 修改 Description
         .on('meta[name="description"]', {
-          // 你的JSON没有 preview 字段，这里用 title + date 组合一下，或者截取 title
-          element(el) { el.setAttribute('content', `${post.title} - 发布于 ${post.date}`); }
+          element(el) { 
+            // 截取正文前100字作为描述，如果没有正文则用标题
+            const desc = rawMarkdown 
+              ? rawMarkdown.replace(/[#*`\[\]]/g, '').slice(0, 150).replace(/\n/g, ' ') + '...'
+              : `${post.title} - 发布于 ${post.date}`;
+            el.setAttribute('content', desc); 
+          }
         })
-        // 移除 display:none 让爬虫认为内容可见
+        // 修改 Canonical (防止重复收录)
+        .on('link[rel="canonical"]', {
+            element(el) { el.setAttribute('href', canonicalUrl); }
+        })
+        // 移除 display:none
         .on('article#postView', {
           element(el) { el.removeAttribute('style'); } 
         })
-        // 隐藏列表 div
+        // 隐藏列表
         .on('div#blogList', {
           element(el) { el.setAttribute('style', 'display:none'); }
         })
-        // 填入标题
+        // 填入元数据
         .on('h2#postTitle', {
           element(el) { el.setInnerContent(post.title); }
         })
-        // 填入日期
         .on('p#postDate', {
           element(el) { el.setInnerContent(post.date); }
         })
-        // 填入内容区域
+        // 🔥 填入转换后的 HTML 正文
         .on('div#postContent', {
           element(el) {
-            const contentHTML = `
-              <div class="seo-content">
+            // 在正文中加入一些引导性结构
+            const fullHtml = `
+              <div class="article-header">
                 <h1>${post.title}</h1>
                 <p><strong>发布时间：</strong>${post.date}</p>
-                <hr>
-                <p>（注：这是针对搜索引擎的预览页面，完整交互体验请使用浏览器访问）</p>
-                <!-- 生成 Markdown 链接 -->
-                <p><a href="${CDN_BASE}/blog/${post.file}">点击下载 Markdown 源文件</a></p>
+              </div>
+              <hr>
+              ${contentHtml || '<p>文章加载中...</p>'}
+              <hr>
+              <div class="article-footer">
+                <p>本文由 缎金SatinAu 原创。</p>
+                <p><a href="${canonicalUrl}">访问原文链接</a></p>
               </div>
             `;
-            el.setInnerContent(contentHTML, { html: true });
+            el.setInnerContent(fullHtml, { html: true });
           }
         })
         .transform(response);
@@ -127,15 +193,15 @@ export const onRequest = async (context) => {
   // === 场景 B: 列表页 (无参数) ===
   else {
     const listHtml = posts.map(post => {
-      // 生成不带 .md 后缀的 ID，让 URL 看上去更干净
-      // 例如：file="abc.md" -> id="abc"
-      const cleanId = post.file.replace(/\.md$/, '');
+      // 为了配合 Sitemap，这里列表页的链接优先使用 ?title=
+      // 这样爬虫从列表页爬进去的链接，和你 sitemap.xml 里的链接就是一样的了
+      const targetUrl = `/blog?title=${encodeURIComponent(post.title)}`;
       
       return `
       <div class="contact-card" style="display:block; margin-bottom:15px;">
         <div class="text">
           <div class="label">
-            <a href="/blog?id=${encodeURIComponent(cleanId)}" style="text-decoration:none; color:inherit;">
+            <a href="${targetUrl}" style="text-decoration:none; color:inherit; font-weight:bold; font-size:1.1em;">
               ${post.title}
             </a>
           </div>

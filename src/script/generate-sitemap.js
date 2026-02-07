@@ -25,7 +25,7 @@ const path = require('path');
 
 // 配置
 const CONFIG = {
-    blogApiUrl: `${getCdnBaseUrl()}/blog/index.json`,
+    blogApiUrl: 'https://cdn-cf.satinau.cn/blog/index.json',
     sitemapPath: path.join(__dirname, '../../sitemap.xml'),
     baseUrl: 'https://satinau.cn',
     timeout: 10000,
