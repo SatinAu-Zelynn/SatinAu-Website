@@ -49,37 +49,10 @@
 
     .back-btn-wrapper {
       margin-top: 20px;
-      position: absolute;      /* 如果你希望登录框绝对居中，不被按钮影响，请用 absolute */
-      bottom: 40px;            /* 将返回按钮固定在底部，不参与垂直居中的计算 */
+      position: absolute;
+      bottom: 40px;
     }
     
-    .auth-tabs {
-      display: flex;
-      margin-bottom: 24px;
-      background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
-      padding: 4px;
-      border-radius: var(--border-radius-md);
-    }
-    
-    .auth-tab {
-      flex: 1;
-      text-align: center;
-      padding: 10px;
-      cursor: pointer;
-      border-radius: var(--border-radius-sm);
-      font-weight: 600;
-      transition: all 0.3s ease;
-      color: var(--word-color);
-      opacity: 0.6;
-    }
-    
-    .auth-tab.active {
-      background: light-dark(#fff, #444);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      opacity: 1;
-      color: var(--primary-color);
-    }
-
     .form-group {
       margin-bottom: 16px;
     }

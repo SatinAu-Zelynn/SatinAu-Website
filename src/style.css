@@ -31,7 +31,7 @@
   --border-radius-lg: 20px;
   --border-radius-xl: 22px;
   --custom-cursor: url('/public/cursor.Daeq1_K3.cur') 12 4, auto;
-  --font-sans: "Google Sans Flex", MiSans, sans-serif; /* 默认无衬线 */
+  --font-sans: "Google Sans Flex", Ginto, MiSans, sans-serif; /* 默认无衬线 */
   --font-serif: "Noto Serif SC", serif; /* 衬线体 */
   --global-font: var(--font-sans); /* 当前应用字体 */
 }
