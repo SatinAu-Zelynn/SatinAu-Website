@@ -39,6 +39,7 @@ class CustomRightClickMenu extends HTMLElement {
         this.menuOpenTime = 0;
         this.focusedElementBeforeMenu = null;
         this.scrollTimer = null;
+        this.hideMenuTimer = null;
         this.touchStartY = 0;
         this.target = null;
         this.menuItemsRegistry = new Map();
@@ -201,10 +202,22 @@ class CustomRightClickMenu extends HTMLElement {
     unmount() {
         if (!this.isMounted || !this.target) return;
         this.listenArgs.forEach(([ele, ...args]) => ele.removeEventListener(...args));
-        this.target = null;
-        this.isMounted = false;
-        this.listenArgs = [];
+        this.clearTimers();
         this.hideMenu();
+        this.isMounted = false;
+        this.target = null;
+        this.listenArgs = [];
+    }
+    
+    clearTimers() {
+        if (this.scrollTimer) {
+            clearTimeout(this.scrollTimer);
+            this.scrollTimer = null;
+        }
+        if (this.hideMenuTimer) {
+            clearTimeout(this.hideMenuTimer);
+            this.hideMenuTimer = null;
+        }
     }
 
     handleContextMenu(e) {
@@ -580,6 +593,8 @@ class CustomRightClickMenu extends HTMLElement {
 
     hideMenu() {
         if (this.isAnimating || !this.customMenu) return;
+        this.clearTimers();
+
         this.isAnimating = true;
         this.isOpening = false;
 
@@ -587,7 +602,8 @@ class CustomRightClickMenu extends HTMLElement {
 
         this.customMenu.classList.remove('visible');
         this.customMenu.classList.add('hiding');
-        setTimeout(() => {
+        this.hideMenuTimer = setTimeout(() => {
+            if (!this.customMenu) return;
             this.customMenu.style.display = 'none';
             this.customMenu.classList.remove('hiding');
             this.customMenu.style.left = 'auto';
@@ -597,6 +613,7 @@ class CustomRightClickMenu extends HTMLElement {
             this.currentLinkUrl = null;
             this.currentImageUrl = null;
             this.selectedText = '';
+            this.hideMenuTimer = null;
         }, 150);
     }
 }
@@ -714,6 +731,12 @@ const copyWebsiteUrlAction = (text) => {
     document.body.removeChild(textArea);
     showToast("📋 已复制: " + text);
 };
+const scrollToTopAction = () => {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+};
 const scrollToBottomAction = () => {
     window.scrollTo({
         top: document.body.scrollHeight,
@@ -722,6 +745,19 @@ const scrollToBottomAction = () => {
 };
 const testAction = (ctx) => {
     alert('我是测试');
+};
+const openSettingsSectionAction = (anchorId) => {
+    const settingsPath = '/pages/settings.html';
+    // 判断当前是否已经在设置页面
+    if (window.location.pathname.includes('/pages/settings')) {
+        const element = document.getElementById(anchorId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } else {
+        // 如果不在设置页，跳转并带上锚点
+        window.location.href = `${settingsPath}#${anchorId}`;
+    }
 };
 // 菜单项回调函数写在下面--结束
 
@@ -753,7 +789,7 @@ const createRightClickMenu = () => {
         // 外部样式（可选，FontAwesome图标库必选，但可换源）
         externalStyles: [
             //'Example.css',
-            'https://s4.zstatic.net/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+            'https://s4.zstatic.net/ajax/libs/font-awesome/7.0.1/css/all.min.css'
         ]
     });
 
@@ -868,9 +904,48 @@ const createRightClickMenu = () => {
                             },
                             {
                                 id: 'sub-3',
-                                label: '滚动到最底部',
-                                icon: 'fa-arrow-down',
-                                callback: () => scrollToBottomAction()
+                                label: '滚动',
+                                icon: 'fa-arrows-up-down',
+                                children: [
+                                    {
+                                        id: 'sub-top', 
+                                        label: '滚动到最顶部',
+                                        icon: 'fa-arrow-up',
+                                        callback: () => scrollToTopAction()
+                                    },
+                                    {
+                                        id: 'sub-3',
+                                        label: '滚动到最底部',
+                                        icon: 'fa-arrow-down',
+                                        callback: () => scrollToBottomAction()
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 'settings',
+                        label: '网站设置',
+                        icon: 'fa-cog',
+                        // 移除原来的 callback，改为 children
+                        children: [
+                            {
+                                id: 'setting-ui',
+                                label: '外观样式',
+                                icon: 'fa-paint-brush', // 或 fa-palette
+                                callback: () => openSettingsSectionAction('ui-settings')
+                            },
+                            {
+                                id: 'setting-func',
+                                label: '功能开关',
+                                icon: 'fa-toggle-on', // 或 fa-sliders
+                                callback: () => openSettingsSectionAction('function-settings')
+                            },
+                            {
+                                id: 'setting-about',
+                                label: '关于与帮助',
+                                icon: 'fa-question-circle', // 或 fa-info-circle
+                                callback: () => openSettingsSectionAction('about-help')
                             }
                         ]
                     },

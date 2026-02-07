@@ -83,7 +83,8 @@
 .modal, pre,
 .toast,
 .setting-item, .mobile-more-menu,
-#loginBtn, #logoutBtn, .post-actions .back-button {
+#loginBtn, #logoutBtn, .post-actions .back-button,
+.satin-notify-card {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
 }
 
