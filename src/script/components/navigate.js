@@ -170,7 +170,7 @@ class NavigateBar extends HTMLElement {
 
       <nav class="bottom-nav ${isMoreActive ? 'more-active' : ''}">
         <div class="nav-avatar" onclick="window.location.href='/'">
-          <img src="/public/favicon.ico" alt="Avatar">
+          <img src="/favicon.ico" alt="Avatar">
         </div>
         ${navItems.map(item => `
           <a 

@@ -1102,8 +1102,8 @@ function isNativeNotificationEnabled() {
 // 发送原生通知的底层函数
 function _sendNativeImplementation(title, options = {}, url = null) {
   const defaultOptions = {
-    icon: '/public/favicon.ico',
-    badge: '/public/favicon.ico',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
     vibrate: [200, 100, 200],
     ...options
   };
@@ -1139,7 +1139,7 @@ function _sendInAppImplementation(title, options = {}, url = null) {
   card.className = 'satin-notify-card'; // 初始状态在 CSS 中定义为 max-height: 0
   
   // 默认图标
-  const iconSrc = options.icon || '/public/favicon.ico';
+  const iconSrc = options.icon || '/favicon.ico';
   
   card.innerHTML = `
     <img src="${iconSrc}" class="notify-icon" alt="icon">
