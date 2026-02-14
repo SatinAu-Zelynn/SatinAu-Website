@@ -34,7 +34,7 @@
   <style>
     .auth-container {
       max-width: 400px;
-      width: 90%;
+      width: 60%;
       padding: 30px;
       /* 进场动画 */
       animation: blurFadeUp 0.8s ease forwards;
@@ -104,24 +104,6 @@
       height: 100%;
       margin: 0;
       touch-action: none; /* 禁止移动端触摸滚动 */
-    }
-
-    /* 让登录容器填满屏幕并居中 */
-    .login-container {
-      display: flex;
-      justify-content: center; /* 水平居中 */
-      align-items: center;     /* 垂直居中 */
-      height: 100vh;           /* 占满视口高度 */
-      width: 100vw;            /* 占满视口宽度 */
-      padding: 0 !important;   /* 清除可能存在的原有内边距 */
-      margin: 0 !important;
-      box-sizing: border-box;
-    }
-
-    /* 确保登录卡片自身没有多余的外部边距影响居中 */
-    .login-card {
-      margin: 0;
-      /* 如果需要，可以稍微调整 transform 进行微调，通常不需要 */
     }
 
     .page {
