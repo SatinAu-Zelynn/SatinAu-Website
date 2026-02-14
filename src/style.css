@@ -1561,49 +1561,12 @@ body#index-page {
   }
 }
 
-.spinner{
-    /* css变量 环的宽度 */
-    --s:4px;
-    width: calc(16 * var(--s));
-    height: calc(16 * var(--s));
-    border-radius: 50%;
-    /* 网格布局 */
-    display: grid;
-    /* 渐变蒙版 */
-    -webkit-mask: radial-gradient(50% 50%,
-    #0000 calc(99% - 2 * var(--s)),
-    #000 calc(100% - 2 * var(--s)));
-    mask: radial-gradient(50% 50%,
-    #0000 calc(99% - 2 * var(--s)),
-    #000 calc(100% - 2 * var(--s)));
-    /* 执行动画：动画名 时长 线性 循环播放 */
-    animation: spin 3s linear infinite;
-}
-.spinner::before{
-    content: "";
-    /* 圆锥渐变 */
-    background: conic-gradient(
-        from 25deg,
-        #FFE92C 25%,
-        #FF9999 0 50%,
-        #00FFCC 0 75%,
-        #5E447B 0
-    );
-    /* 渐变蒙版 */
-    -webkit-mask: repeating-conic-gradient(#0000 0 25deg,#000 23% 25%),
-    radial-gradient(var(--s) at var(--s) 50%,#000 97%,#0000) left/calc(100% - 2 * var(--s)) 100% repeat-x,
-    radial-gradient(var(--s) at 50% var(--s),#000 97%,#0000) top/100% calc(100% - 2 * var(--s)) repeat-y;
-    mask: repeating-conic-gradient(#0000 0 25deg,#000 23% 25%),
-    radial-gradient(var(--s) at var(--s) 50%,#000 97%,#0000) left/calc(100% - 2 * var(--s)) 100% repeat-x,
-    radial-gradient(var(--s) at 50% var(--s),#000 97%,#0000) top/100% calc(100% - 2 * var(--s)) repeat-y;
-}
-
-/* 定义动画 */
-@keyframes spin {
-    to{
-        /* 旋转一周 */
-        transform: rotate(1turn);
-    }
+.spinner {
+  width: 300px;
+  height: 300px;
+  background: url('/public/loading.gif') no-repeat center center;
+  background-size: cover;
+  border-radius: 50%;
 }
 
 /* 登录按钮 - SatinAu Design 风格 */
