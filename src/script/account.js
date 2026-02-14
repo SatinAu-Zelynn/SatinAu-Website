@@ -34,7 +34,7 @@ function initLoginPage() {
         return;
     }
 
-    const tabs = document.querySelectorAll('.auth-tab');
+    const tabs = document.querySelectorAll('#authTabControl button');
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
 
