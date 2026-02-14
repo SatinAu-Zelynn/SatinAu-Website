@@ -1,4 +1,4 @@
-DB代码如下
+Cloudflare D1 数据库代码如下
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
@@ -10,8 +10,24 @@ avatar TEXT,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+PRAGMA foreign_keys = ON;
 
-Worker代码如下
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  page_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL,
+  parent_id INTEGER DEFAULT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_comments_page_id ON comments(page_id);
+
+
+Cloudflare Worker 代码如下
 
 export default {
   async fetch(request, env) {
@@ -21,7 +37,7 @@ export default {
     // 设置 CORS 头，允许你的前端访问
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*", // 生产环境请改为 "https://satinau.cn"
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     };
 
@@ -41,6 +57,16 @@ export default {
       }
       else if (path === "/api/user/avatar" && request.method === "POST") {
         return await updateAvatar(request, env, corsHeaders);
+      }
+      else if (path === "/api/comments" && request.method === "GET") {
+        return await getComments(request, env, corsHeaders);
+      }
+      else if (path === "/api/comments" && request.method === "POST") {
+        return await postComment(request, env, corsHeaders);
+      }
+      else if (path.startsWith("/api/comments/") && request.method === "DELETE") {
+        const id = path.split("/").pop();
+        return await deleteComment(request, env, corsHeaders, id);
       }
 
       return new Response("Not Found", { status: 404, headers: corsHeaders });
@@ -120,6 +146,91 @@ async function getUserProfile(req, env, cors) {
     return json(cors, user);
   } catch (e) {
     return error(cors, "Invalid token", 401);
+  }
+}
+
+// 获取评论列表
+async function getComments(req, env, cors) {
+  const url = new URL(req.url);
+  const pageId = url.searchParams.get("page_id");
+
+  if (!pageId) return error(cors, "Missing page_id");
+
+  // 联表查询：获取评论内容 + 用户昵称 + 用户头像
+  const results = await env.DB.prepare(`
+    SELECT 
+      c.id, c.page_id, c.content, c.parent_id, c.created_at, c.user_id,
+      u.nickname, u.avatar
+    FROM comments c
+    LEFT JOIN users u ON c.user_id = u.id
+    WHERE c.page_id = ?
+    ORDER BY c.created_at DESC
+  `).bind(pageId).all();
+
+  return json(cors, results.results || []);
+}
+
+// 发布评论
+async function postComment(req, env, cors) {
+  const user = await verifyToken(req); // 需要复用下方的 verifyToken 逻辑
+  if (!user) return error(cors, "Unauthorized", 401);
+
+  const { page_id, content, parent_id } = await req.json();
+
+  if (!page_id || !content) return error(cors, "Missing fields");
+  if (content.length > 1000) return error(cors, "Content too long");
+
+  const result = await env.DB.prepare(
+    "INSERT INTO comments (page_id, user_id, content, parent_id) VALUES (?, ?, ?, ?)"
+  ).bind(page_id, user.id, content, parent_id || null).run();
+
+  if (result.success) {
+    // 返回新创建的评论数据用于前端立即渲染
+    const newComment = await env.DB.prepare(`
+      SELECT c.*, u.nickname, u.avatar 
+      FROM comments c 
+      LEFT JOIN users u ON c.user_id = u.id 
+      WHERE c.id = ?
+    `).bind(result.meta.last_row_id).first();
+    
+    return json(cors, newComment);
+  } else {
+    return error(cors, "Failed to post comment", 500);
+  }
+}
+
+// 删除评论 (支持递归删除子评论)
+async function deleteComment(req, env, cors, commentId) {
+  const user = await verifyToken(req);
+  if (!user) return error(cors, "Unauthorized", 401);
+
+  // 1. 检查评论是否存在以及是否属于该用户
+  const comment = await env.DB.prepare("SELECT user_id FROM comments WHERE id = ?").bind(commentId).first();
+  
+  if (!comment) return error(cors, "Comment not found", 404);
+  
+  // 权限检查：只有评论作者本人可以删除
+  // (可选扩展：如果是管理员也可以删除，这里暂只允许本人)
+  if (comment.user_id !== user.id) return error(cors, "Forbidden", 403);
+
+  // 2. 执行递归删除
+  // 使用 WITH RECURSIVE 查找当前评论ID以及所有 parent_id 指向它的评论（无限层级）
+  // 然后删除所有找到的 ID
+  try {
+    await env.DB.prepare(`
+      WITH RECURSIVE targets(id) AS (
+        -- 基础记录：要删除的父评论
+        SELECT id FROM comments WHERE id = ?
+        UNION ALL
+        -- 递归部分：查找 parent_id 等于上一轮结果中 id 的记录
+        SELECT c.id FROM comments c JOIN targets t ON c.parent_id = t.id
+      )
+      DELETE FROM comments WHERE id IN (SELECT id FROM targets);
+    `).bind(commentId).run();
+
+    return json(cors, { success: true });
+  } catch (e) {
+    return error(cors, "Delete failed: " + e.message, 500);
   }
 }
 
@@ -217,5 +328,18 @@ async function updateAvatar(req, env, cors) {
 
   } catch (e) {
     return error(cors, "Database error: " + e.message, 500);
+  }
+}
+
+async function verifyToken(req) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.split(" ")[1];
+    const payload = JSON.parse(atob(token));
+    if (payload.exp < Date.now()) return null;
+    return { id: payload.uid };
+  } catch (e) {
+    return null;
   }
 }

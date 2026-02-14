@@ -564,8 +564,19 @@ function renderPost(post, mdContent) {
             renderGenerateButton(summaryContainer, mdContent, cacheKey);
         }
 
-        // 插入评论区容器已移除，评论系统已下线
-        // Supabase 后端已下线
+        // 创建评论区容器
+        const commentContainer = document.createElement('div');
+        commentContainer.id = 'comments-container';
+        commentContainer.style.marginTop = '40px'; // 增加顶部间距
+        postContent.appendChild(commentContainer);
+
+        // 初始化评论系统
+        if (typeof window.initPageComments === 'function') {
+            // 使用 post.file (文件名) 作为唯一的 page_id
+            window.initPageComments('comments-container', post.file);
+        } else {
+            console.warn('Comment system not initialized: initPageComments missing');
+        }
 
         initImageViewer();
 
