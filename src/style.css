@@ -162,7 +162,8 @@ button,
 .dropdown-item,
 .image-gallery img,
 .contact-card,
-.lang-wrapper a {
+.lang-wrapper a,
+.nav-user-card, .nav-login-btn {
   cursor: var(--custom-cursor) !important;
 }
 
@@ -2676,6 +2677,8 @@ input:checked + .switch-slider {
   text-decoration: none;
   color: inherit;
   -webkit-tap-highlight-color: transparent; /* 移动端点击不高亮背景 */
+  cursor: default;
+  pointer-events: none;
 }
 
 /* 圆形按钮样式 */
@@ -2695,6 +2698,8 @@ input:checked + .switch-slider {
   cursor: var(--custom-cursor, pointer);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  cursor: var(--custom-cursor, pointer);
+  pointer-events: auto;
 }
 
 .action-btn svg {
