@@ -22,13 +22,30 @@ function initFriendLinks() {
   const container = document.getElementById("friendlink-container");
   if (!container) return;
 
-  fetch(`${getCdnBaseUrl()}/data/friendlink.json`)
-    .then(res => res.json())
-    .then(data => {
-      const list = data.friends || [];
+  fetch(`${getCdnBaseUrl()}/data/friendlink.yaml`)
+    .then(res => {
+      if (!res.ok) throw new Error("Network response was not ok");
+      return res.text();
+    })
+    .then(text => {
+      const data = jsyaml.load(text);
+      const list = data || [];
+      
       container.innerHTML = ""; // 清空
 
-      list.forEach((item, index) => {
+      const observer = new IntersectionObserver((entries) => {
+        let batchIndex = 0;
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.animationDelay = `${batchIndex * 0.1}s`;
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+            batchIndex++;
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+      list.forEach((item) => {
         const a = document.createElement("a");
         a.className = "contact-card";
         a.href = "javascript:void(0);";
@@ -39,7 +56,7 @@ function initFriendLinks() {
 
         a.innerHTML = `
           <div class="icon">
-            <img src="${item.avatar}" alt="${item.name}"">
+            <img src="${item.avatar}" alt="${item.name}">
           </div>
           <div class="text">
             <div class="label">${item.name}</div>
@@ -48,15 +65,14 @@ function initFriendLinks() {
         `;
 
         container.appendChild(a);
-
-        // 加载可见动画
-        setTimeout(() => {
-          a.classList.add("visible");
-        }, 200 + index * 120);
+        observer.observe(a);
       });
     })
     .catch(err => {
       console.error("友情链接加载失败：", err);
+      if (typeof jsyaml === 'undefined') {
+        console.error("错误：未找到 jsyaml 对象，请在 HTML 中引入 js-yaml 库。");
+      }
       container.innerHTML = `<p style="opacity:1;">加载失败，请稍后重试。</p>`;
     });
 }
