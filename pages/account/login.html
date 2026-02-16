@@ -30,6 +30,7 @@
   <script src="/src/script/components/CRCMenu.js"></script>
   <script src="/src/script/components/GlobalModal.js" defer></script>
   <script src="/src/script/account.js" defer></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <!-- 引入样式补丁以适配表单 -->
   <style>
     .auth-container {
@@ -164,6 +165,9 @@
         <div class="form-group">
           <input type="password" class="form-input" placeholder="密码" required autocomplete="current-password">
         </div>
+        <div class="form-group" style="display: flex; justify-content: center;">
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAACdhW6Gdnaxealh5" data-theme="auto"></div>
+        </div>
         <button type="submit" class="submit-btn">立即登录</button>
       </form>
 
@@ -180,6 +184,9 @@
         </div>
         <div class="form-group">
           <input type="password" id="reg-pwd-confirm" class="form-input" placeholder="确认密码" required autocomplete="new-password">
+        </div>
+        <div class="form-group" style="display: flex; justify-content: center;">
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAACdhW6Gdnaxealh5" data-theme="auto"></div>
         </div>
         <button type="submit" class="submit-btn">注册账号</button>
       </form>

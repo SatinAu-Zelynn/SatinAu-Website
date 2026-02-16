@@ -82,10 +82,17 @@ export default {
 /* ===== 业务逻辑 ===== */
 
 async function register(req, env, cors) {
-  const { email, password, nickname } = await req.json();
+  const { email, password, nickname, cfToken } = await req.json();
   
   if (!email || !password || !nickname) 
     return error(cors, "Missing fields");
+
+  const ip = req.headers.get('CF-Connecting-IP');
+  const isHuman = await validateTurnstile(cfToken, env.TURNSTILE_SECRET_KEY, ip);
+  
+  if (!isHuman) {
+    return error(cors, "Turnstile validation failed (Are you a robot?)", 403);
+  }
 
   // 1. 检查邮箱是否存在
   const exists = await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
@@ -105,7 +112,14 @@ async function register(req, env, cors) {
 }
 
 async function login(req, env, cors) {
-  const { email, password } = await req.json();
+  const { email, password, cfToken } = await req.json();
+
+  const ip = req.headers.get('CF-Connecting-IP');
+  const isHuman = await validateTurnstile(cfToken, env.TURNSTILE_SECRET_KEY, ip);
+
+  if (!isHuman) {
+    return error(cors, "Turnstile validation failed", 403);
+  }
   
   const user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
   if (!user) return error(cors, "User not found", 401);
@@ -341,5 +355,26 @@ async function verifyToken(req) {
     return { id: payload.uid };
   } catch (e) {
     return null;
+  }
+}
+
+async function validateTurnstile(token, secretKey, ip) {
+  const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+  const formData = new FormData();
+  formData.append('secret', secretKey);
+  formData.append('response', token);
+  if (ip) formData.append('remoteip', ip);
+
+  try {
+    const result = await fetch(url, {
+      body: formData,
+      method: 'POST',
+    });
+
+    const outcome = await result.json();
+    return outcome.success;
+  } catch (e) {
+    console.error("Turnstile validation error:", e);
+    return false;
   }
 }

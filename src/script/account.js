@@ -59,6 +59,15 @@ function initLoginPage() {
         e.preventDefault();
         const email = loginForm.querySelector('input[type="email"]').value;
         const password = loginForm.querySelector('input[type="password"]').value;
+        
+        const formData = new FormData(loginForm);
+        const cfToken = formData.get('cf-turnstile-response');
+
+        if (!cfToken) {
+            showToast('请完成人机验证');
+            return;
+        }
+
         const btn = loginForm.querySelector('button');
 
         setLoading(btn, true);
@@ -67,7 +76,7 @@ function initLoginPage() {
             const res = await fetch(`${API_BASE}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email, password, cfToken })
             });
             
             const data = await res.json();
@@ -87,6 +96,7 @@ function initLoginPage() {
         } catch (err) {
             showToast(err.message);
             setLoading(btn, false);
+            if (window.turnstile) window.turnstile.reset();
         }
     });
 
@@ -97,6 +107,15 @@ function initLoginPage() {
         const email = document.getElementById('reg-email').value;
         const password = document.getElementById('reg-pwd').value;
         const confirmPwd = document.getElementById('reg-pwd-confirm').value;
+
+        const formData = new FormData(registerForm);
+        const cfToken = formData.get('cf-turnstile-response');
+
+        if (!cfToken) {
+            showToast('请完成人机验证');
+            return;
+        }
+
         const btn = registerForm.querySelector('button');
 
         if (password !== confirmPwd) {
@@ -110,7 +129,7 @@ function initLoginPage() {
             const res = await fetch(`${API_BASE}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nickname, email, password })
+                body: JSON.stringify({ nickname, email, password, cfToken })
             });
 
             const data = await res.json();
@@ -120,6 +139,7 @@ function initLoginPage() {
             // 切换到登录 Tab
             tabs[0].click();
             setLoading(btn, false);
+            if (window.turnstile) window.turnstile.reset(); // 注册失败或成功后重置
 
         } catch (err) {
             showToast(err.message);
