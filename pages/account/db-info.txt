@@ -149,15 +149,32 @@ async function getUserProfile(req, env, cors) {
 
   try {
     const token = authHeader.split(" ")[1];
-    const payload = JSON.parse(atob(token)); // 解析 Token
+    const payload = JSON.parse(atob(token));
     
     if (payload.exp < Date.now()) return error(cors, "Token expired", 401);
 
+    const userId = payload.uid;
+    const cacheKey = `user:${userId}`;
+
+    const cachedUser = await env.KV.get(cacheKey, { type: "json" });
+    if (cachedUser) {
+      const res = json(cors, cachedUser);
+      res.headers.set("X-Cache", "HIT");
+      return res;
+    }
+
     const user = await env.DB.prepare(
       "SELECT id, nickname, email, avatar, created_at FROM users WHERE id = ?"
-    ).bind(payload.uid).first();
+    ).bind(userId).first();
 
-    return json(cors, user);
+    if (user) {
+      await env.KV.put(cacheKey, JSON.stringify(user), { expirationTtl: 3600 });
+    }
+
+    const res = json(cors, user);
+    res.headers.set("X-Cache", "MISS");
+    return res;
+
   } catch (e) {
     return error(cors, "Invalid token", 401);
   }
@@ -170,6 +187,15 @@ async function getComments(req, env, cors) {
 
   if (!pageId) return error(cors, "Missing page_id");
 
+  const cacheKey = `comments:${pageId}`;
+
+  const cachedComments = await env.KV.get(cacheKey, { type: "json" });
+  if (cachedComments) {
+    const res = json(cors, cachedComments);
+    res.headers.set("X-Cache", "HIT");
+    return res;
+  }
+
   // 联表查询：获取评论内容 + 用户昵称 + 用户头像
   const results = await env.DB.prepare(`
     SELECT 
@@ -181,12 +207,19 @@ async function getComments(req, env, cors) {
     ORDER BY c.created_at DESC
   `).bind(pageId).all();
 
-  return json(cors, results.results || []);
+  const data = results.results || [];
+
+  await env.KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 86400 });
+
+  const res = json(cors, data);
+  res.headers.set("X-Cache", "MISS");
+  return res;
 }
+
 
 // 发布评论
 async function postComment(req, env, cors) {
-  const user = await verifyToken(req); // 需要复用下方的 verifyToken 逻辑
+  const user = await verifyToken(req); 
   if (!user) return error(cors, "Unauthorized", 401);
 
   const { page_id, content, parent_id } = await req.json();
@@ -199,6 +232,8 @@ async function postComment(req, env, cors) {
   ).bind(page_id, user.id, content, parent_id || null).run();
 
   if (result.success) {
+    await env.KV.delete(`comments:${page_id}`);
+
     // 返回新创建的评论数据用于前端立即渲染
     const newComment = await env.DB.prepare(`
       SELECT c.*, u.nickname, u.avatar 
@@ -213,34 +248,31 @@ async function postComment(req, env, cors) {
   }
 }
 
-// 删除评论 (支持递归删除子评论)
+// 删除评论
 async function deleteComment(req, env, cors, commentId) {
   const user = await verifyToken(req);
   if (!user) return error(cors, "Unauthorized", 401);
 
   // 1. 检查评论是否存在以及是否属于该用户
-  const comment = await env.DB.prepare("SELECT user_id FROM comments WHERE id = ?").bind(commentId).first();
+  // 注意：这里多查了一个 page_id，为了清除缓存
+  const comment = await env.DB.prepare("SELECT user_id, page_id FROM comments WHERE id = ?").bind(commentId).first();
   
   if (!comment) return error(cors, "Comment not found", 404);
   
-  // 权限检查：只有评论作者本人可以删除
-  // (可选扩展：如果是管理员也可以删除，这里暂只允许本人)
   if (comment.user_id !== user.id) return error(cors, "Forbidden", 403);
 
-  // 2. 执行递归删除
-  // 使用 WITH RECURSIVE 查找当前评论ID以及所有 parent_id 指向它的评论（无限层级）
-  // 然后删除所有找到的 ID
   try {
+    // 2. 执行递归删除
     await env.DB.prepare(`
       WITH RECURSIVE targets(id) AS (
-        -- 基础记录：要删除的父评论
         SELECT id FROM comments WHERE id = ?
         UNION ALL
-        -- 递归部分：查找 parent_id 等于上一轮结果中 id 的记录
         SELECT c.id FROM comments c JOIN targets t ON c.parent_id = t.id
       )
       DELETE FROM comments WHERE id IN (SELECT id FROM targets);
     `).bind(commentId).run();
+
+    await env.KV.delete(`comments:${comment.page_id}`);
 
     return json(cors, { success: true });
   } catch (e) {
@@ -336,6 +368,8 @@ async function updateAvatar(req, env, cors) {
     if (result.meta.changes === 0) {
       return error(cors, "User not found or update failed", 404);
     }
+
+    await env.KV.delete(`user:${userId}`);
 
     // 6. 返回成功及新的头像地址
     return json(cors, { success: true, avatar: avatarUrl });
