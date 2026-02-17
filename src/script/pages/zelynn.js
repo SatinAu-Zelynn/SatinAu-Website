@@ -19,6 +19,8 @@
 document.addEventListener('DOMContentLoaded', function() {
   // 图片画廊容器
   const galleryContainer = document.getElementById('zelynnGallery');
+  const filterContainer = document.getElementById('gallery-filter');
+  const noResultMsg = document.getElementById('no-result-msg');
   
   // 获取全局 HDR 设置状态
   const useGlobalHDR = localStorage.getItem('enableHDR') === 'true';
@@ -35,6 +37,11 @@ document.addEventListener('DOMContentLoaded', function() {
     tipsContainer.innerHTML = '<span style="opacity: 0.9; font-weight: 500;">您的设备支持显示HDR图片</span> <a href="/pages/settings.html#hdr-setting-anchor" style="color: var(--primary-color); font-weight: 600; margin-left: 6px; text-decoration: none;"> 去开启 &rarr; </a>';
   }
 
+  // 存储当前选中的标签
+  let activeTags = new Set();
+  // 存储Viewer实例
+  let galleryViewer = null;
+
   // 加载图片列表
   fetch(`${getCdnBaseUrl()}/zelynn/list.json`)
     .then(response => {
@@ -44,6 +51,42 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.json();
     })
     .then(images => {
+      // 提取所有唯一标签
+      const allTags = new Set();
+      images.forEach(img => {
+        if (Array.isArray(img.tags)) {
+          img.tags.forEach(tag => allTags.add(tag));
+        }
+      });
+
+      // 生成筛选按钮
+      if (filterContainer && allTags.size > 0) {
+        // 转换并在数组中排序
+        const sortedTags = Array.from(allTags).sort();
+        
+        sortedTags.forEach(tag => {
+          const btn = document.createElement('div');
+          btn.className = 'filter-tag';
+          btn.textContent = tag;
+          btn.dataset.tag = tag;
+          
+          btn.addEventListener('click', () => {
+            // 切换选中状态
+            if (activeTags.has(tag)) {
+              activeTags.delete(tag);
+              btn.classList.remove('active');
+            } else {
+              activeTags.add(tag);
+              btn.classList.add('active');
+            }
+            // 执行筛选
+            filterImages();
+          });
+          
+          filterContainer.appendChild(btn);
+        });
+      }
+      
       // 清空加载提示
       galleryContainer.innerHTML = '';
       
@@ -51,6 +94,9 @@ document.addEventListener('DOMContentLoaded', function() {
       images.forEach(imgInfo => {
         const wrapper = document.createElement('div');
         wrapper.className = 'gallery-item';
+
+        // 格式化为 JSON 字符串存储
+        wrapper.dataset.tags = JSON.stringify(imgInfo.tags || []);
 
         const img = document.createElement('img');
         
@@ -95,13 +141,49 @@ document.addEventListener('DOMContentLoaded', function() {
         wrapper.appendChild(img);
         galleryContainer.appendChild(wrapper);
       });
+
+      // === 筛选核心逻辑 ===
+      function filterImages() {
+        const items = galleryContainer.querySelectorAll('.gallery-item');
+        let hasVisibleItems = false;
+
+        items.forEach(item => {
+          const itemTags = JSON.parse(item.dataset.tags || '[]');
+          
+          let isVisible = true;
+          if (activeTags.size > 0) {
+            isVisible = Array.from(activeTags).every(tag => itemTags.includes(tag));
+          }
+
+          if (isVisible) {
+            item.style.display = ''; // 恢复默认 display
+            hasVisibleItems = true;
+          } else {
+            item.style.display = 'none';
+          }
+        });
+
+        // 处理无结果提示
+        if (noResultMsg) {
+          noResultMsg.style.display = hasVisibleItems ? 'none' : 'block';
+        }
+
+        // 更新 Viewer.js 实例，使其只包含当前可见的图片
+        if (galleryViewer) {
+          galleryViewer.update();
+        }
+      }
       
       // 初始化Viewer.js
       if (images.length > 0) {
-        const viewer = new Viewer(galleryContainer, {
+        galleryViewer = new Viewer(galleryContainer, {
           url: 'src', // 使用img的src属性作为大图地址
           title: function(image) {
             return image.alt; // 显示alt作为标题
+          },
+          filter: function(image) {
+          // 确保只查看显示的图片
+            return image.parentElement.style.display !== 'none';
           },
           toolbar: true,
           tooltip: true,
@@ -120,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const linkUrl = currentImg.dataset.link;
             // 获取 Viewer 生成的标题元素
             // viewer.viewer 是 Viewer 生成的模态框 DOM 根节点
-            const titleElement = viewer.viewer.querySelector('.viewer-title');
+            const titleElement = galleryViewer.viewer.querySelector('.viewer-title');
 
             if (titleElement) {
               // 重置样式和事件（防止上一个图片的事件残留）

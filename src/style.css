@@ -3602,3 +3602,57 @@ iframe#webFrame {
     transform: translateY(-20px) scale(0.9);
   }
 }
+
+/* ========== 图片库筛选器样式 ========== */
+.filter-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  animation: blurFadeUp 1s ease forwards;
+}
+
+.filter-tag {
+  padding: 6px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--word-color);
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(60, 60, 60, 0.4));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+  border-radius: 99px; /* 胶囊形 */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 悬停效果 */
+.filter-tag:hover {
+  background: light-dark(rgba(255, 255, 255, 0.5), rgba(80, 80, 80, 0.5));
+  transform: translateY(-2px);
+}
+
+/* 激活状态 */
+.filter-tag.active {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(var(--primary-color), 0.4); /* 需要配合RGB变量，或者简单的阴影 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .filter-container {
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .filter-tag {
+    font-size: 13px;
+    padding: 5px 12px;
+  }
+}
