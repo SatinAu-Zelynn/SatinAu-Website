@@ -1,0 +1,90 @@
+<!--
+  Copyright 2025 缎金SatinAu
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>评论审核与规范 - 缎金SatinAu</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <link rel="icon" type="image/x-icon" href="https://satinau.cn/favicon.ico">
+  <link rel="stylesheet" href="/src/style.css">
+  <script src="/src/script/config.js"></script>
+  <script src="/src/script/common.js" defer></script>
+  <script src="/src/script/components/CRCMenu.js"></script>
+  <script src="/src/script/components/GlobalModal.js" defer></script>
+</head>
+<body id="comment-policy-page">
+  <!-- 背景色块 -->
+  <div class="color-bg color-bg-1"></div>
+  <div class="color-bg color-bg-2"></div>
+  <div class="color-bg color-bg-3"></div>
+  <div class="color-bg color-bg-4"></div>
+
+  <main class="page container">
+    <header style="padding-top: 60px; padding-bottom: 20px;">
+      <!-- 返回按钮 -->
+      <a onclick="window.close()" class="back-button" aria-label="关闭页面">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </a>
+      <div class="title-row" style="justify-content: center; display: flex;">
+        <h1>评论审核与规范</h1>
+      </div>
+    </header>
+
+    <section>
+      <div class="ai-summary-card" style="margin-top: 0; text-align: left;">
+        <div class="ai-header">
+          <span class="ai-icon">🛡️</span>
+          <span>为什么我的评论未通过？</span>
+        </div>
+        <div class="ai-content">
+          <p>本站使用 <strong>Cloudflare AI (Llama-3)</strong> 对评论内容进行自动安全检测。如果您的评论状态显示为 <span style="color:#ff3b30;background:rgba(255,59,48,0.1);padding:2px 6px;border-radius:4px;font-size:12px;font-weight:bold;">审核不通过</span>，通常是因为触发了以下拦截策略：</p>
+          
+          <ul style="margin: 15px 0 20px 20px; padding: 0; font-size: 14px; line-height: 1.8; color: var(--word-color);">
+            <li><strong>攻击性语言：</strong> 包含仇恨言论、辱骂、严重的人身攻击或歧视性词汇。</li>
+            <li><strong>敏感内容：</strong> 涉及政治敏感、色情低俗或过度暴力的描述。</li>
+            <li><strong>垃圾广告：</strong> 包含与其无关的推广链接、SEO 灌水内容或乱码。</li>
+            <li><strong>AI 误判：</strong> 由于模型基于英语语境训练，极少数情况下可能对某些中文俚语或双关语产生误解。</li>
+          </ul>
+
+          <!-- 提示块 -->
+          <div style="background: rgba(var(--primary-rgb), 0.08); padding: 16px; border-radius: 12px; border: 1px solid rgba(var(--primary-rgb), 0.15); margin-top: 20px;">
+            <p style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">
+              💡 如何恢复？
+            </p>
+            <p style="margin: 0; font-size: 14px; opacity: 0.9;">
+              如果您的评论被拒绝且确认不包含违规内容，建议您<strong>修改措辞后重新发布</strong>。对于审核不通过的评论，只有您自己可见，其他访客无法看到。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <script src="/src/script/components/footer.js"></script>
+    <site-footer></site-footer>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+  <!-- 弹窗组件 -->
+  <global-modal id="globalModal"></global-modal>
+
+</body>
+</html>

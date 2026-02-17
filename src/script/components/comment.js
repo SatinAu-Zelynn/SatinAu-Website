@@ -177,7 +177,8 @@ function renderCommentItem(comment) {
         extraClass = ' audit-pending';
         contentStyle = 'opacity: 0.8;';
     } else if (comment.status === 'rejected') {
-        statusHtml = `<span class="comment-status rejected">审核不通过</span>`;
+        statusHtml = `<span class="comment-status rejected">审核不通过</span>
+                      <a href="/pages/help/comment-policy.html" target="_blank" class="audit-help-icon" title="查看原因">?</a>`;
         extraClass = ' audit-rejected';
         contentStyle = 'opacity: 0.6; text-decoration: line-through; color: #ff3b30;';
     }

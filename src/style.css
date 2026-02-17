@@ -2420,6 +2420,31 @@ input:checked + .switch-slider {
   background: light-dark(rgba(255, 59, 48, 0.02), rgba(255, 59, 48, 0.05));
 }
 
+/* ========== 评论审核帮助图标 ========== */
+.audit-help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 59, 48, 0.15);
+  color: #ff3b30;
+  font-size: 11px;
+  font-weight: bold;
+  text-decoration: none !important; /* 强制去下划线 */
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.audit-help-icon:hover {
+  background: #ff3b30;
+  color: #fff;
+  transform: scale(1.1);
+}
+
 /* 内嵌回复框容器 */
 .reply-form-wrapper {
   margin-top: 12px;
