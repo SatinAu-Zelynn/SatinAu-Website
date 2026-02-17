@@ -16,6 +16,8 @@
 
 const API_BASE = 'https://db.satinau.cn';
 
+let pollingInterval = null;
+
 // 为了让全局函数能获取 pageId
 const originalInit = window.initPageComments;
 window.initPageComments = async function(containerId, pageId) {
@@ -41,7 +43,7 @@ window.initPageComments = async function(containerId, pageId) {
                     <textarea id="mainCommentText" class="comment-textarea" placeholder="写下你的想法..."></textarea>
                     <div class="comment-actions">
                         <span class="comment-tip">支持 Markdown 语法</span>
-                        <button id="submitCommentBtn" class="comment-submit-btn">发表评论</button>
+                        <button type="button" id="submitCommentBtn" class="comment-submit-btn">发表评论</button>
                     </div>
                 </div>
 
@@ -97,11 +99,35 @@ async function loadComments(pageId) {
     const countEl = document.getElementById('commentCount');
     
     try {
-        const res = await fetch(`${API_BASE}/api/comments?page_id=${encodeURIComponent(pageId)}`);
+        // 构建请求头 (带 Token)
+        const token = localStorage.getItem('auth_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE}/api/comments?page_id=${encodeURIComponent(pageId)}`, {
+            headers: headers
+        });
+        
         if (!res.ok) throw new Error('加载失败');
         
         const comments = await res.json();
         
+        // --- 轮询逻辑：如果有 "pending" 状态的评论，启动自动刷新 ---
+        const hasPending = comments.some(c => c.status === 'pending');
+        
+        if (hasPending) {
+            if (!pollingInterval) {
+                // 每 3 秒刷新一次
+                pollingInterval = setInterval(() => loadComments(pageId), 3000);
+            }
+        } else {
+            // 没有审核中的评论，停止轮询节省流量
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
         if (comments.length === 0) {
             listEl.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.6;">暂无评论，快来抢沙发吧~</div>';
             countEl.textContent = '(0)';
@@ -110,34 +136,21 @@ async function loadComments(pageId) {
 
         countEl.textContent = `(${comments.length})`;
         
-        // 构建评论树 (修复版)
+        // 构建评论树
         const commentMap = {};
         const roots = [];
-
-        // 第一步：初始化所有评论到 Map，确保所有节点都存在
         comments.forEach(c => {
             c.children = [];
             commentMap[c.id] = c;
         });
-
-        // 第二步：建立层级关系
-        // 无论 API 返回顺序如何，这里都能找到 parent
         comments.forEach(c => {
-            if (c.parent_id) {
-                // 如果有父ID，且父ID在Map中存在（未被物理删除）
-                if (commentMap[c.parent_id]) {
-                    commentMap[c.parent_id].children.push(c);
-                } else {
-                    // 孤儿评论（父评论可能已被物理删除），作为顶级显示
-                    roots.push(c);
-                }
+            if (c.parent_id && commentMap[c.parent_id]) {
+                commentMap[c.parent_id].children.push(c);
             } else {
-                // 顶级评论
                 roots.push(c);
             }
         });
 
-        // 渲染 HTML
         listEl.innerHTML = roots.map(c => renderCommentItem(c)).join('');
 
     } catch (err) {
@@ -152,12 +165,25 @@ function renderCommentItem(comment) {
     const currentUser = JSON.parse(localStorage.getItem('user_info') || '{}');
     const isOwner = currentUser.id === comment.user_id;
 
-    // 安全处理内容 (防止XSS)
     const safeContent = escapeHtml(comment.content).replace(/\n/g, '<br>');
+
+    // === 状态标签逻辑 ===
+    let statusHtml = '';
+    let extraClass = '';
+    let contentStyle = '';
+
+    if (comment.status === 'pending') {
+        statusHtml = `<span class="comment-status pending">审核中</span>`;
+        extraClass = ' audit-pending';
+        contentStyle = 'opacity: 0.8;';
+    } else if (comment.status === 'rejected') {
+        statusHtml = `<span class="comment-status rejected">审核不通过</span>`;
+        extraClass = ' audit-rejected';
+        contentStyle = 'opacity: 0.6; text-decoration: line-through; color: #ff3b30;';
+    }
 
     let childrenHtml = '';
     if (comment.children && comment.children.length > 0) {
-        // 子评论按时间正序排列（旧的在上，新的在下，符合楼中楼阅读习惯）
         const sortedChildren = comment.children.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
         childrenHtml = `
             <div class="comment-children">
@@ -166,22 +192,27 @@ function renderCommentItem(comment) {
         `;
     }
 
+    // 只有审核通过的才能回复
+    const canReply = comment.status === 'approved';
+
     return `
-        <div class="comment-item" id="comment-${comment.id}">
+        <div class="comment-item${extraClass}" id="comment-${comment.id}">
             <img src="${comment.avatar || '/public/guest.png'}" class="comment-avatar" loading="lazy">
             <div class="comment-body">
                 <div class="comment-header">
-                    <span class="comment-user">${escapeHtml(comment.nickname || '未知用户')}</span>
+                    <span class="comment-user">
+                        ${escapeHtml(comment.nickname || '未知用户')}
+                        ${statusHtml}
+                    </span>
                     <span class="comment-date">${date}</span>
                 </div>
-                <div class="comment-content">${safeContent}</div>
+                <div class="comment-content" style="${contentStyle}">${safeContent}</div>
                 
                 <div class="comment-actions-bar">
-                    <button class="comment-reply-btn" onclick="openReplyBox(${comment.id}, '${escapeHtml(comment.nickname || '')}')">回复</button>
+                    ${canReply ? `<button class="comment-reply-btn" onclick="openReplyBox(${comment.id}, '${escapeHtml(comment.nickname || '')}')">回复</button>` : ''}
                     ${isOwner ? `<button class="comment-delete" onclick="deleteComment(${comment.id})">删除</button>` : ''}
                 </div>
 
-                <!-- 回复框挂载点 -->
                 <div id="reply-box-${comment.id}" class="reply-form-wrapper" style="display:none;"></div>
 
                 ${childrenHtml}
@@ -213,13 +244,19 @@ function bindEvents(pageId) {
     // 提交主评论
     const submitBtn = document.getElementById('submitCommentBtn');
     if (submitBtn) {
-        submitBtn.addEventListener('click', async () => {
+        if (submitBtn.dataset.bound) return;
+        
+        submitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
             const content = document.getElementById('mainCommentText').value;
             if (!content.trim()) return showToast('请输入评论内容');
             
             await submitComment(pageId, content, null);
-            document.getElementById('mainCommentText').value = ''; // 清空
+            document.getElementById('mainCommentText').value = ''; 
         });
+        
+        submitBtn.dataset.bound = "true";
     }
 }
 

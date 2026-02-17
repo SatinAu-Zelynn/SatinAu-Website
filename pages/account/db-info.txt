@@ -25,12 +25,13 @@ CREATE TABLE comments (
 );
 
 CREATE INDEX idx_comments_page_id ON comments(page_id);
+ALTER TABLE comments ADD COLUMN status TEXT DEFAULT 'pending';
 
 
 Cloudflare Worker 代码如下
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
     
@@ -62,7 +63,7 @@ export default {
         return await getComments(request, env, corsHeaders);
       }
       else if (path === "/api/comments" && request.method === "POST") {
-        return await postComment(request, env, corsHeaders);
+        return await postComment(request, env, corsHeaders, ctx);
       }
       else if (path.startsWith("/api/comments/") && request.method === "DELETE") {
         const id = path.split("/").pop();
@@ -184,41 +185,61 @@ async function getUserProfile(req, env, cors) {
 async function getComments(req, env, cors) {
   const url = new URL(req.url);
   const pageId = url.searchParams.get("page_id");
-
   if (!pageId) return error(cors, "Missing page_id");
 
-  const cacheKey = `comments:${pageId}`;
+  // 尝试从 KV 获取 "公开且已通过" 的评论缓存
+  const cacheKey = `comments:public:${pageId}`;
+  let publicComments = await env.KV.get(cacheKey, { type: "json" });
 
-  const cachedComments = await env.KV.get(cacheKey, { type: "json" });
-  if (cachedComments) {
-    const res = json(cors, cachedComments);
-    res.headers.set("X-Cache", "HIT");
-    return res;
+  if (!publicComments) {
+    // 缓存未命中，查数据库：只查 status = 'approved'
+    const results = await env.DB.prepare(`
+      SELECT 
+        c.id, c.page_id, c.content, c.parent_id, c.created_at, c.user_id, c.status,
+        u.nickname, u.avatar
+      FROM comments c
+      LEFT JOIN users u ON c.user_id = u.id
+      WHERE c.page_id = ? AND c.status = 'approved'
+      ORDER BY c.created_at DESC
+    `).bind(pageId).all();
+    
+    publicComments = results.results || [];
+    // 写入 KV 缓存 (1小时过期，因为有后台审核更新)
+    await env.KV.put(cacheKey, JSON.stringify(publicComments), { expirationTtl: 3600 });
   }
 
-  // 联表查询：获取评论内容 + 用户昵称 + 用户头像
-  const results = await env.DB.prepare(`
-    SELECT 
-      c.id, c.page_id, c.content, c.parent_id, c.created_at, c.user_id,
-      u.nickname, u.avatar
-    FROM comments c
-    LEFT JOIN users u ON c.user_id = u.id
-    WHERE c.page_id = ?
-    ORDER BY c.created_at DESC
-  `).bind(pageId).all();
+  // 检查用户是否登录，如果登录，需合并显示 "我的待审核/未通过评论"
+  const user = await verifyToken(req);
+  let finalComments = publicComments;
 
-  const data = results.results || [];
+  if (user) {
+    const myPendingComments = await env.DB.prepare(`
+      SELECT 
+        c.id, c.page_id, c.content, c.parent_id, c.created_at, c.user_id, c.status,
+        u.nickname, u.avatar
+      FROM comments c
+      LEFT JOIN users u ON c.user_id = u.id
+      WHERE c.page_id = ? AND c.user_id = ? AND c.status != 'approved'
+      ORDER BY c.created_at DESC
+    `).bind(pageId, user.id).all();
 
-  await env.KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 86400 });
+    if (myPendingComments.results && myPendingComments.results.length > 0) {
+      // 合并两个数组
+      finalComments = [...finalComments, ...myPendingComments.results];
+      // 重新按时间倒序排序
+      finalComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  }
 
-  const res = json(cors, data);
-  res.headers.set("X-Cache", "MISS");
+  const res = json(cors, finalComments);
+  // 标记缓存状态供调试
+  res.headers.set("X-Cache-Status", user ? "MIXED" : "PUBLIC_KV"); 
   return res;
 }
 
 
 // 发布评论
-async function postComment(req, env, cors) {
+async function postComment(req, env, cors, ctx) {
   const user = await verifyToken(req); 
   if (!user) return error(cors, "Unauthorized", 401);
 
@@ -227,24 +248,80 @@ async function postComment(req, env, cors) {
   if (!page_id || !content) return error(cors, "Missing fields");
   if (content.length > 1000) return error(cors, "Content too long");
 
+  // 插入数据库，状态默认为 'pending'
   const result = await env.DB.prepare(
-    "INSERT INTO comments (page_id, user_id, content, parent_id) VALUES (?, ?, ?, ?)"
+    "INSERT INTO comments (page_id, user_id, content, parent_id, status) VALUES (?, ?, ?, ?, 'pending')"
   ).bind(page_id, user.id, content, parent_id || null).run();
 
-  if (result.success) {
-    await env.KV.delete(`comments:${page_id}`);
-
-    // 返回新创建的评论数据用于前端立即渲染
-    const newComment = await env.DB.prepare(`
-      SELECT c.*, u.nickname, u.avatar 
-      FROM comments c 
-      LEFT JOIN users u ON c.user_id = u.id 
-      WHERE c.id = ?
-    `).bind(result.meta.last_row_id).first();
-    
-    return json(cors, newComment);
-  } else {
+  if (!result.success) {
     return error(cors, "Failed to post comment", 500);
+  }
+
+  const commentId = result.meta.last_row_id;
+
+  // 使用 ctx.waitUntil 在后台执行 AI 审核，不阻塞当前请求返回
+  ctx.waitUntil(performAIModeration(env, commentId, content, page_id));
+
+  // 立即返回新评论数据 (状态为 pending)
+  const newComment = await env.DB.prepare(`
+    SELECT c.*, u.nickname, u.avatar 
+    FROM comments c 
+    LEFT JOIN users u ON c.user_id = u.id 
+    WHERE c.id = ?
+  `).bind(commentId).first();
+  
+  return json(cors, newComment);
+}
+
+// AI 审核逻辑
+async function performAIModeration(env, commentId, content, pageId) {
+  try {
+    console.log(`Starting AI moderation for comment ${commentId}...`);
+    
+    // 使用 Llama 3 模型
+    const model = '@cf/meta/llama-3-8b-instruct';
+    
+    // System Prompt: 定义 AI 的角色和输出格式
+    const systemPrompt = `You are a strict content moderation AI. 
+    Task: Analyze the user's comment for hate speech, explicit violence, spam, or severe toxicity.
+    Output Rule: You must output ONLY one word.
+    If the content is safe, output: APPROVED
+    If the content is unsafe, output: REJECTED
+    Do not output any explanation.`;
+
+    const response = await env.AI.run(model, {
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Comment content: "${content}"` }
+      ]
+    });
+
+    // 解析 AI 输出
+    let status = 'approved'; // 默认通过，避免 AI 挂了导致所有评论卡死
+    
+    if (response && response.response) {
+      const output = response.response.trim().toUpperCase();
+      if (output.includes('REJECTED')) {
+        status = 'rejected';
+      }
+    }
+
+    console.log(`AI decision for comment ${commentId}: ${status}`);
+
+    // 更新数据库状态
+    await env.DB.prepare("UPDATE comments SET status = ? WHERE id = ?")
+      .bind(status, commentId)
+      .run();
+
+    // 如果是通过状态，必须清除 KV 中的公共缓存，这样所有人才能看到新评论
+    // 如果是拒绝状态，不需要清缓存（因为本来就没显示）
+    if (status === 'approved') {
+      await env.KV.delete(`comments:public:${pageId}`);
+    }
+
+  } catch (err) {
+    console.error("AI Moderation Error:", err);
+    // 出错时保持 pending，或者你可以选择自动通过
   }
 }
 
@@ -272,7 +349,7 @@ async function deleteComment(req, env, cors, commentId) {
       DELETE FROM comments WHERE id IN (SELECT id FROM targets);
     `).bind(commentId).run();
 
-    await env.KV.delete(`comments:${comment.page_id}`);
+    await env.KV.delete(`comments:public:${comment.page_id}`);
 
     return json(cors, { success: true });
   } catch (e) {

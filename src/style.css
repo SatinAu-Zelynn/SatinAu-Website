@@ -2388,30 +2388,36 @@ input:checked + .switch-slider {
 /* ========== 评论审核状态样式 ========== */
 .comment-status {
   display: inline-block;
-  font-size: 12px;
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  width: fit-content;
+  letter-spacing: 0.5px;
 }
 
 .comment-status.pending {
-  background: light-dark(rgba(255, 165, 0, 0.15), rgba(255, 165, 0, 0.25));
-  color: light-dark(#d97706, #fbbf24);
-  border: 1px solid light-dark(rgba(255, 165, 0, 0.2), rgba(255, 165, 0, 0.1));
+  background: rgba(255, 165, 0, 0.1);
+  color: #ff9800;
+  border: 1px solid rgba(255, 165, 0, 0.3);
 }
 
 .comment-status.rejected {
-  background: light-dark(rgba(255, 59, 48, 0.1), rgba(255, 69, 58, 0.2));
-  color: light-dark(#c02b20, #ff453a);
-  border: 1px solid light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.1));
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+  border: 1px solid rgba(255, 59, 48, 0.3);
 }
 
-/* 审核未通过或待审核的整体样式 */
-.comment-item.audit-filtered {
-  background: light-dark(rgba(0, 0, 0, 0.02), rgba(255, 255, 255, 0.03));
+/* 待审核/被拒绝的卡片样式 */
+.comment-item.audit-pending {
   border-style: dashed;
+  background: light-dark(rgba(255, 165, 0, 0.02), rgba(255, 165, 0, 0.05));
+}
+
+.comment-item.audit-rejected {
+  border-style: dashed;
+  background: light-dark(rgba(255, 59, 48, 0.02), rgba(255, 59, 48, 0.05));
 }
 
 /* 内嵌回复框容器 */
