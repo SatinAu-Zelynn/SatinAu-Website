@@ -725,12 +725,24 @@ function initImageViewer() {
         window.imageViewer = null;
     }
     
-    // 选择文章中所有图片
-    const postImages = postContent.querySelectorAll('img');
-    if (postImages.length === 0) return;
+    // 排除评论头像 (.comment-avatar) 和评论区容器 (#comments-container) 内的图片
+    const validImages = Array.from(postContent.querySelectorAll('img')).filter(img => {
+        return !img.classList.contains('comment-avatar') && 
+               !img.closest('#comments-container') &&
+               !img.classList.contains('ai-icon'); // 如果有 AI 摘要图标也排除
+    });
+
+    // 如果文章本身没有图片，直接返回，不初始化 Viewer
+    if (validImages.length === 0) return;
     
     // 为图片容器初始化查看器
     window.imageViewer = new Viewer(postContent, {
+        filter: function(image) {
+            // 返回 false 表示不进入查看器列表
+            return !image.classList.contains('comment-avatar') && 
+                   !image.closest('#comments-container') &&
+                   !image.classList.contains('ai-icon');
+        },
         title: function(img) {
             const articleTitle = postTitle?.textContent;
             const width = img.naturalWidth;
