@@ -505,16 +505,18 @@ h1, h2 { text-wrap: balance; }
     opacity: 0;
   }
   
-  &:hover::after {
-    left: -20%;
-    opacity: 1;
-  }
-  
-  &:hover {
-    box-shadow: 0 32px 70px rgba(0,0,0,0.2);
-    background: light-dark(rgba(255,255,255,0.45), rgba(255,255,255,0.2));
-    -webkit-backdrop-filter: blur(28px) saturate(220%);
-    backdrop-filter: blur(28px) saturate(220%);
+  @media (hover: hover) {
+    &:hover::after {
+      left: -20%;
+      opacity: 1;
+    }
+    
+    &:hover {
+      box-shadow: 0 32px 70px rgba(0,0,0,0.2);
+      background: light-dark(rgba(255,255,255,0.45), rgba(255,255,255,0.2));
+      -webkit-backdrop-filter: blur(28px) saturate(220%);
+      backdrop-filter: blur(28px) saturate(220%);
+    }
   }
   
   &:active { transform: scale(0.98) !important; }
@@ -562,9 +564,11 @@ h1, h2 { text-wrap: balance; }
 }
 
 /* 交互：悬停时图片微动且变亮 */
-.contact-card:hover .card-cover {
-  transform: scale(1.05);
-  opacity: 0.7; /* 悬停时稍微清晰一点 */
+@media (hover: hover) {
+  .contact-card:hover .card-cover {
+    transform: scale(1.05);
+    opacity: 0.7; /* 悬停时稍微清晰一点 */
+  }
 }
 
 .card-cover {
@@ -1449,9 +1453,11 @@ body#index-page {
     stroke-width: 2.2;
     fill: none;
   }
-  &:hover {
-    transform: scale(1.08);
-    background: rgba(255,255,255,0.45);
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.08);
+      background: rgba(255,255,255,0.45);
+    }
   }
   &:active {
     transform: scale(0.9);
@@ -1529,8 +1535,10 @@ body#index-page {
       border-bottom: none;
     }
     
-    tbody tr:hover {
-      background: light-dark(rgba(0,0,0,0.03), rgba(255,255,255,0.05));
+    @media (hover: hover) {
+      tbody tr:hover {
+        background: light-dark(rgba(0,0,0,0.03), rgba(255,255,255,0.05));
+      }
     }
   }
 }
@@ -1585,8 +1593,10 @@ body#index-page {
   transition: transform 0.2s ease, filter 0.2s ease, background 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 
-  &:hover {
-    background: light-dark(rgba(255, 255, 255, 0.4), rgba(60, 60, 60, 0.75));
+  @media (hover: hover) {
+    &:hover {
+      background: light-dark(rgba(255, 255, 255, 0.4), rgba(60, 60, 60, 0.75));
+    }
   }
 
   &:active {
@@ -1610,8 +1620,10 @@ body#index-page {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: inline-block; /* 确保按钮正确显示 */
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.4);
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
   }
 
   &:active {
@@ -1641,13 +1653,15 @@ body#index-page {
 }
 
 /* hover效果 */
-#authModal .tab-btn:hover,
-#emailLoginBtn:hover,
-#signupBtn:hover,
-#githubLoginBtn:hover,
-#googleLoginBtn:hover,
-#closeAuthModal:hover {
-  background: light-dark(rgba(255, 255, 255, 0.75), rgba(60, 60, 60, 0.75));
+@media (hover: hover) {
+  #authModal .tab-btn:hover,
+  #emailLoginBtn:hover,
+  #signupBtn:hover,
+  #githubLoginBtn:hover,
+  #googleLoginBtn:hover,
+  #closeAuthModal:hover {
+    background: light-dark(rgba(255, 255, 255, 0.75), rgba(60, 60, 60, 0.75));
+  }
 }
 
 /* 点击效果 */
@@ -1978,12 +1992,14 @@ input:checked + .switch-slider {
     cursor: pointer;
     transition: transform 0.3s ease;
 
-    &:hover {
-      transform: scale(1.03);
+    @media (hover: hover) {
+      &:hover {
+        transform: scale(1.03);
+      }
+    }
 
     &:active {
       transform: scale(0.96);
-    }
     }
   }
 }
@@ -2013,8 +2029,10 @@ input:checked + .switch-slider {
 }
 
 /* Hover 时更明显 */
-.gallery-item:hover .hdr-badge {
-  transform: scale(1.05);
+@media (hover: hover) {
+  .gallery-item:hover .hdr-badge {
+    transform: scale(1.05);
+  }
 }
 
 .loading-indicator {
@@ -2379,10 +2397,12 @@ input:checked + .switch-slider {
   color: light-dark(#ff3b30, #ff453a);
 }
 
-.comment-reply-btn:hover,
-.comment-delete:hover {
-  opacity: 1;
-  text-decoration: none;
+@media (hover: hover) {
+  .comment-reply-btn:hover,
+  .comment-delete:hover {
+    opacity: 1;
+    text-decoration: none;
+  }
 }
 
 /* ========== 评论审核状态样式 ========== */
@@ -2591,6 +2611,11 @@ input:checked + .switch-slider {
   animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 @keyframes starPulse {
   0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(66, 133, 244, 0)); }
   50% { transform: scale(1.15); filter: drop-shadow(0 0 5px rgba(66, 133, 244, 0.5)); }
@@ -2751,21 +2776,25 @@ input:checked + .switch-slider {
 
 /* 交互效果 (Hover & Active) */
 /* 当鼠标悬停在整个item上时 */
-.action-item:hover .action-btn {
-  background: var(--primary-color);
-  color: white;
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
-  border-color: transparent;
-}
+@media (hover: hover) {
+  .action-item:hover .action-btn {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
+    border-color: transparent;
+  }
 
-.action-item:hover .action-label {
-  color: var(--word-color);
+  .action-item:hover .action-label {
+    color: var(--word-color);
+  }
 }
 
 /* 点击时的缩放 */
 .action-item:active .action-btn {
   transform: scale(0.92);
+  background: var(--primary-color);
+  color: white;
 }
 
 /* 让回到顶部按钮在悬停时有个向上的小动画 */
@@ -3091,14 +3120,16 @@ input:checked + .switch-slider {
   transition: transform 0.4s ease;
 }
 
-.reset-btn:hover {
-  background: light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.3));
-  box-shadow: 0 6px 16px rgba(255, 59, 48, 0.2);
-  transform: translateY(-2px);
-}
+@media (hover: hover) {
+  .reset-btn:hover {
+    background: light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.3));
+    box-shadow: 0 6px 16px rgba(255, 59, 48, 0.2);
+    transform: translateY(-2px);
+  }
 
-.reset-btn:hover svg {
-  transform: rotate(-180deg);
+  .reset-btn:hover svg {
+    transform: rotate(-180deg);
+  }
 }
 
 .reset-btn:active {
@@ -3401,11 +3432,13 @@ iframe#webFrame {
   -webkit-tap-highlight-color: transparent;
 }
 
-.doc-float-btn:hover {
-  transform: scale(1.1);
-  background: var(--primary-color);
-  color: white;
-  border-color: transparent;
+@media (hover: hover) {
+  .doc-float-btn:hover {
+    transform: scale(1.1);
+    background: var(--primary-color);
+    color: white;
+    border-color: transparent;
+  }
 }
 
 .doc-float-btn:active {
@@ -3418,8 +3451,10 @@ iframe#webFrame {
   fill: currentColor;
 }
 
-.doc-float-btn.close-btn:hover {
-  background: light-dark(#ff3b30, #ff453a);
+@media (hover: hover) {
+  .doc-float-btn.close-btn:hover {
+    background: light-dark(#ff3b30, #ff453a);
+  }
 }
 
 /* 全屏模式样式 (覆盖默认 Modal 样式) */
@@ -3662,9 +3697,11 @@ iframe#webFrame {
 }
 
 /* 悬停效果 */
-.filter-tag:hover {
-  background: light-dark(rgba(255, 255, 255, 0.5), rgba(80, 80, 80, 0.5));
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .filter-tag:hover {
+    background: light-dark(rgba(255, 255, 255, 0.5), rgba(80, 80, 80, 0.5));
+    transform: translateY(-2px);
+  }
 }
 
 /* 激活状态 */
