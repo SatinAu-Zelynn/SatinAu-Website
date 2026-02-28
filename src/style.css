@@ -624,6 +624,42 @@ h1, h2 { text-wrap: balance; }
 .paw-purple { background: linear-gradient(135deg, #a18cd1, #fbc2eb); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .paw-cyan   { background: linear-gradient(135deg, #43e97b, #38f9d7); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
+body#zelynn-page .lang-wrapper .contact-card {
+  .icon {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    scrollbar-gutter: auto !important;
+    transition: box-shadow 0.3s ease;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: url('/public/zelynn.gif') no-repeat center center / cover;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    span {
+      position: relative;
+      z-index: 5;
+      transition: opacity 0.3s ease;
+    }
+  }
+
+  &:hover .icon {
+    box-shadow: none;
+
+    &::before { opacity: 1; }
+    span { opacity: 0; }
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .contact-card {
     .icon {
