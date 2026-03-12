@@ -1409,3 +1409,105 @@ function initSegmentedControls() {
 
 // 页面加载完成后立即初始化
 document.addEventListener('DOMContentLoaded', initSegmentedControls);
+
+/* ========== Live2D 模型集成逻辑 ========== */
+(function initLive2D() {
+  const MODEL_PATH = 'https://cdn-cf.satinau.cn/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json';
+  const CORE_PATH = '/src/script/components/live2dcubismcore.min.js';
+
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.crossOrigin = "anonymous";
+      script.onload = () => resolve();
+      script.onerror = (e) => reject(new Error(`Failed to load script: ${url}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  const KEY_MAPPING = {
+    'Digit1': { name: 'love' },
+    'Digit2': { name: 'star' },
+    'Digit3': { name: 'mad mouth' },
+    'Digit4': { name: 'mad' }
+  };
+
+  async function startLive2D() {
+    try {
+      if (typeof Live2DCubismCore === 'undefined') {
+        await loadScript(CORE_PATH);
+      }
+
+      if (typeof PIXI === 'undefined') {
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.5.10/browser/pixi.min.js');
+      }
+
+      if (typeof PIXI.live2d === 'undefined') {
+        await loadScript('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js');
+      }
+
+      const oldCanvas = document.getElementById('live2d-canvas');
+      if (oldCanvas) oldCanvas.remove();
+
+      const canvas = document.createElement('canvas');
+      canvas.id = 'live2d-canvas';
+      document.body.appendChild(canvas);
+
+      const app = new PIXI.Application({
+        view: canvas,
+        autoStart: true,
+        backgroundAlpha: 0,
+        width: 300,
+        height: 400,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
+
+      const model = await PIXI.live2d.Live2DModel.from(MODEL_PATH, {
+        autoInteract: true
+      });
+
+      app.stage.addChild(model);
+
+      // 自动计算比例，使模型适应画布大小
+      const targetWidth = 300;
+      const targetHeight = 400;
+
+      const scaleX = targetWidth / model.width;
+      const scaleY = targetHeight / model.height;
+      const scale = Math.min(scaleX, scaleY) * 0.95; // 预留出5%的边缘空间
+      
+      model.scale.set(scale);
+      
+      model.x = (targetWidth - model.width) / 2;
+      model.y = targetHeight - model.height;
+
+      window.addEventListener('keydown', (e) => {
+        const config = KEY_MAPPING[e.code];
+        if (config) {
+          try {
+            model.expression(config.name);
+          } catch (err) {}
+        }
+      });
+
+      model.on('hit', (hitAreas) => {
+        if (hitAreas.includes('Body')) {
+          model.motion('TapBody');
+        }
+      });
+
+      canvas.classList.add('loaded');
+
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startLive2D);
+  } else {
+    startLive2D();
+  }
+})();

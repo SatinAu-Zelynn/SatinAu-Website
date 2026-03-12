@@ -3760,3 +3760,27 @@ iframe#webFrame {
     padding: 5px 12px;
   }
 }
+
+/* ========== Live2D 模型样式 ========== */
+#live2d-canvas {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 1000; /* 确保在背景之上，但在弹窗之下 */
+  width: 300px;  /* 默认宽度，JS中会根据模型调整 */
+  height: 400px; /* 默认高度 */
+  pointer-events: auto; /* 允许鼠标交互 */
+  transition: opacity 0.5s ease;
+  opacity: 0;    /* 加载完成前隐藏 */
+}
+
+#live2d-canvas.loaded {
+  opacity: 1;
+}
+
+/* 移动端隐藏模型 (通常移动端屏幕太小，遮挡内容) */
+@media (max-width: 768px) {
+  #live2d-canvas {
+    display: none;
+  }
+}
