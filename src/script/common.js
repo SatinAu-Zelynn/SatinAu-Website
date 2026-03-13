@@ -1459,7 +1459,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         autoStart: true,
         backgroundAlpha: 0,
         width: 300,
-        height: 400,
+        height: 300,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true,
       });
@@ -1472,7 +1472,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
 
       // 自动计算比例，使模型适应画布大小
       const targetWidth = 300;
-      const targetHeight = 400;
+      const targetHeight = 300;
 
       const scaleX = targetWidth / model.width;
       const scaleY = targetHeight / model.height;

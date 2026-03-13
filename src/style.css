@@ -3768,7 +3768,7 @@ iframe#webFrame {
   left: 0;
   z-index: 1000; /* 确保在背景之上，但在弹窗之下 */
   width: 300px;  /* 默认宽度，JS中会根据模型调整 */
-  height: 400px; /* 默认高度 */
+  height: 300px; /* 默认高度 */
   pointer-events: auto; /* 允许鼠标交互 */
   transition: opacity 0.5s ease;
   opacity: 0;    /* 加载完成前隐藏 */
