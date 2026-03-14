@@ -451,6 +451,49 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
+  // 壁纸弹窗
+  // ==========================================
+  showWallpaper() {
+    this.modal.className = 'modal ios-alert';
+    
+    this.content.innerHTML = `
+      <div style="padding: 10px 0;">
+        <h2 style="margin: 0 0 10px; font-size: 20px; opacity: 1">壁纸</h2>
+        <p style="font-size: 15px; color: var(--word-color); opacity: 0.8; margin-bottom: 0;">敬请期待</p>
+      </div>
+      <div class="actions">
+        <button class="cancel" id="modalClose">关闭</button>
+      </div>
+    `;
+
+    this.querySelector('#modalClose').onclick = () => this.close();
+    this.show();
+  }
+
+  // ==========================================
+  // 装扮弹窗
+  // ==========================================
+  showDecoration() {
+    this.modal.className = 'modal ios-alert';
+    
+    this.content.innerHTML = `
+      <div style="padding: 10px 0;">
+        <h2 style="margin: 0 0 15px; font-size: 20px; opacity: 1">装扮</h2>
+        <a href="https://club.vip.qq.com/openKuikly/vas_gxh_dress_detail?open_kuikly_info=%7B%22bundle_name%22%3A%22vas_gxh_dress_detail%22%7D&qqmc_config=vas_kuikly_config&page_name=vas_gxh_dress_detail&from=share&kr_turbo_display=2_2144217&app_id=2&item_id=2144217" target="_blank" style="display: block; margin-bottom: 10px;">
+          <img src="/public/qqbubble.png" alt="QQ气泡" style="width: 100%; border-radius: var(--border-radius-md); box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.2s ease; background: light-dark(#f5f5f5, #111);" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        </a>
+        <p style="font-size: 15px; color: var(--word-color); opacity: 0.8; margin: 0;">敬请期待</p>
+      </div>
+      <div class="actions">
+        <button class="cancel" id="modalClose">关闭</button>
+      </div>
+    `;
+
+    this.querySelector('#modalClose').onclick = () => this.close();
+    this.show();
+  }
+
+  // ==========================================
   // 整点报时
   // ==========================================
   showChime(hour) {
