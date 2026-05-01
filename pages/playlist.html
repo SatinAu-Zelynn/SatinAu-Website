@@ -21,7 +21,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>歌单分享 - 缎金SatinAu</title>
   <meta name="description" content="缎金SatinAu的音乐歌单">
-  <meta name="keywords" content="缎金,SatinAu,歌单,音乐,Spotify,Bilibili,播放列表">
+  <meta name="keywords" content="缎金,SatinAu,歌单,音乐,Apple Music,Bilibili,播放列表">
   <meta name="author" content="缎金SatinAu">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
@@ -89,18 +89,18 @@
       to { opacity: 1; }
     }
 
-    /* Spotify 容器样式 */
-    .spotify-container {
+    /* Apple Music 容器样式 */
+    .am-container {
       width: 100%;
       margin: 0 auto;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
       transition: transform 0.3s ease;
-      /* 给 Spotify 也加个底色防止加载慢时透明 */
+      /* 给 Apple Music 也加个底色防止加载慢时透明 */
       background: light-dark(rgba(255, 255, 255, 0.5), rgba(0,0,0,0.3));
     }
-    .spotify-container:hover {
+    .am-container:hover {
       transform: scale(1.01);
     }
 
@@ -192,19 +192,15 @@
     </header>
 
     <section>
-      <h2>Spotify</h2>
-      <p>国内大概率访问不上</p>
-      <div class="spotify-container">
+      <h2>Apple Music</h2>
+      <div class="am-container">
         <iframe 
-          style="border-radius:12px" 
-          src="https://open.spotify.com/embed/playlist/0W3c4YHSKyx9b4IEx0mdjE?utm_source=generator" 
-          width="100%" 
-          height="352" 
-          frameBorder="0" 
-          allowfullscreen="" 
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-          loading="lazy"
-          title="Spotify Playlist"
+          allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" 
+          frameborder="0" 
+          height="450" 
+          style="width:100%;overflow:hidden;border-radius:10px;" 
+          sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" 
+          src="https://embed.music.apple.com/cn/playlist/favorite-songs/pl.u-XzUgYdyWJg"
         ></iframe>
       </div>
     </section>
