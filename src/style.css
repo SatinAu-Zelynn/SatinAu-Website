@@ -3912,7 +3912,7 @@ iframe#webFrame {
 }
 
 @media (max-width: 768px) {
-  #live2d-wrapper {
+  #live2d-wrapper, #live2d-setting-anchor {
     display: none !important;
   }
 }
