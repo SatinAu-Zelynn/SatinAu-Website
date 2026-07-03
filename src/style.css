@@ -429,6 +429,22 @@ h1, h2 { text-wrap: balance; }
   repeat(auto-fit, minmax(260px, 1fr)); 
 }
 
+/* ========== 泽凌页面顶部网格 (桌面端双列) ========== */
+.zelynn-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+body#zelynn-page .zelynn-top-grid .lang-wrapper,
+body#zelynn-page .zelynn-top-grid .contact-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
 /* 卡片液态玻璃效果 */
 .contact-card {
   display: flex; align-items: center; gap: 14px; padding: 20px 18px;
@@ -716,14 +732,38 @@ body#zelynn-page .lang-wrapper .contact-card {
     }
   }
 
-  /* 泽凌页面 - 设定总览卡片移动端定制 */
-  body#zelynn-page .lang-wrapper {
-    /* 强制一行显示三个，不换行 */
-    grid-template-columns: repeat(3, 1fr);
+  /* 泽凌页面 - 桌面端并排结构在移动端恢复单列竖向排列 */
+  .zelynn-top-grid {
+    grid-template-columns: 1fr;
     gap: 10px;
   }
+  
+  .zelynn-top-grid .grid-column {
+    margin-bottom: 20px;
+  }
 
-  body#zelynn-page .lang-wrapper .contact-card {
+  /* 泽凌页面 - 设定总览和资源分享卡片移动端定制 */
+  body#zelynn-page .lang-wrapper,
+  body#zelynn-page .contact-wrapper {
+    /* 强制恢复为网格以横向排列小卡片 */
+    display: grid !important;
+    gap: 10px;
+    margin-top: 16px !important;
+  }
+  
+  /* 设定总览有3个语言，均分3列 */
+  body#zelynn-page .lang-wrapper {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* 资源分享有2个项，均分2列 */
+  body#zelynn-page .contact-wrapper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* 统一为小卡片尺寸并调整内容居中 */
+  body#zelynn-page .lang-wrapper .contact-card,
+  body#zelynn-page .contact-wrapper .contact-card {
     padding: 16px 4px;
     flex-direction: column;
     justify-content: center;
@@ -732,23 +772,28 @@ body#zelynn-page .lang-wrapper .contact-card {
   }
 
   /* 隐藏图标 */
-  body#zelynn-page .lang-wrapper .contact-card .icon {
+  body#zelynn-page .lang-wrapper .contact-card .icon,
+  body#zelynn-page .contact-wrapper .contact-card .icon {
     display: none;
   }
 
-  /* 隐藏 "语言/Language" 标签 */
-  body#zelynn-page .lang-wrapper .contact-card .label {
+  /* 隐藏小标题 */
+  body#zelynn-page .lang-wrapper .contact-card .label,
+  body#zelynn-page .contact-wrapper .contact-card .label {
     display: none;
   }
 
-  /* 调整文本容器居中 */
-  body#zelynn-page .lang-wrapper .contact-card .text {
+  /* 调整文本容器居中并确保显示 */
+  body#zelynn-page .lang-wrapper .contact-card .text,
+  body#zelynn-page .contact-wrapper .contact-card .text {
     align-items: center;
     width: 100%;
+    display: flex; 
   }
 
   /* 保持主要文字大小 */
-  body#zelynn-page .lang-wrapper .contact-card .value {
+  body#zelynn-page .lang-wrapper .contact-card .value,
+  body#zelynn-page .contact-wrapper .contact-card .value {
     font-size: 15px;
     font-weight: 600;
   }
