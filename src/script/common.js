@@ -29,6 +29,23 @@ window.getCdnBaseUrl = function() {
   return 'https://cdn-cf.satinau.cn';
 };
 
+/* ========== Live2D 设置逻辑 ========== */
+const LIVE2D_KEY = 'setting_live2d_enabled';
+
+function isLive2DEnabled() {
+  const setting = localStorage.getItem(LIVE2D_KEY);
+  return setting === null ? true : setting === 'true'; // 默认开启
+}
+
+window.toggleLive2D = function() {
+  const checkbox = document.getElementById('live2dToggle');
+  if (!checkbox) return;
+  const enabled = checkbox.checked;
+  localStorage.setItem(LIVE2D_KEY, enabled);
+  showToast(enabled ? "Live2D：已启用，正在刷新..." : "Live2D：已禁用，正在刷新...");
+  setTimeout(() => location.reload(), 800); // 刷新页面以应用
+};
+
 /* ========== 整点报时逻辑 ========== */
 const CHIME_KEY = 'setting_hourly_chime_enabled';
 let serverTimeOffset = 0; // 服务器时间与本地时间的差值 (ms)
@@ -564,6 +581,11 @@ window.togglePerformanceMode = function () {
 
 // 页面加载时自动应用
 document.addEventListener('DOMContentLoaded', () => {
+    const l2dToggle = document.getElementById('live2dToggle');
+    if (l2dToggle) {
+      l2dToggle.checked = isLive2DEnabled();
+    }
+
     const settingsToggle = document.getElementById('performanceModeToggle');
 
     if (settingsToggle) {
@@ -1322,7 +1344,8 @@ window.restoreDefaultSettings = function(triggerElement) {
       'setting_hourly_chime_enabled',       // 整点报时
       'setting_custom_context_menu_enabled', // 右键菜单
       'enableHDR',                           // HDR 模式
-      'setting_cdn_source'                  // 重置 CDN 设置
+      'setting_cdn_source',                  // 重置 CDN 设置
+      'setting_live2d_enabled'
     ];
 
     // 移除这些 Key
@@ -1412,6 +1435,9 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
 
 /* ========== Live2D 模型集成逻辑 ========== */
 (function initLive2D() {
+  // 检查开关，若关闭则中止加载
+  if (!isLive2DEnabled()) return; 
+
   const MODEL_PATH = 'https://cdn-cf.satinau.cn/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json';
   const CORE_PATH = '/src/script/components/live2dcubismcore.min.js';
 
@@ -1435,24 +1461,52 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
 
   async function startLive2D() {
     try {
-      if (typeof Live2DCubismCore === 'undefined') {
-        await loadScript(CORE_PATH);
-      }
+      if (typeof Live2DCubismCore === 'undefined') await loadScript(CORE_PATH);
+      if (typeof PIXI === 'undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.5.10/browser/pixi.min.js');
+      if (typeof PIXI.live2d === 'undefined') await loadScript('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js');
 
-      if (typeof PIXI === 'undefined') {
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.5.10/browser/pixi.min.js');
-      }
-
-      if (typeof PIXI.live2d === 'undefined') {
-        await loadScript('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js');
-      }
-
+      // 清理可能存在的旧元素
+      const oldWrapper = document.getElementById('live2d-wrapper');
+      if (oldWrapper) oldWrapper.remove();
       const oldCanvas = document.getElementById('live2d-canvas');
-      if (oldCanvas) oldCanvas.remove();
+      if (oldCanvas && !oldCanvas.closest('#live2d-wrapper')) oldCanvas.remove();
+
+      // 构建容器和菜单
+      const wrapper = document.createElement('div');
+      wrapper.id = 'live2d-wrapper';
+      
+      const menu = document.createElement('div');
+      menu.className = 'live2d-menu';
+      menu.innerHTML = `
+        <div class="live2d-menu-btn" data-exp="love">🥰 爱心</div>
+        <div class="live2d-menu-btn" data-exp="star">✨ 星星</div>
+        <div class="live2d-menu-btn" data-exp="mad mouth">😕撇嘴</div>
+        <div class="live2d-menu-btn" data-exp="mad">💢 生气</div>
+        <div class="live2d-menu-divider"></div>
+        <div class="live2d-menu-btn" onclick="window.location.href='/pages/settings.html#live2d-setting-anchor'">⚙️ 设置</div>
+      `;
 
       const canvas = document.createElement('canvas');
       canvas.id = 'live2d-canvas';
-      document.body.appendChild(canvas);
+
+      wrapper.appendChild(canvas);
+      wrapper.appendChild(menu);
+      document.body.appendChild(wrapper);
+
+      // 防抖定时器控制菜单，解决鼠标跨越空隙时菜单闪烁消失的问题
+      let hoverTimer;
+      const showMenu = () => {
+        clearTimeout(hoverTimer);
+        menu.classList.add('show');
+      };
+      const hideMenu = () => {
+        hoverTimer = setTimeout(() => menu.classList.remove('show'), 400); // 400ms后消失
+      };
+      
+      canvas.addEventListener('mouseenter', showMenu);
+      canvas.addEventListener('mouseleave', hideMenu);
+      menu.addEventListener('mouseenter', showMenu);
+      menu.addEventListener('mouseleave', hideMenu);
 
       const app = new PIXI.Application({
         view: canvas,
@@ -1470,38 +1524,44 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
 
       app.stage.addChild(model);
 
-      // 自动计算比例，使模型适应画布大小
+      // 缩放并居中
       const targetWidth = 300;
       const targetHeight = 300;
-
       const scaleX = targetWidth / model.width;
       const scaleY = targetHeight / model.height;
-      const scale = Math.min(scaleX, scaleY) * 0.95; // 预留出5%的边缘空间
-      
+      const scale = Math.min(scaleX, scaleY) * 0.95; 
       model.scale.set(scale);
-      
       model.x = (targetWidth - model.width) / 2;
       model.y = targetHeight - model.height;
 
+      // 监听快捷键
       window.addEventListener('keydown', (e) => {
         const config = KEY_MAPPING[e.code];
         if (config) {
-          try {
-            model.expression(config.name);
-          } catch (err) {}
+          try { model.expression(config.name); } catch (err) {}
         }
       });
 
+      // 监听菜单按钮点击事件 (委托)
+      menu.addEventListener('click', (e) => {
+        const expName = e.target.getAttribute('data-exp');
+        if (expName) {
+          try { model.expression(expName); } catch (err) {}
+        }
+      });
+
+      // 点击身体动作
       model.on('hit', (hitAreas) => {
         if (hitAreas.includes('Body')) {
           model.motion('TapBody');
         }
       });
 
-      canvas.classList.add('loaded');
+      // 动画淡入
+      wrapper.classList.add('loaded');
 
     } catch (error) {
-      console.error(error);
+      console.error('Live2D Load Error:', error);
     }
   }
 
