@@ -185,60 +185,88 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 渲染函数
     function renderMoments(moments) {
-    // 按日期倒序排列
-    moments.sort((a, b) => new Date(b.date) - new Date(a.date));
+        // 按日期倒序排列
+        moments.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    moments.forEach((item, index) => {
-        const card = document.createElement('div');
-        card.className = 'moment-card';
-        // 设置动画延迟，形成阶梯出现效果
-        card.style.animation = `blurFadeUp 0.8s ease forwards ${index * 0.15}s`;
+        moments.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = 'moment-card';
+            // 设置动画延迟，形成阶梯出现效果
+            card.style.animation = `blurFadeUp 0.8s ease forwards ${index * 0.15}s`;
 
-        // 处理图片 HTML
-        let imagesHtml = '';
-        if (item.images && item.images.length > 0) {
-        const count = item.images.length;
-        // 根据数量设置 data-count 用于 CSS Grid 布局
-        const gridClass = count <= 4 ? count : 'default';
-        
-        imagesHtml = `<div class="moment-gallery" data-count="${gridClass}">`;
-        item.images.forEach(src => {
-            // 懒加载 loading="lazy"
-            const isPotentialMotion = /\.(jpg|jpeg|heic)$/i.test(src);
-            const badgeHtml = isPotentialMotion 
-            ? `<div class="live-badge" onclick="playMotionPhoto(this, '${src}')" title="播放动态照片">
-                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg> LIVE
-                </div>` 
-            : '';
+            // 处理图片 HTML
+            let imagesHtml = '';
+            if (item.images && item.images.length > 0) {
+                const count = item.images.length;
+                const gridClass = count <= 4 ? count : 'default';
+                
+                imagesHtml = `<div class="moment-gallery" data-count="${gridClass}">`;
+                item.images.forEach(src => {
+                    const isPotentialMotion = /\.(jpg|jpeg|heic)$/i.test(src);
+                    const badgeHtml = isPotentialMotion 
+                    ? `<div class="live-badge" onclick="playMotionPhoto(this, '${src}')" title="播放动态照片">
+                            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg> LIVE
+                        </div>` 
+                    : '';
 
-            imagesHtml += `
-            <div class="moment-img-wrapper">
-                <img src="${src}" alt="动态图片" loading="lazy">
-                ${badgeHtml}
+                    imagesHtml += `
+                    <div class="moment-img-wrapper">
+                        <img src="${src}" alt="动态图片" loading="lazy">
+                        ${badgeHtml}
+                    </div>
+                    `;
+                });
+                imagesHtml += `</div>`;
+            }
+
+            // 构建卡片 HTML
+            card.innerHTML = `
+            <div class="moment-header">
+                <img src="/favicon.ico" class="moment-avatar" alt="Avatar">
+                <div class="moment-info">
+                <span class="moment-author">缎金SatinAu</span>
+                <span class="moment-date">${formatDate(item.date)}</span>
+                </div>
             </div>
+            <div class="moment-content">${marked.parse(item.content).replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')}</div>
+            ${imagesHtml}
             `;
+
+            momentsList.appendChild(card);
+
+            // 当图片异步加载完成后，精准重算当前卡片高度
+            card.querySelectorAll('img').forEach(img => {
+                img.addEventListener('load', () => resizeGridItem(card));
+            });
         });
-        imagesHtml += `</div>`;
+
+        // 初始计算所有卡片高度
+        resizeAllGridItems();
+        window.addEventListener('resize', resizeAllGridItems);
+
+        // 初始化图片查看器
+        initViewer();
+    }
+
+    // 单个卡片高度计算
+    function resizeGridItem(item) {
+        if (window.innerWidth <= 600) {
+            item.style.gridRowEnd = 'auto';
+            return;
         }
+        const rowHeight = 10;
+        const rowGap = window.innerWidth <= 992 ? 16 : 24; // 对应纵向 margin-bottom 间距
+        const height = item.getBoundingClientRect().height;
+        const rowSpan = Math.ceil((height + rowGap) / rowHeight);
+        item.style.gridRowEnd = `span ${rowSpan}`;
+    }
 
-        // 构建卡片 HTML
-        card.innerHTML = `
-        <div class="moment-header">
-            <img src="/favicon.ico" class="moment-avatar" alt="Avatar">
-            <div class="moment-info">
-            <span class="moment-author">缎金SatinAu</span>
-            <span class="moment-date">${formatDate(item.date)}</span>
-            </div>
-        </div>
-        <div class="moment-content">${marked.parse(item.content).replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')}</div>
-        ${imagesHtml}
-        `;
-
-        momentsList.appendChild(card);
-    });
-
-    // 初始化图片查看器
-    initViewer();
+    // 全局重算
+    function resizeAllGridItems() {
+        const allItems = document.getElementsByClassName('moment-card');
+        for (let i = 0; i < allItems.length; i++) {
+            resizeGridItem(allItems[i]);
+        }
     }
 
     // 日期格式化 (YYYY年MM月DD日 HH:mm)

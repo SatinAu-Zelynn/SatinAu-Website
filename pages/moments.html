@@ -39,21 +39,16 @@
   <style>
     /* 动态卡片容器 */
     .moments-timeline {
-      column-count: 3;
-      column-gap: 24px;
-      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 10px; /* 瀑布流定位基准行高 */
+      gap: 0 24px; /* 横向间距，纵向间距通过 margin-bottom 与 span 控制 */
+      align-items: start;
       text-align: left; /* 动态内容左对齐更易阅读 */
     }
 
-    /* 单个动态卡片 - 复用 .contact-card 的核心玻璃质感并支持瀑布流防截断 */
+    /* 单个动态卡片 - 支持动态 Grid 跨度 */
     .moment-card {
-      display: block;
-      width: 100%;
-      box-sizing: border-box;
-      margin-bottom: 24px; /* 在瀑布流中代替 container 的 gap */
-      break-inside: avoid; /* 防止卡片在列间发生垂直断裂 */
-      -webkit-column-break-inside: avoid;
-      
       padding: 24px;
       border-radius: var(--border-radius-lg);
       background: light-dark(rgba(255, 255, 255, 0.28), rgba(30, 30, 30, 0.2));
@@ -64,6 +59,9 @@
       transition: transform 0.3s ease, box-shadow 0.3s ease;
       opacity: 0; /* 初始隐藏，用于JS做入场动画 */
       transform: translateY(20px);
+      
+      grid-row-end: span 25; /* 默认占位跨度 */
+      margin-bottom: 24px; /* 纵向间距 */
     }
 
     .moment-card:hover {
@@ -253,8 +251,8 @@
     /* 移动端与平板多栏自适应优化 */
     @media (max-width: 992px) {
       .moments-timeline {
-        column-count: 2;
-        column-gap: 16px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0 16px;
       }
       .moment-card {
         margin-bottom: 16px;
@@ -269,7 +267,11 @@
 
     @media (max-width: 600px) {
       .moments-timeline {
-        column-count: 1;
+        grid-template-columns: 1fr;
+        grid-auto-rows: auto; /* 移动端单栏还原默认高度 */
+      }
+      .moment-card {
+        grid-row-end: auto !important; /* 单栏无需计算跨度 */
       }
     }
   </style>
