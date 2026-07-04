@@ -234,13 +234,17 @@ class NavigateBar extends HTMLElement {
           // 1. 向下滚动：隐藏
           if (currentScrollY > lastScrollY && currentScrollY > 50) {
             nav.classList.add('nav-hidden');
-            // 顺便关闭可能打开的移动端菜单
-            const mobileMenu = document.querySelector('.mobile-more-menu');
-            if (mobileMenu && mobileMenu.classList.contains('show')) {
-              mobileMenu.classList.remove('show');
+            // 顺便关闭可能打开的一体式移动端菜单
+            if (nav.classList.contains('menu-open')) {
               nav.classList.remove('menu-open');
+              const mobileMenu = document.querySelector('.mobile-more-menu');
+              if (mobileMenu) {
+                mobileMenu.style.height = '0px';
+                mobileMenu.style.opacity = '0';
+              }
+              document.body.style.overflow = ''; // 释放页面滚动锁定
             }
-          } 
+          }
           // 2. 向上滚动：显示
           else if (currentScrollY < lastScrollY) {
             nav.classList.remove('nav-hidden');

@@ -333,107 +333,146 @@ function consoleBeautify() {
 window.addEventListener('load', consoleBeautify);
 
 document.addEventListener('DOMContentLoaded', function() {
-  // 获取桌面端原有的菜单选项
+  // === 重构：移动端一体式下拉菜单初始化 ===
   const desktopDropdown = document.querySelector('.more-dropdown');
-  if (!desktopDropdown) return;
-  
-  // 复制桌面端原菜单到移动端
-  const mobileMenu = document.createElement('div');
-  mobileMenu.className = 'mobile-more-menu';
-  mobileMenu.innerHTML = desktopDropdown.innerHTML;
-  document.body.appendChild(mobileMenu);
-  
   const bottomNav = document.querySelector('.bottom-nav');
-  const navLinks = bottomNav.querySelectorAll('a'); // 获取导航按钮
-  let startY = 0;
-  let moveY = 0;
-  let isDragging = false;
-  let isMenuOpen = false;
-  let isNavLinkTouched = false; // 标记是否点击了导航按钮
   
-  // 导航按钮触摸事件
-  navLinks.forEach(link => {
-    link.addEventListener('touchstart', () => {
-      isNavLinkTouched = true;
+  if (desktopDropdown && bottomNav) {
+    // 融入底栏的构建
+    const mobileMenuWrapper = document.createElement('div');
+    mobileMenuWrapper.className = 'mobile-more-menu';
+    
+    const innerContent = document.createElement('div');
+    innerContent.className = 'mobile-menu-inner';
+    innerContent.innerHTML = desktopDropdown.innerHTML;
+    
+    mobileMenuWrapper.appendChild(innerContent);
+    bottomNav.prepend(mobileMenuWrapper); // 插至最前
+    
+    const navLinks = bottomNav.querySelectorAll('a:not(.dropdown-item)'); 
+    let startY = 0, currentY = 0;
+    let isDragging = false, isMenuOpen = false, isNavLinkTouched = false;
+    let maxMenuHeight = 0, currentHeight = 0, touchStartTime = 0;
+    
+    // 获取实际内容的精准高度
+    function getMenuMaxHeight() {
+      return innerContent.offsetHeight;
+    }
+
+    // 区分日常点击与误判
+    navLinks.forEach(link => {
+      link.addEventListener('touchstart', () => { isNavLinkTouched = true; }, { passive: true });
+      link.addEventListener('touchend', () => { setTimeout(() => isNavLinkTouched = false, 100); });
     });
     
-    link.addEventListener('touchend', () => {
-      // 延迟重置，确保在手势判断后执行
-      setTimeout(() => {
-        isNavLinkTouched = false;
-      }, 100);
-    });
-  });
-  
-  // 触摸开始
-  bottomNav.addEventListener('touchstart', function(e) {
-    startY = e.touches[0].clientY;
-    isDragging = true;
-    isNavLinkTouched = false; // 重置状态
-  }, { passive: false });
-  
-  // 触摸移动
-  bottomNav.addEventListener('touchmove', function(e) {
-    if (!isDragging) return;
+    // 手势开始
+    bottomNav.addEventListener('touchstart', function(e) {
+      if (e.target.closest('.dropdown-item') || e.target.closest('button')) return; // 释放原生交互区域
+
+      startY = e.touches[0].clientY;
+      currentY = startY;
+      isDragging = true;
+      isNavLinkTouched = false;
+      touchStartTime = Date.now();
+      
+      maxMenuHeight = getMenuMaxHeight();
+      currentHeight = isMenuOpen ? maxMenuHeight : 0;
+      
+      mobileMenuWrapper.style.transition = 'none';
+      bottomNav.classList.add('is-dragging'); 
+    }, { passive: false });
     
-    moveY = e.touches[0].clientY;
-    const diff = moveY - startY;
-    
-    // 上滑手势且菜单未打开时阻止页面滚动
-    if (diff < 0 && !isMenuOpen) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-  
-  // 触摸结束
-  bottomNav.addEventListener('touchend', function() {
-    if (!isDragging) return;
-    
-    const diff = moveY - startY;
-    const touchDuration = Date.now() - touchStartTime; // 计算触摸时长
-    
-    // 触发条件：上滑距离>80px，且不是点击导航按钮，且触摸时长>150ms
-    if (diff < -80 && !isMenuOpen && !isNavLinkTouched && touchDuration > 150) {
-      mobileMenu.classList.add('show');
-      bottomNav.classList.add('menu-open');
-      isMenuOpen = true;
-      document.body.style.overflow = 'hidden';
-    }
-    
-    isDragging = false;
-  });
-  
-  // 记录触摸开始时间
-  let touchStartTime = 0;
-  bottomNav.addEventListener('touchstart', function() {
-    touchStartTime = Date.now();
-  }, { passive: true });
-  
-  // 点击菜单外部关闭
-  document.addEventListener('click', function(e) {
-    if (isMenuOpen && !mobileMenu.contains(e.target) && !bottomNav.contains(e.target)) {
-      mobileMenu.classList.remove('show');
-      bottomNav.classList.remove('menu-open');
-      isMenuOpen = false;
-      document.body.style.overflow = '';
-    }
-  });
-  
-  // 菜单内部点击处理
-  mobileMenu.querySelectorAll('.dropdown-item').forEach(item => {
-    item.addEventListener('click', function(e) {
-      const isExternal = this.target === '_blank' || this.href.startsWith('http');
-      if (!isExternal) {
-        e.preventDefault();
-        window.location.href = this.getAttribute('href');
+    // 手指滑动 (实时反馈)
+    bottomNav.addEventListener('touchmove', function(e) {
+      if (!isDragging) return;
+      
+      currentY = e.touches[0].clientY;
+      const diff = startY - currentY; // 向上划为正值
+      let newHeight = currentHeight + diff;
+      
+      if (newHeight < 0) {
+        newHeight = 0; // 收底硬锁死
+      } else if (newHeight > maxMenuHeight) {
+        const over = newHeight - maxMenuHeight;
+        newHeight = maxMenuHeight + over * 0.2; // 抽拉过头时的顶部物理阻尼
       }
       
-      mobileMenu.classList.remove('show');
-      bottomNav.classList.remove('menu-open');
+      if (Math.abs(diff) > 5) e.preventDefault(); // 阻断页面本体滑动乱跳
+      
+      if (newHeight >= 0) {
+        mobileMenuWrapper.style.height = `${newHeight}px`;
+        mobileMenuWrapper.style.opacity = Math.min(newHeight / (maxMenuHeight * 0.8), 1);
+      }
+    }, { passive: false });
+    
+    function openMenu() {
+      isMenuOpen = true;
+      maxMenuHeight = getMenuMaxHeight();
+      mobileMenuWrapper.style.height = `${maxMenuHeight}px`;
+      mobileMenuWrapper.style.opacity = '1';
+      bottomNav.classList.add('menu-open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
       isMenuOpen = false;
+      mobileMenuWrapper.style.height = '0px';
+      mobileMenuWrapper.style.opacity = '0';
+      bottomNav.classList.remove('menu-open');
       document.body.style.overflow = '';
+    }
+
+    // 释放判断 (回弹动画)
+    bottomNav.addEventListener('touchend', function() {
+      if (!isDragging) return;
+      isDragging = false;
+      
+      const diff = startY - currentY;
+      const touchDuration = Date.now() - touchStartTime;
+      const velocity = diff / touchDuration; // 滑动速率判断
+      
+      let shouldOpen = isMenuOpen;
+      
+      if (!isMenuOpen) {
+        if (velocity > 0.4 || diff > maxMenuHeight / 3) shouldOpen = true; 
+      } else {
+        if (velocity < -0.4 || diff < -maxMenuHeight / 3) shouldOpen = false;
+      }
+      
+      // 容错：当成极其快速的小点击时放弃手势接管
+      if (Math.abs(diff) < 10 && touchDuration < 200) {
+        shouldOpen = isMenuOpen;
+      }
+      
+      mobileMenuWrapper.style.transition = '';
+      bottomNav.classList.remove('is-dragging'); 
+      
+      void mobileMenuWrapper.offsetHeight;
+      
+      if (shouldOpen && !isNavLinkTouched) {
+          openMenu();
+      } else {
+          closeMenu();
+      }
     });
-  });
+    
+    // 点击非底栏区域时自动关合
+    document.addEventListener('click', function(e) {
+      if (isMenuOpen && !bottomNav.contains(e.target)) closeMenu();
+    });
+    
+    // 菜单内子链接控制
+    mobileMenuWrapper.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', function(e) {
+        const isExternal = this.target === '_blank' || this.href.startsWith('http');
+        if (!isExternal) {
+          e.preventDefault();
+          window.location.href = this.getAttribute('href');
+        }
+        closeMenu();
+      });
+    });
+  }
 
   // 初始化原生通知开关状态
   const notifyToggle = document.getElementById('nativeNotificationToggle');
