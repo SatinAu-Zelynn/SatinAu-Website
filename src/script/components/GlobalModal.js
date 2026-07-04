@@ -66,6 +66,7 @@ class GlobalModal extends HTMLElement {
     // 补偿页面抖动：给 body 添加右内边距
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
+      document.documentElement.style.setProperty('--scrollbar-compensate', `${scrollbarWidth}px`);
       
     }
     
@@ -88,6 +89,7 @@ class GlobalModal extends HTMLElement {
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
     document.body.style.overscrollBehavior = '';
+    document.documentElement.style.removeProperty('--scrollbar-compensate');
     
     this.isScrollLocked = false;
   }

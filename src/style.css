@@ -1015,7 +1015,7 @@ body#index-page {
 /* ========== SatinAu Design 导航栏 ========== */
 .bottom-nav{
   position: fixed;
-  left: 50%;
+  left: calc(50% - var(--scrollbar-compensate, 0px) / 2);
   bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
   transform: translateX(-50%);
   display: flex;
@@ -1339,14 +1339,14 @@ body#index-page {
   .bottom-nav {
     flex-wrap: wrap;       /* 允许内部项目换行 */
     align-items: flex-end; /* 主导航保持在最底部 */
-    padding-top: 18px;     /* 为提示线预留空间 */
+    padding-top: 10px;     /* 为提示线预留空间 */
   }
   
   /* 手势提示线样式 */
   .bottom-nav::before {
     content: '';
     position: absolute;
-    top: 8px;
+    top: 6px;
     left: 50%;
     transform: translateX(-50%) rotate(0deg);
     width: 36px;
@@ -1387,7 +1387,7 @@ body#index-page {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-    padding: 0 4px 16px;
+    padding: 8px 4px 16px;
     align-content: start;
     box-sizing: border-box;
   }
