@@ -1522,7 +1522,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         <div class="live2d-menu-btn" data-exp="mad mouth">😕撇嘴</div>
         <div class="live2d-menu-btn" data-exp="mad">💢 生气</div>
         <div class="live2d-menu-divider"></div>
-        <div class="live2d-menu-btn" onclick="window.location.href='/pages/settings.html#live2d-setting-anchor'">⚙️ 设置</div>
+        <div class="live2d-menu-btn" onclick="window.openSettingsModal('live2d-setting-anchor')">⚙️ 设置</div>
       `;
 
       const canvas = document.createElement('canvas');
@@ -1610,3 +1610,17 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
     startLive2D();
   }
 })();
+
+/* ========== 全局调起设置浮窗方法 ========== */
+window.openSettingsModal = function(anchorId = null, triggerEl = null) {
+  let modal = document.querySelector('global-modal');
+  if (!modal) {
+    modal = document.createElement('global-modal');
+    document.body.appendChild(modal);
+  }
+  if (triggerEl) {
+    modal.with(triggerEl).showSettings(anchorId);
+  } else {
+    modal.showSettings(anchorId);
+  }
+};

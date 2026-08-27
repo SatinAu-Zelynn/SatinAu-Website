@@ -1722,7 +1722,7 @@ body#index-page {
   border-radius: var(--border-radius-lg);
   box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
   width: 100%;
-  max-width: 400px;
+  max-width: 100%;
   margin: 20px auto;
   box-sizing: border-box;
   scroll-margin-top: 50vh;
@@ -3838,3 +3838,126 @@ iframe#webFrame {
     display: none !important;
   }
 }
+
+/* ========== 网站设置大型浮窗 (GlobalModal Settings) ========== */
+.modal.settings-modal {
+  width: 90vw;
+  max-width: 680px;
+  height: 85vh;
+  height: 85dvh;
+  padding: 0;
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  background: light-dark(rgba(255, 255, 255, 0.5), rgba(30, 30, 30, 0.5));
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.12));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25), inset 0 0 30px rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+/* 关键修复：让 modal 内部的内容包装层承接 flex 列布局与高度约束 */
+.modal.settings-modal .modal-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0; /* 允许 flex 子项收缩 */
+  overflow: hidden;
+}
+
+/* 浮窗固定头部 */
+.settings-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  background: light-dark(rgba(255, 255, 255, 0.4), rgba(20, 20, 20, 0.4));
+  flex-shrink: 0; /* 防止头部被压缩 */
+  z-index: 10;
+}
+
+.settings-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-modal-actions .reset-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.settings-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.15));
+  background: light-dark(rgba(255, 255, 255, 0.6), rgba(60, 60, 60, 0.6));
+  color: var(--word-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.settings-modal-close:hover {
+  background: light-dark(#ff3b30, #ff453a);
+  color: #fff;
+  border-color: transparent;
+  transform: scale(1.05);
+}
+
+/* 浮窗滚动内容区：限制在剩余高度内并允许滚动 */
+.settings-modal-body {
+  flex: 1 1 auto;
+  min-height: 0; /* 关键：必须设置 min-height: 0 否则在 flex 容器内不会产生溢出滚动 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; /* 阻止向外层页面传递滚动链 */
+  padding: 20px 24px 60px; /* 底部预留充足留白，防止下拉菜单被遮挡 */
+}
+
+.modal.settings-modal section {
+  padding: 0;
+}
+
+.settings-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--word-color);
+}
+
+.settings-modal-body section h2,
+.settings-modal-body section p,
+.settings-modal-body section .setting-item {
+  opacity: 1;
+  animation: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .modal.settings-modal {
+    width: 94vw;
+    height: 88vh;
+    height: 88dvh;
+  }
+
+  .settings-modal-header {
+    padding: 14px 16px;
+  }
+
+  .settings-modal-body {
+    padding: 16px 16px 50px;
+  }
+}
+
+/* 移动端菜单项：个人中心与下方设置均占满整行 */
+  .mobile-menu-inner .nav-user-card,
+  .mobile-menu-inner .nav-settings-btn {
+    grid-column: 1 / -1;
+  }

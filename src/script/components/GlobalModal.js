@@ -453,6 +453,36 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
+  // 网站设置大型浮窗
+  // ==========================================
+  showSettings(anchorId = null) {
+    if (typeof window.mountSettingsToModal === 'function') {
+      window.mountSettingsToModal(this, anchorId);
+      return;
+    }
+
+    const scriptId = 'settings-modal-script';
+    let script = document.getElementById(scriptId);
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = '/src/script/components/SettingsModal.js';
+      script.onload = () => {
+        if (typeof window.mountSettingsToModal === 'function') {
+          window.mountSettingsToModal(this, anchorId);
+        }
+      };
+      document.head.appendChild(script);
+    } else {
+      script.addEventListener('load', () => {
+        if (typeof window.mountSettingsToModal === 'function') {
+          window.mountSettingsToModal(this, anchorId);
+        }
+      }, { once: true });
+    }
+  }
+
+  // ==========================================
   // 壁纸弹窗
   // ==========================================
   showWallpaper() {

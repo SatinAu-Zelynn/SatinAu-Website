@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const isHardwareHDR = window.matchMedia && window.matchMedia('(dynamic-range: high)').matches;
   // 如果设备支持 HDR 但用户未开启 HDR 模式，提示开启
   if (isHardwareHDR && !useGlobalHDR && tipsContainer) {
-    tipsContainer.innerHTML = '<span style="opacity: 0.9; font-weight: 500;">您的设备支持显示HDR图片</span> <a href="/pages/settings.html#hdr-setting-anchor" style="color: var(--primary-color); font-weight: 600; margin-left: 6px; text-decoration: none;"> 去开启 &rarr; </a>';
+    tipsContainer.innerHTML = '<span style="opacity: 0.9; font-weight: 500;">您的设备支持显示HDR图片</span> <a href="javascript:void(0);" onclick="window.openSettingsModal(\'hdr-setting-anchor\')" style="color: var(--primary-color); font-weight: 600; margin-left: 6px; text-decoration: none;"> 去开启 &rarr; </a>';
   }
 
   // 存储当前选中的标签

@@ -782,14 +782,17 @@ const testAction = (ctx) => {
 const openSettingsSectionAction = (anchorId) => {
     const settingsPath = '/pages/settings.html';
     // 判断当前是否已经在设置页面
-    if (window.location.pathname.includes('/pages/settings')) {
-        const element = document.getElementById(anchorId);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+    if (typeof window.openSettingsModal === 'function') {
+        window.openSettingsModal(anchorId);
     } else {
-        // 如果不在设置页，跳转并带上锚点
-        window.location.href = `${settingsPath}#${anchorId}`;
+        let modal = document.querySelector('global-modal');
+        if (!modal) {
+            modal = document.createElement('global-modal');
+            document.body.appendChild(modal);
+        }
+        if (modal.showSettings) {
+            modal.showSettings(anchorId);
+        }
     }
 };
 // 菜单项回调函数写在下面--结束

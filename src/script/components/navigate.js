@@ -61,8 +61,7 @@ class NavigateBar extends HTMLElement {
       { label: '动态', href: 'moments' },
       { label: '关于我', href: 'aboutme' },
       { label: '友情链接', href: 'friendlink' },
-      { label: '歌单分享', href: 'playlist' },
-      { label: '网站设置', href: 'settings' }
+      { label: '歌单分享', href: 'playlist' }
     ];
 
     const isMoreActive = moreItems.some(item => {
@@ -118,13 +117,14 @@ class NavigateBar extends HTMLElement {
         .nav-user-card {
           display: flex;
           align-items: center;
-          padding: 10px 12px;
-          margin: 4px 8px 8px 8px; /* 底部留点空隙 */
+          padding: 8px 12px;
+          margin: 0 0 2px 0; /* 左右边距归零，与 dropdown-item 一致 */
           border-radius: var(--border-radius-md, 8px);
           cursor: pointer;
           transition: background 0.2s;
           text-decoration: none;
           color: inherit;
+          box-sizing: border-box;
         }
         
         .nav-user-card:hover {
@@ -211,6 +211,14 @@ class NavigateBar extends HTMLElement {
 
             <!-- 分体式菜单：用户区域 -->
             ${userHtml}
+
+            <a 
+              href="javascript:void(0);" 
+              class="dropdown-item nav-settings-btn"
+              onclick="if(window.openSettingsModal) { window.openSettingsModal(null); if(typeof toggleMoreMenu === 'function' && moreMenuVisible) toggleMoreMenu(); } return false;"
+            >
+              网站设置
+            </a>
           </div>
         </div>
       </nav>
