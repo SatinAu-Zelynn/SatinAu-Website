@@ -3923,7 +3923,7 @@ iframe#webFrame {
 }
 
 .modal.settings-modal section {
-  padding: 0;
+  padding: 30px 0;
 }
 
 .settings-modal-title {

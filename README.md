@@ -58,8 +58,6 @@
 
 | 环境变量名 | 说明 | 示例 |
 |------------|------|------|
-| `SUPABASE_URL` | Supabase 项目的基础 URL | `https://abcdefghijklmnopqrst.supabase.co` |
-| `SUPABASE_ANON_KEY` | Supabase 项目的匿名访问密钥 | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
 | `BUILD_INFO` | 构建信息，将注入到前端页面中 | `Cloudflare提供静态托管和CDN服务` |
 
 
