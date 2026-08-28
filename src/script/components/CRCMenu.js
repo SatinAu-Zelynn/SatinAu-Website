@@ -11,7 +11,7 @@
  * 该项目受Apache License 2.0开源协议保护，您必须在遵守协议的前提下使用、修改和分发该项目的代码
  */
 
-// 此文件为CRCM.V3-B.js的格式化版本，若在意加载速度，则不建议在生产环境中使用
+// 此文件为CRCM.V3.js的格式化版本，若在意加载速度，则不建议在生产环境中使用
 // 此版本默认配置了第三级嵌套菜单，若不需要第三级菜单，可在注册默认菜单配置中删除sub-3（深层嵌套项）菜单项代码
 
 class CustomRightClickMenu extends HTMLElement {
@@ -52,11 +52,17 @@ class CustomRightClickMenu extends HTMLElement {
             '--menu-backdrop': 'blur(10px)',
             '--menu-shadow': '0 6px 15px -3px rgba(0, 0, 0, 0.08)',
             '--item-hover-bg': '#f3f4f6',
+            '--item-transition-speed': '0.2s',
             '--text-color': '#6b7280',
             '--header-color': '#9ca3af',
             '--divider-color': '#e5e7eb',
             '--transition-speed': '0.1s',
             '--arrow-margin-left': 'auto',
+            '--menu-line-height': '1.4',
+            '--menu-white-space': 'nowrap',
+            '--item-before-scale': 'scale(0.9)',
+            '--reopen-behavior': 'translate',
+            '--prevent-secondary-click': true,
             ...theme
         };
         this.externalStyles = externalStyles;
@@ -65,6 +71,7 @@ class CustomRightClickMenu extends HTMLElement {
       ${this._renderExternalStyles()}
       <style>
         :host{${this._renderThemeVariables()}}
+
         #custom-menu {
           display: none;
           position: fixed;
@@ -72,38 +79,47 @@ class CustomRightClickMenu extends HTMLElement {
           border-radius: 12px;
           box-shadow: var(--menu-shadow);
           padding: 0.5rem 0;
-          z-index: 9999;
+          z-index: 9989;
           min-width: 180px;
+          white-space: var(--menu-white-space);
           transition: all var(--transition-speed) ease-out;
           transform-origin: top left;
           opacity: 0;
-          transform: scale(0.95);
+          transform: scale(0.95) translateZ(0);
+          will-change: transform, opacity;
+          backface-visibility: hidden;
           backdrop-filter: var(--menu-backdrop);
           border: var(--menu-border);
           user-select: none;
+          line-height: var(--menu-line-height);
         }
         .sub-menu {
           position: fixed;
           opacity: 0;
           visibility: hidden; 
-          transform: scale(0.95);
+          transform: scale(0.95) translateZ(0);
           transform-origin: top left;
           transition: opacity 0.2s ease, transform 0.2s ease;
+          will-change: transform, opacity;
+          backface-visibility: hidden;
           background: var(--menu-bg);
           border-radius: 12px;
           box-shadow: var(--menu-shadow);
           padding: 0.5rem 0;
           min-width: 180px;
+          white-space: var(--menu-white-space);
           backdrop-filter: var(--menu-backdrop);
           border: var(--menu-border);
-          z-index: 10000;
+          z-index: 9990;
           pointer-events: none;
           contain: layout paint;
+          user-select: none;
+          line-height: var(--menu-line-height);
         }
         .sub-menu.active {
           opacity: 1;
           visibility: visible;
-          transform: scale(1);
+          transform: scale(1) translateZ(0);
           pointer-events: auto;
         }
         .menu-item {
@@ -112,9 +128,35 @@ class CustomRightClickMenu extends HTMLElement {
             padding: 0.75rem 1.25rem;
             margin: 0 5px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
             color: var(--text-color);
             position: relative;
+            border-radius: 10px;
+            z-index: 1;
+        }
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--item-hover-bg);
+            border-radius: 10px;
+            z-index: -1;
+            transform: var(--item-before-scale);
+            opacity: 0;
+            transition: transform var(--item-transition-speed) ease, opacity var(--item-transition-speed) ease;
+        }
+        .menu-item:hover::before,
+        .menu-item.expanded::before {
+            transform: scale(1);
+            background-color: var(--item-hover-bg);
+            opacity: 1;
+        }
+        .menu-item:active::before {
+            transform: scale(0.94);
+            opacity: 1;
         }
         .menu-header {
             padding: 0.5rem 1.25rem;
@@ -123,10 +165,11 @@ class CustomRightClickMenu extends HTMLElement {
             text-transform: uppercase;
             font-weight: 500;
         }
-        #custom-menu.visible { opacity: 1; transform: scale(1); }
-        #custom-menu.hiding { opacity: 0; transform: scale(0.95); }
-        .menu-item:hover{background-color:var(--item-hover-bg);border-radius:10px;}
-        .menu-item i { width: 1.5rem; margin-right: 0.75rem; color: var(--text-color); }
+        #custom-menu.visible { opacity: 1; transform: scale(1) translateZ(0); }
+        #custom-menu.hiding { opacity: 0; transform: scale(0.95) translateZ(0); }
+        .menu-item .menu-icon{width:1.5rem;margin-right:0.75rem;color:var(--text-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;transform:translateZ(0);backface-visibility:hidden;}
+        .menu-item .menu-icon i { width: 100%; text-align: center; }
+        .menu-item .menu-icon svg{width:1.25rem;height:1.1rem;fill:currentColor;object-fit:contain;will-change:transform;}
         .menu-item .arrow { margin-left: var(--arrow-margin-left); font-size: 10px; opacity: 0.6; margin-right: 0; width: auto; display: flex; align-items: center; justify-content: center; }        
         .menu-item .arrow svg { height: 20px; width: 10px; }
         .menu-divider { border-top: 1px solid var(--divider-color); margin: 0.25rem 0; }
@@ -164,11 +207,12 @@ class CustomRightClickMenu extends HTMLElement {
         });
     }
 
-    registerSchema({ selector = 'default', groups }) {
-        if (!Array.isArray(groups)) {
-            throw new Error('groups 必须是数组');
+    registerSchema({ selector = 'default', groups, items }) {
+        const data = groups || items;
+        if (!Array.isArray(data)) {
+            throw new Error('必须提供 groups 或 items 数组');
         }
-        this.selectorSchemas.set(selector, groups);
+        this.selectorSchemas.set(selector, data);
     }
 
     unregisterSchema(selector = 'default') {
@@ -210,7 +254,7 @@ class CustomRightClickMenu extends HTMLElement {
         this.target = null;
         this.listenArgs = [];
     }
-    
+
     clearTimers() {
         if (this.scrollTimer) {
             clearTimeout(this.scrollTimer);
@@ -223,6 +267,15 @@ class CustomRightClickMenu extends HTMLElement {
     }
 
     handleContextMenu(e) {
+        const path = e.composedPath();
+        const isInsideMenu = (this.customMenu && path.includes(this.customMenu)) ||
+            Array.from(this.shadowRoot.querySelectorAll('.sub-menu')).some(sm => path.includes(sm));
+
+        if (isInsideMenu && this.theme['--prevent-secondary-click']) {
+            e.preventDefault();
+            return;
+        }
+
         e.preventDefault();
         this.focusedElementBeforeMenu = document.activeElement;
         const now = Date.now();
@@ -263,7 +316,19 @@ class CustomRightClickMenu extends HTMLElement {
 
         const safeMargin = 7;
         let menuWidth, menuHeight;
-        const isNewOpen = !this.isMenuVisible && !this.isOpening;
+        let isNewOpen = !this.isMenuVisible && !this.isOpening;
+
+        if (!isNewOpen && this.theme['--reopen-behavior'] === 're-show') {
+            this.shadowRoot.querySelectorAll('.sub-menu').forEach(sm => sm.remove());
+            this.customMenu.classList.remove('visible', 'hiding');
+            this.customMenu.style.display = 'none';
+            this.customMenu.style.left = 'auto';
+            this.customMenu.style.top = 'auto';
+            this.isMenuVisible = false;
+            this.isOpening = false;
+            this.isAnimating = false;
+            isNewOpen = true;
+        }
 
         if (isNewOpen) {
             this.customMenu.style.visibility = 'hidden';
@@ -283,18 +348,43 @@ class CustomRightClickMenu extends HTMLElement {
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
+        const maxLeft = Math.max(safeMargin, viewportWidth - menuWidth - safeMargin);
+        const maxTop = Math.max(safeMargin, viewportHeight - menuHeight - safeMargin);
+
         let left = this.contextMenuX;
+        let originX = 'left';
         if (left + menuWidth + safeMargin > viewportWidth) {
-            left = Math.max(safeMargin, viewportWidth - menuWidth - safeMargin);
+            const canOpenLeft = this.contextMenuX - menuWidth - safeMargin >= safeMargin;
+            if (canOpenLeft) {
+                left = this.contextMenuX - menuWidth;
+                originX = 'right';
+            } else {
+                left = maxLeft;
+                originX = 'left';
+            }
+        } else {
+            left = Math.min(left, maxLeft);
         }
 
         let top = this.contextMenuY;
+        let originY = 'top';
         if (top + menuHeight + safeMargin > viewportHeight) {
-            top = Math.max(safeMargin, viewportHeight - menuHeight - safeMargin);
+            const canOpenUp = this.contextMenuY - menuHeight - safeMargin >= safeMargin;
+            if (canOpenUp) {
+                top = this.contextMenuY - menuHeight;
+                originY = 'bottom';
+            } else {
+                top = maxTop;
+                originY = 'top';
+            }
+        } else {
+            top = Math.min(top, maxTop);
         }
 
-        left = Math.max(safeMargin, left);
-        top = Math.max(safeMargin, top);
+        left = Math.min(Math.max(safeMargin, left), maxLeft);
+        top = Math.min(Math.max(safeMargin, top), maxTop);
+
+        this.customMenu.style.transformOrigin = `${originX} ${originY}`;
 
         isNewOpen ? this.showMenu(left, top) : this.moveMenu(left, top);
         this.menuOpenTime = now;
@@ -324,6 +414,56 @@ class CustomRightClickMenu extends HTMLElement {
         return null;
     }
 
+    _renderMenuContent(container, data, ctx) {
+        if (!Array.isArray(data) || data.length === 0) return false;
+
+        let hasAnyVisible = false;
+        let currentStandaloneItems = [];
+
+        const flushStandalone = () => {
+            if (currentStandaloneItems.length > 0) {
+                this._renderMenuLayer(currentStandaloneItems, container, ctx);
+                currentStandaloneItems = [];
+                hasAnyVisible = true;
+            }
+        };
+
+        data.forEach((item) => {
+            const children = item.items || item.children;
+            const isGroup = children && !item.label;
+
+            if (isGroup) {
+                flushStandalone();
+                const visibleItems = children.filter(sub =>
+                    typeof sub.context === 'function' ? sub.context(ctx) : true
+                );
+
+                if (visibleItems.length > 0) {
+                    if (container.children.length > 0) {
+                        const divider = document.createElement('div');
+                        divider.className = 'menu-divider';
+                        container.appendChild(divider);
+                    }
+                    if (item.name) {
+                        const header = document.createElement('div');
+                        header.className = 'menu-header';
+                        header.textContent = item.name;
+                        container.appendChild(header);
+                    }
+                    this._renderMenuLayer(visibleItems, container, ctx);
+                    hasAnyVisible = true;
+                }
+            } else {
+                if (item.divider || (typeof item.context === 'function' ? item.context(ctx) : true)) {
+                    currentStandaloneItems.push(item);
+                }
+            }
+        });
+
+        flushStandalone();
+        return hasAnyVisible;
+    }
+
     _renderMenuLayer(items, parentContainer, ctx) {
         items.forEach((item) => {
             if (typeof item.context === 'function' && !item.context(ctx)) return;
@@ -340,16 +480,25 @@ class CustomRightClickMenu extends HTMLElement {
             menuItem.dataset.id = item.id;
 
             if (item.icon) {
-                const icon = document.createElement('i');
-                icon.className = `fa ${item.icon}`;
-                menuItem.appendChild(icon);
+                const iconContainer = document.createElement('div');
+                iconContainer.className = 'menu-icon';
+
+                if (item.icon.trim().startsWith('<svg')) {
+                    iconContainer.innerHTML = item.icon;
+                } else {
+                    const icon = document.createElement('i');
+                    icon.className = `fa ${item.icon}`;
+                    iconContainer.appendChild(icon);
+                }
+                menuItem.appendChild(iconContainer);
             }
 
             const label = document.createElement('span');
             label.textContent = item.label;
             menuItem.appendChild(label);
 
-            if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+            const children = item.children || item.items;
+            if (children && Array.isArray(children) && children.length > 0) {
                 const arrow = document.createElement('span');
                 arrow.className = 'arrow';
                 arrow.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="24" viewBox="0 0 12 24"><path fill="currentColor" fill-rule="evenodd" d="M10.157 12.711L4.5 18.368l-1.414-1.414l4.95-4.95l-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 0 1 0 1.414"/></svg>`;
@@ -363,6 +512,7 @@ class CustomRightClickMenu extends HTMLElement {
                         clearTimeout(hideTimer);
                         hideTimer = null;
                     }
+                    menuItem.classList.add('expanded');
 
                     Array.from(parentContainer.children).forEach(child => {
                         if (child.classList.contains('menu-item') && child !== menuItem) {
@@ -377,9 +527,9 @@ class CustomRightClickMenu extends HTMLElement {
                         subMenu.setAttribute('data-parent-id', item.id);
                         this.shadowRoot.appendChild(subMenu);
 
-                        this._renderMenuLayer(item.children, subMenu, ctx);
+                        const hasContent = this._renderMenuContent(subMenu, children, ctx);
 
-                        if (subMenu.childNodes.length === 0) {
+                        if (!hasContent) {
                             subMenu.remove();
                             subMenu = null;
                             return;
@@ -431,12 +581,14 @@ class CustomRightClickMenu extends HTMLElement {
                         subMenu.addEventListener('mouseenter', () => {
                             if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
                             subMenu.classList.add('active');
+                            menuItem.classList.add('expanded');
 
                             let p = parentContainer;
                             while (p && p.classList.contains('sub-menu')) {
                                 p.classList.add('active');
                                 const parentId = p.getAttribute('data-parent-id');
                                 const pItem = this.shadowRoot.querySelector(`.menu-item[data-id="${parentId}"]`);
+                                if (pItem) pItem.classList.add('expanded');
                                 p = pItem ? pItem.parentElement : null;
                             }
                         });
@@ -444,8 +596,16 @@ class CustomRightClickMenu extends HTMLElement {
                         subMenu.addEventListener('mouseleave', (e) => {
                             if (e.relatedTarget && (menuItem === e.relatedTarget || menuItem.contains(e.relatedTarget))) return;
 
+                            if (e.relatedTarget && e.relatedTarget.classList.contains('sub-menu')) {
+                                const relatedParentId = e.relatedTarget.getAttribute('data-parent-id');
+                                if (subMenu.querySelector(`.menu-item[data-id="${relatedParentId}"]`)) {
+                                    return;
+                                }
+                            }
+
                             if (subMenu) {
                                 subMenu.classList.remove('active');
+                                menuItem.classList.remove('expanded');
                                 if (hideTimer) clearTimeout(hideTimer);
                                 hideTimer = setTimeout(() => {
                                     if (subMenu && !subMenu.classList.contains('active')) {
@@ -460,6 +620,7 @@ class CustomRightClickMenu extends HTMLElement {
                                 p.classList.remove('active');
                                 const parentId = p.getAttribute('data-parent-id');
                                 const parentItem = this.shadowRoot.querySelector(`.menu-item[data-id="${parentId}"]`);
+                                if (parentItem) parentItem.classList.remove('expanded');
                                 p = parentItem ? parentItem.parentElement : null;
                             }
                         });
@@ -473,6 +634,7 @@ class CustomRightClickMenu extends HTMLElement {
                     if (e.relatedTarget && subMenu && (subMenu === e.relatedTarget || subMenu.contains(e.relatedTarget))) {
                         return;
                     }
+                    menuItem.classList.remove('expanded');
                     if (subMenu) {
                         subMenu.classList.remove('active');
                         if (hideTimer) clearTimeout(hideTimer);
@@ -498,52 +660,26 @@ class CustomRightClickMenu extends HTMLElement {
         });
     }
 
-    updateMenuItemsFromSchema(schemaGroups, ctx) {
-        const visibleGroups = [];
-        schemaGroups.forEach(group => {
-            const visibleItems = group.items.filter(item =>
-                typeof item.context === 'function' ? item.context(ctx) : true
-            );
-            if (visibleItems.length > 0) {
-                visibleGroups.push({
-                    id: group.id,
-                    name: group.name,
-                    order: group.order || 0,
-                    items: visibleItems
-                });
-            }
-        });
-
-        visibleGroups.sort((a, b) => a.order - b.order);
-
+    updateMenuItemsFromSchema(schema, ctx) {
         this.customMenu.innerHTML = '';
         this.shadowRoot.querySelectorAll('.sub-menu').forEach(el => el.remove());
 
-        visibleGroups.forEach((group, index) => {
-            if (index > 0) {
-                const divider = document.createElement('div');
-                divider.className = 'menu-divider';
-                this.customMenu.appendChild(divider);
-            }
-            const header = document.createElement('div');
-            header.className = 'menu-header';
-            header.textContent = group.name;
-            this.customMenu.appendChild(header);
+        const hasContent = this._renderMenuContent(this.customMenu, schema, ctx);
 
-            this._renderMenuLayer(group.items, this.customMenu, ctx);
-        });
-
-        if (visibleGroups.length === 0) this.hideMenu();
+        if (!hasContent) this.hideMenu();
     }
 
     showMenu(left, top) {
         if (this.isOpening || !this.customMenu) return;
         this.isOpening = true;
         this.customMenu.style.position = 'fixed';
+        this.customMenu.style.transition = 'none';
         this.customMenu.style.left = `${left}px`;
         this.customMenu.style.top = `${top}px`;
         this.customMenu.style.display = 'block';
-        this.customMenu.classList.remove('hiding');
+        this.customMenu.classList.remove('visible', 'hiding');
+        void this.customMenu.offsetWidth;
+        this.customMenu.style.transition = '';
         requestAnimationFrame(() => {
             this.customMenu.classList.add('visible');
             setTimeout(() => {
@@ -576,10 +712,10 @@ class CustomRightClickMenu extends HTMLElement {
 
     handleScroll() {
         if (this.isMenuVisible) {
-            if (this.scrollTimer) clearTimeout(this.scrollTimer);
-            this.scrollTimer = setTimeout(() => this.hideMenu(), 50);
+            this.hideMenu();
         }
     }
+
     handleSelectionChange() {
         const selection = window.getSelection();
         if (this.isMenuVisible && selection.toString().length > 0) {
@@ -598,11 +734,11 @@ class CustomRightClickMenu extends HTMLElement {
                     const clientX = rect.left + (rect.width / 2);
                     const clientY = rect.bottom + 5;
                     const mockEvent = {
-                        preventDefault: () => {},
+                        preventDefault: () => { },
                         clientX: clientX,
                         clientY: clientY,
                         target: selection.anchorNode.parentElement || document.body,
-                        isSynthetic: true 
+                        isSynthetic: true
                     };
                     this.handleContextMenu(mockEvent);
                 } catch (err) {
@@ -611,6 +747,7 @@ class CustomRightClickMenu extends HTMLElement {
             }
         }, 50);
     }
+
     handleTouchStart(e) {
         if (this.isMenuVisible) this.touchStartY = e.touches[0].clientY;
     }
@@ -627,7 +764,6 @@ class CustomRightClickMenu extends HTMLElement {
     hideMenu() {
         if (this.isAnimating || !this.customMenu) return;
         this.clearTimers();
-
         this.isAnimating = true;
         this.isOpening = false;
 
@@ -802,7 +938,6 @@ const createRightClickMenu = () => {
     // 自定义主题配置和外部样式
     const menu = new CustomRightClickMenu({
 
-        //  示例，改为玻璃拟态右键菜单：
         theme: {
             // 对应菜单的背景
             '--menu-bg': 'light-dark(rgba(255,255,255,0.5), rgba(255,255,255,0.1))',
@@ -829,10 +964,10 @@ const createRightClickMenu = () => {
         ]
     });
 
-    // 注册默认菜单配置
+    // 注册默认菜单配置（菜单项图标支持“内嵌SVG”与“FontAwesome类名”）
     menu.registerSchema({
         selector: 'default',
-        groups: [
+        items: [
             {
                 id: 'general',
                 name: '常规操作',
@@ -841,13 +976,15 @@ const createRightClickMenu = () => {
                     {
                         id: 'back',
                         label: '返回',
-                        icon: 'fa-arrow-left',
+                        // fa-arrow-left
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.2 288 416 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-306.7 0L214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg>',
                         callback: backAction, context: () => true
                     },
                     {
                         id: 'refresh',
                         label: '刷新',
-                        icon: 'fa-refresh',
+                        // fa-refresh
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M142.9 142.9c-17.5 17.5-30.1 38-37.8 59.8c-5.9 16.7-24.2 25.4-40.8 19.5s-25.4-24.2-19.5-40.8C55.6 150.7 73.2 122 97.6 97.6c87.2-87.2 228.3-87.5 315.8-1L455 55c6.9-6.9 17.2-8.9 26.2-5.2s14.8 12.5 14.8 22.2l0 128c0 13.3-10.7 24-24 24l-8.4 0c0 0 0 0 0 0L344 224c-9.7 0-18.5-5.8-22.2-14.8s-1.7-19.3 5.2-26.2l41.1-41.1c-62.6-61.5-163.1-61.2-225.3 1zM16 312c0-13.3 10.7-24 24-24l7.6 0 .7 0L168 288c9.7 0 18.5 5.8 22.2 14.8s1.7 19.3-5.2 26.2l-41.1 41.1c62.6 61.5 163.1 61.2 225.3-1c17.5-17.5 30.1-38 37.8-59.8c5.9-16.7 24.2-25.4 40.8-19.5s25.4 24.2 19.5 40.8c-10.8 30.6-28.4 59.3-52.9 83.8c-87.2 87.2-228.3 87.5-315.8 1L57 457c-6.9 6.9-17.2 8.9-26.2 5.2S16 449.7 16 440l0-119.6 0-.7 0-7.6z"/></svg>',
                         callback: refreshAction, context: () => true
                     }
                 ]
@@ -860,14 +997,16 @@ const createRightClickMenu = () => {
                     {
                         id: 'copy',
                         label: '复制',
-                        icon: 'fa-copy',
+                        // fa-copy
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M208 0L332.1 0c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9L448 336c0 26.5-21.5 48-48 48l-192 0c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48zM48 128l80 0 0 64-64 0 0 256 192 0 0-32 64 0 0 48c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 176c0-26.5 21.5-48 48-48z"/></svg>',
                         callback: copyAction,
                         context: (ctx) => ctx.selectedText.trim().length > 0 || ctx.isInputFocused
                     },
                     {
                         id: 'paste',
                         label: '粘贴',
-                        icon: 'fa-paste',
+                        // 	fa-paste
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M160 0c-23.7 0-44.4 12.9-55.4 32L48 32C21.5 32 0 53.5 0 80L0 400c0 26.5 21.5 48 48 48l144 0 0-272c0-44.2 35.8-80 80-80l48 0 0-16c0-26.5-21.5-48-48-48l-56.6 0C204.4 12.9 183.7 0 160 0zM272 128c-26.5 0-48 21.5-48 48l0 272 0 16c0 26.5 21.5 48 48 48l192 0c26.5 0 48-21.5 48-48l0-220.1c0-12.7-5.1-24.9-14.1-33.9l-67.9-67.9c-9-9-21.2-14.1-33.9-14.1L320 128l-48 0zM160 40a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"/></svg>',
                         callback: pasteAction,
                         context: (ctx) => ctx.isInputFocused && (ctx.target.tagName === 'INPUT' || ctx.target.tagName === 'TEXTAREA' || ctx.target.isContentEditable)
                     }
@@ -881,14 +1020,16 @@ const createRightClickMenu = () => {
                     {
                         id: 'open-in-new-tab',
                         label: '在新标签页打开',
-                        icon: 'fa-external-link',
+                        // fa-external-link
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l82.7 0L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3l0 82.7c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160c0-17.7-14.3-32-32-32L320 0zM80 32C35.8 32 0 67.8 0 112L0 432c0 44.2 35.8 80 80 80l320 0c44.2 0 80-35.8 80-80l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 112c0 8.8-7.2 16-16 16L80 448c-8.8 0-16-7.2-16-16l0-320c0-8.8 7.2-16 16-16l112 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 32z"/></svg>',
                         callback: openInNewTabAction,
                         context: (ctx) => !!ctx.currentLinkUrl && !ctx.currentLinkUrl.startsWith('javascript:')
                     },
                     {
                         id: 'copy-link',
                         label: '复制链接地址',
-                        icon: 'fa-link',
+                        // fa-link
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" transform="scale(1.2)"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M579.8 267.7c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114L422.3 334.8c-31.5 31.5-82.5 31.5-114 0c-27.9-27.9-31.5-71.8-8.6-103.8l1.1-1.6c10.3-14.4 6.9-34.4-7.4-44.6s-34.4-6.9-44.6 7.4l-1.1 1.6C206.5 251.2 213 330 263 380c56.5 56.5 148 56.5 204.5 0L579.8 267.7zM60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5L217.7 177.2c31.5-31.5 82.5-31.5 114 0c27.9 27.9 31.5 71.8 8.6 103.9l-1.1 1.6c-10.3 14.4-6.9 34.4 7.4 44.6s34.4 6.9 44.6-7.4l1.1-1.6C433.5 260.8 427 182 377 132c-56.5-56.5-148-56.5-204.5 0L60.2 244.3z"/></svg>',
                         callback: copyLinkAction,
                         context: (ctx) => !!ctx.currentLinkUrl && !ctx.currentLinkUrl.startsWith('javascript:')
                     }
@@ -902,14 +1043,16 @@ const createRightClickMenu = () => {
                     {
                         id: 'open-image-in-new-tab',
                         label: '在新标签页打开',
-                        icon: 'fa-external-link',
+                        // fa-external-link
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l82.7 0L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3l0 82.7c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160c0-17.7-14.3-32-32-32L320 0zM80 32C35.8 32 0 67.8 0 112L0 432c0 44.2 35.8 80 80 80l320 0c44.2 0 80-35.8 80-80l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 112c0 8.8-7.2 16-16 16L80 448c-8.8 0-16-7.2-16-16l0-320c0-8.8 7.2-16 16-16l112 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 32z"/></svg>',
                         callback: openImageInNewTabAction,
                         context: (ctx) => !!ctx.currentImageUrl && !ctx.currentImageUrl.startsWith('data:')
                     },
                     {
                         id: 'copy-image-link',
                         label: '复制图片地址',
-                        icon: 'fa-link',
+                        // fa-link
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" transform="scale(1.2)"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M579.8 267.7c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114L422.3 334.8c-31.5 31.5-82.5 31.5-114 0c-27.9-27.9-31.5-71.8-8.6-103.8l1.1-1.6c10.3-14.4 6.9-34.4-7.4-44.6s-34.4-6.9-44.6 7.4l-1.1 1.6C206.5 251.2 213 330 263 380c56.5 56.5 148 56.5 204.5 0L579.8 267.7zM60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5L217.7 177.2c31.5-31.5 82.5-31.5 114 0c27.9 27.9 31.5 71.8 8.6 103.9l-1.1 1.6c-10.3 14.4-6.9 34.4 7.4 44.6s34.4 6.9 44.6-7.4l1.1-1.6C433.5 260.8 427 182 377 132c-56.5-56.5-148-56.5-204.5 0L60.2 244.3z"/></svg>',
                         callback: copyImageUrlAction,
                         context: (ctx) => !!ctx.currentImageUrl && !ctx.currentImageUrl.startsWith('data:')
                     }
@@ -923,13 +1066,15 @@ const createRightClickMenu = () => {
                     {
                         id: 'more',
                         label: '更多功能',
-                        icon: 'fa-ellipsis-h',
+                        // fa-ellipsis-h
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M8 256a56 56 0 1 1 112 0A56 56 0 1 1 8 256zm160 0a56 56 0 1 1 112 0 56 56 0 1 1 -112 0zm216-56a56 56 0 1 1 0 112 56 56 0 1 1 0-112z"/></svg>',
                         // 多级嵌套子菜单
                         children: [
                             {
                                 id: 'sub-1',
                                 label: '复制当前链接',
-                                icon: 'fa-globe',
+                                // fa-globe
+                                icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M352 256c0 22.2-1.2 43.6-3.3 64l-185.3 0c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64l185.3 0c2.2 20.4 3.3 41.8 3.3 64zm28.8-64l123.1 0c5.3 20.5 8.1 41.9 8.1 64s-2.8 43.5-8.1 64l-123.1 0c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64zm112.6-32l-116.7 0c-10-63.9-29.8-117.4-55.3-151.6c78.3 20.7 142 77.5 171.9 151.6zm-149.1 0l-176.6 0c6.1-36.4 15.5-68.6 27-94.7c10.5-23.6 22.2-40.7 33.5-51.5C239.4 3.2 248.7 0 256 0s16.6 3.2 27.8 13.8c11.3 10.8 23 27.9 33.5 51.5c11.6 26 20.9 58.2 27 94.7zm-209 0L18.6 160C48.6 85.9 112.2 29.1 190.6 8.4C165.1 42.6 145.3 96.1 135.3 160zM8.1 192l123.1 0c-2.1 20.6-3.2 42-3.2 64s1.1 43.4 3.2 64L8.1 320C2.8 299.5 0 278.1 0 256s2.8-43.5 8.1-64zM194.7 446.6c-11.6-26-20.9-58.2-27-94.6l176.6 0c-6.1 36.4-15.5 68.6-27 94.6c-10.5 23.6-22.2 40.7-33.5 51.5C272.6 508.8 263.3 512 256 512s-16.6-3.2-27.8-13.8c-11.3-10.8-23-27.9-33.5-51.5zM135.3 352c10 63.9 29.8 117.4 55.3 151.6C112.2 482.9 48.6 426.1 18.6 352l116.7 0zm358.1 0c-30 74.1-93.6 130.9-171.9 151.6c25.5-34.2 45.2-87.7 55.3-151.6l116.7 0z"/></svg>',
                                 callback: () => copyWebsiteUrlAction(window.location.href)
                             },
                             {
@@ -956,39 +1101,40 @@ const createRightClickMenu = () => {
                                         callback: () => scrollToBottomAction()
                                     }
                                 ]
-                            }
-                        ]
-                    },
-                    {
-                        id: 'settings',
-                        label: '网站设置',
-                        icon: 'fa-cog',
-                        // 移除原来的 callback，改为 children
-                        children: [
-                            {
-                                id: 'setting-ui',
-                                label: '外观样式',
-                                icon: 'fa-paint-brush', // 或 fa-palette
-                                callback: () => openSettingsSectionAction('ui-settings')
                             },
                             {
-                                id: 'setting-func',
-                                label: '功能开关',
-                                icon: 'fa-toggle-on', // 或 fa-sliders
-                                callback: () => openSettingsSectionAction('function-settings')
-                            },
-                            {
-                                id: 'setting-about',
-                                label: '关于与帮助',
-                                icon: 'fa-question-circle', // 或 fa-info-circle
-                                callback: () => openSettingsSectionAction('about-help')
+                                id: 'settings',
+                                label: '网站设置',
+                                icon: 'fa-cog',
+                                // 移除原来的 callback，改为 children
+                                children: [
+                                    {
+                                        id: 'setting-ui',
+                                        label: '外观样式',
+                                        icon: 'fa-paint-brush', // 或 fa-palette
+                                        callback: () => openSettingsSectionAction('ui-settings')
+                                    },
+                                    {
+                                        id: 'setting-func',
+                                        label: '功能开关',
+                                        icon: 'fa-toggle-on', // 或 fa-sliders
+                                        callback: () => openSettingsSectionAction('function-settings')
+                                    },
+                                    {
+                                        id: 'setting-about',
+                                        label: '关于与帮助',
+                                        icon: 'fa-question-circle', // 或 fa-info-circle
+                                        callback: () => openSettingsSectionAction('about-help')
+                                    }
+                                ]
                             }
                         ]
                     },
                     {
                         id: 'back-to-home',
                         label: '返回主页',
-                        icon: 'fa-home',
+                        // fa-home
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M575.8 255.5c0 18-15 32.1-32 32.1l-32 0 .7 160.2c0 2.7-.2 5.4-.5 8.1l0 16.2c0 22.1-17.9 40-40 40l-16 0c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1L416 512l-24 0c-22.1 0-40-17.9-40-40l0-24 0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32l0 64 0 24c0 22.1-17.9 40-40 40l-24 0-31.9 0c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2l-16 0c-22.1 0-40-17.9-40-40l0-112c0-.9 0-1.9 .1-2.8l0-69.7-32 0c-18 0-32-14-32-32.1c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z"/></svg>',
                         callback: backToHomeAction,
                         context: () => true
                     }
