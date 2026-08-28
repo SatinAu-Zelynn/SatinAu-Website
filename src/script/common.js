@@ -133,13 +133,77 @@ function toggleModal(id, show = true) {
   if (el) el.classList.toggle("show", show);
 }
 
-function showToast(msg) {
+/* Toast 队列与动画调度逻辑 */
+let toastQueue = [];
+let isToastShowing = false;
+let isToastDismissing = false;
+let toastTimers = [];
+
+function clearToastTimers() {
+  toastTimers.forEach(t => clearTimeout(t));
+  toastTimers = [];
+}
+
+function processToastQueue() {
+  if (toastQueue.length === 0) {
+    isToastShowing = false;
+    isToastDismissing = false;
+    return;
+  }
+
   const tip = document.getElementById("toast");
-  if (!tip) return;
+  if (!tip) {
+    toastQueue = [];
+    isToastShowing = false;
+    isToastDismissing = false;
+    return;
+  }
+
+  isToastShowing = true;
+  isToastDismissing = false;
+  const msg = toastQueue.shift();
+
   tip.textContent = msg;
+  tip.classList.remove("done");
+  void tip.offsetWidth; // 触发回流重绘，确保重新播放进场动画
   tip.classList.add("show");
-  setTimeout(() => tip.classList.add("done"), 250);
-  setTimeout(() => { tip.classList.remove("show", "done"); }, 1800);
+
+  toastTimers.push(setTimeout(() => {
+    tip.classList.add("done");
+  }, 250));
+
+  toastTimers.push(setTimeout(() => {
+    dismissCurrentToast();
+  }, 1800));
+}
+
+function dismissCurrentToast() {
+  if (isToastDismissing) return;
+  isToastDismissing = true;
+  clearToastTimers();
+
+  const tip = document.getElementById("toast");
+  if (!tip) {
+    processToastQueue();
+    return;
+  }
+
+  tip.classList.remove("show", "done");
+
+  // 等待出场过渡动画（对应 CSS 的 0.4s 过渡）结束后播放下一条
+  toastTimers.push(setTimeout(() => {
+    processToastQueue();
+  }, 350));
+}
+
+function showToast(msg) {
+  toastQueue.push(msg);
+  if (!isToastShowing) {
+    processToastQueue();
+  } else {
+    // 当前已有 Toast 在显示时，立即触发当前 Toast 退场并衔接下一条
+    dismissCurrentToast();
+  }
 }
 
 /* 页面加载动画 & 卡片入场 */
