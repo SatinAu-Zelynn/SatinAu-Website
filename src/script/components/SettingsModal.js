@@ -15,7 +15,7 @@
 */
 
 window.mountSettingsToModal = function(modalInstance, anchorId = null) {
-  modalInstance.modal.className = 'modal settings-modal';
+  modalInstance.modal.classList.add('settings-modal');
 
   // 渲染设置窗口结构（头部固定 + 内部可滚动）
   modalInstance.content.innerHTML = `

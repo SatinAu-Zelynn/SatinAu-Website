@@ -901,16 +901,32 @@ const copyWebsiteUrlAction = (text) => {
     showToast("📋 已复制: " + text);
 };
 const scrollToTopAction = () => {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
+    const settingsBody = document.querySelector('.settings-modal.show .settings-modal-body, .settings-modal .settings-modal-body');
+    if (settingsBody && settingsBody.offsetParent !== null) {
+        settingsBody.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    } else {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
 };
 const scrollToBottomAction = () => {
-    window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: 'smooth'
-    });
+    const settingsBody = document.querySelector('.settings-modal.show .settings-modal-body, .settings-modal .settings-modal-body');
+    if (settingsBody && settingsBody.offsetParent !== null) {
+        settingsBody.scrollTo({
+            top: settingsBody.scrollHeight,
+            behavior: 'smooth'
+        });
+    } else {
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
 };
 const testAction = (ctx) => {
     alert('我是测试');
