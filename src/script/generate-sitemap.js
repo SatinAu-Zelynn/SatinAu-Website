@@ -33,15 +33,14 @@ const CONFIG = {
 
 // 默认页面配置（优先级和频率）
 const DEFAULT_PAGES = [
-    { path: '/', priority: 1.0, changefreq: 'weekly' },
-    { path: '/blog', priority: 0.8, changefreq: 'daily' },
+    { path: '/', priority: 1.0, changefreq: 'monthly' },
+    { path: '/blog', priority: 0.8, changefreq: 'weekly' },
     { path: '/zelynn', priority: 0.8, changefreq: 'monthly' },
     { path: '/pages/character', priority: 0.6, changefreq: 'monthly' },
     { path: '/pages/moments', priority: 0.6, changefreq: 'weekly' },
     { path: '/pages/aboutme', priority: 0.6, changefreq: 'monthly' },
     { path: '/pages/friendlink', priority: 0.6, changefreq: 'monthly' },
     { path: '/pages/playlist', priority: 0.6, changefreq: 'monthly' },
-    { path: '/pages/settings', priority: 0.4, changefreq: 'yearly' },
 ];
 
 /**
