@@ -1688,3 +1688,61 @@ window.openSettingsModal = function(anchorId = null, triggerEl = null) {
     modal.showSettings(anchorId);
   }
 };
+
+/* ========== 全局登录状态与用户同步 ========== */
+function checkGlobalAuthStatus() {
+  if (document.getElementById('account-page')) return;
+
+  const token = localStorage.getItem('auth_token');
+  if (!token) return;
+
+  const clearAuth = (reason) => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
+    if (document.getElementById('account-page')) {
+      if (typeof showToast === 'function') {
+        showToast(reason || '登录已过期，请重新登录');
+      }
+      setTimeout(() => {
+        window.location.href = '/pages/account/login.html';
+      }, 1000);
+    }
+  };
+
+  // 本地预检 Token 是否已过期
+  try {
+    const payload = JSON.parse(atob(token));
+    if (payload.exp && payload.exp < Date.now()) {
+      clearAuth('登录已过期，请重新登录');
+      return;
+    }
+  } catch (e) {
+    clearAuth();
+    return;
+  }
+
+  // 向后端静默校验 Token 并同步最新用户信息
+  fetch('https://db.satinau.cn/api/user/me', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  .then(res => {
+    if (res.status === 401) {
+      throw new Error('EXPIRED');
+    }
+    return res.json();
+  })
+  .then(data => {
+    if (data && data.id) {
+      localStorage.setItem('user_info', JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: data }));
+    }
+  })
+  .catch(err => {
+    if (err.message === 'EXPIRED') {
+      clearAuth('登录已过期，请重新登录');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', checkGlobalAuthStatus);

@@ -72,24 +72,29 @@ class NavigateBar extends HTMLElement {
     // --- 用户信息逻辑 ---
     const token = localStorage.getItem('auth_token');
     const userInfoRaw = localStorage.getItem('user_info');
-    let userHtml = '';
+    let isTokenValid = false;
 
-    // 判断是否登录并生成对应HTML
-    if (token && userInfoRaw) {
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token));
+            if (payload.exp && payload.exp < Date.now()) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_info');
+            } else {
+                isTokenValid = true;
+            }
+        } catch (e) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_info');
+        }
+    }
+
+    let userHtml = '';
+    if (isTokenValid && userInfoRaw) {
         try {
             const user = JSON.parse(userInfoRaw);
-            const avatarUrl = user.avatar || '/public/guest.png';
-            userHtml = `
-              <div class="nav-user-card" onclick="window.location.href='/pages/account/index.html'">
-                <img src="${avatarUrl}" class="nav-user-avatar-small" alt="Avatar">
-                <div class="nav-user-info">
-                  <span class="nav-user-name">${user.nickname}</span>
-                  <span class="nav-user-status">个人中心</span>
-                </div>
-              </div>
-            `;
+            userHtml = this.getUserHtml(user);
         } catch (e) {
-            // 解析失败回退到登录
             userHtml = this.getLoginHtml();
         }
     } else {
@@ -210,7 +215,7 @@ class NavigateBar extends HTMLElement {
             <div class="nav-separator"></div>
 
             <!-- 分体式菜单：用户区域 -->
-            ${userHtml}
+            <div class="nav-user-slot">${userHtml}</div>
 
             <a 
               href="javascript:void(0);" 
@@ -264,6 +269,29 @@ class NavigateBar extends HTMLElement {
         ticking = true;
       }
     }, { passive: true });
+    
+    // 监听全局登录状态变动，实时同步导航栏用户区域
+    window.addEventListener('auth-status-changed', (e) => {
+      const user = e.detail;
+      const html = user ? this.getUserHtml(user) : this.getLoginHtml();
+      document.querySelectorAll('.nav-user-slot').forEach(slot => {
+        slot.innerHTML = html;
+      });
+    });
+  }
+
+  // 辅助方法：生成已登录HTML
+  getUserHtml(user) {
+    const avatarUrl = user.avatar || '/public/guest.png';
+    return `
+      <div class="nav-user-card" onclick="window.location.href='/pages/account/index.html'">
+        <img src="${avatarUrl}" class="nav-user-avatar-small" alt="Avatar">
+        <div class="nav-user-info">
+          <span class="nav-user-name">${user.nickname}</span>
+          <span class="nav-user-status">个人中心</span>
+        </div>
+      </div>
+    `;
   }
   
   // 辅助方法：生成未登录HTML

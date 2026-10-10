@@ -28,10 +28,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ========== 登录页逻辑 ========== */
 function initLoginPage() {
-    // 检查是否已登录，已登录则跳转
-    if (localStorage.getItem('auth_token')) {
-        window.location.href = '/pages/account/index.html';
-        return;
+    // 检查是否已登录，未过期才跳转
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token));
+            if (payload.exp && payload.exp < Date.now()) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_info');
+            } else {
+                window.location.href = '/pages/account/index.html';
+                return;
+            }
+        } catch (e) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_info');
+        }
     }
 
     const tabs = document.querySelectorAll('#authTabControl button');
@@ -151,8 +163,24 @@ function initLoginPage() {
 /* ========== 个人中心逻辑 ========== */
 async function initProfilePage() {
     const token = localStorage.getItem('auth_token');
+    let isTokenValid = false;
+
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token));
+            if (payload.exp && payload.exp < Date.now()) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_info');
+            } else {
+                isTokenValid = true;
+            }
+        } catch (e) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_info');
+        }
+    }
     
-    if (!token) {
+    if (!isTokenValid) {
         window.location.href = '/pages/account/login.html';
         return;
     }
@@ -269,6 +297,9 @@ function initAvatarUpload(token) {
             const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
             userInfo.avatar = newAvatarUrl;
             localStorage.setItem('user_info', JSON.stringify(userInfo));
+
+            // 同步更新导航栏用户卡片
+            window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: userInfo }));
 
             showToast('头像修改成功！');
 
