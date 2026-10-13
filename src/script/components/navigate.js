@@ -119,6 +119,10 @@ class NavigateBar extends HTMLElement {
         }
 
         /* --- 用户卡片区域 --- */
+        .nav-user-slot {
+          display: contents;
+        }
+
         .nav-user-card {
           display: flex;
           align-items: center;
@@ -133,7 +137,7 @@ class NavigateBar extends HTMLElement {
         }
         
         .nav-user-card:hover {
-          background: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+          background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.2));
         }
 
         .nav-user-avatar-small {
