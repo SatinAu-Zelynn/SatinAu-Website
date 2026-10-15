@@ -122,10 +122,9 @@ echo "[BUILD] 正在压缩所有代码文件..."
 minify_css() {
     local file="$1"
     local tmp="${file}.tmp"
-    if sed -E ':a; s%(/\*[^*]*\*+([^/*][^*]*\*+)*/)%%g; ta' "$file" 2>/dev/null | \
-       sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
-       tr -d '\r' | tr '\n' ' ' | \
-       sed -E 's/[[:space:]]+/ /g; s/[[:space:]]*([\{\}\;\,])[[:space:]]*/\1/g; s/:\s+/:/g; s/\;}/}/g' \
+    if tr -d '\r' < "$file" 2>/dev/null | tr '\n' ' ' | \
+       sed -E 's%(/\*[^*]*\*+([^/*][^*]*\*+)*/)% %g' | \
+       sed -E 's/[[:space:]]+/ /g; s/[[:space:]]*([\{\}\;\,])[[:space:]]*/\1/g; s/:\s+/:/g; s/\;}/}/g; s/^[[:space:]]*//; s/[[:space:]]*$//' \
        > "$tmp"; then
         mv "$tmp" "$file"
     else
@@ -137,8 +136,9 @@ minify_css() {
 minify_js() {
     local file="$1"
     local tmp="${file}.tmp"
-    if sed -E ':a; s%(/\*[^*]*\*+([^/*][^*]*\*+)*/)%%g; ta' "$file" 2>/dev/null | \
+    if tr -d '\r' < "$file" 2>/dev/null | \
        sed -E 's/^[[:space:]]*\/\/.*$//' | \
+       sed -E 's%/\*[^*]*\*+([^/*][^*]*\*+)*/%%g' | \
        sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
        sed -e '/^$/d' \
        > "$tmp"; then
@@ -152,7 +152,8 @@ minify_js() {
 minify_html() {
     local file="$1"
     local tmp="${file}.tmp"
-    if sed -E ':a; s/<!--[^\>]*-->//g; ta' "$file" 2>/dev/null | \
+    if tr -d '\r' < "$file" 2>/dev/null | \
+       sed -E 's/<!--[^-]*-->//g' | \
        sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
        sed -e '/^$/d' \
        > "$tmp"; then
@@ -184,4 +185,4 @@ find . -type f -name "*.js" -not -path "*/.*" | while IFS= read -r file; do
     esac
 done
 
-echo "[BUILD] ✓ 所有代码文件压缩化处理完成"
+echo "[BUILD] ✓ 所有代码文件压缩化处理完成"
