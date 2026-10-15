@@ -111,3 +111,77 @@ sed -e "/__BUILD_INFO__/{
     }" src/script/config.template.js > src/script/config.js
 
 echo "[BUILD] 配置文件 src/script/config.js 生成成功"
+
+# ==========================================
+# 代码文件压缩化处理 (Minification)
+# ==========================================
+
+echo "[BUILD] 正在压缩所有代码文件..."
+
+# 压缩 CSS 函数
+minify_css() {
+    local file="$1"
+    local tmp="${file}.tmp"
+    if sed -E ':a; s%(/\*[^*]*\*+([^/*][^*]*\*+)*/)%%g; ta' "$file" 2>/dev/null | \
+       sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
+       tr -d '\r' | tr '\n' ' ' | \
+       sed -E 's/[[:space:]]+/ /g; s/[[:space:]]*([\{\}\;\,])[[:space:]]*/\1/g; s/:\s+/:/g; s/\;}/}/g' \
+       > "$tmp"; then
+        mv "$tmp" "$file"
+    else
+        rm -f "$tmp"
+    fi
+}
+
+# 压缩 JS 函数 (安全去注释与缩进，保留结构以防语法破坏)
+minify_js() {
+    local file="$1"
+    local tmp="${file}.tmp"
+    if sed -E ':a; s%(/\*[^*]*\*+([^/*][^*]*\*+)*/)%%g; ta' "$file" 2>/dev/null | \
+       sed -E 's/^[[:space:]]*\/\/.*$//' | \
+       sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
+       sed -e '/^$/d' \
+       > "$tmp"; then
+        mv "$tmp" "$file"
+    else
+        rm -f "$tmp"
+    fi
+}
+
+# 压缩 HTML 函数
+minify_html() {
+    local file="$1"
+    local tmp="${file}.tmp"
+    if sed -E ':a; s/<!--[^\>]*-->//g; ta' "$file" 2>/dev/null | \
+       sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' | \
+       sed -e '/^$/d' \
+       > "$tmp"; then
+        mv "$tmp" "$file"
+    else
+        rm -f "$tmp"
+    fi
+}
+
+# 压缩 HTML 文件
+find . -type f -name "*.html" -not -path "*/.*" | while IFS= read -r file; do
+    [ -f "$file" ] && minify_html "$file"
+done
+
+# 压缩 CSS 文件 (排除 *.min.css)
+find . -type f -name "*.css" -not -name "*.min.css" -not -path "*/.*" | while IFS= read -r file; do
+    [ -f "$file" ] && minify_css "$file"
+done
+
+# 压缩 JS 文件 (排除 *.min.js、模板及构建脚本)
+find . -type f -name "*.js" -not -path "*/.*" | while IFS= read -r file; do
+    case "$file" in
+        *.min.js|*config.template.js|*generate-sitemap.js)
+            continue
+            ;;
+        *)
+            [ -f "$file" ] && minify_js "$file"
+            ;;
+    esac
+done
+
+echo "[BUILD] ✓ 所有代码文件压缩化处理完成"
