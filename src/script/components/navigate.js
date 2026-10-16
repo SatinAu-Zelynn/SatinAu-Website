@@ -130,14 +130,18 @@ class NavigateBar extends HTMLElement {
           margin: 0 0 2px 0; /* 左右边距归零，与 dropdown-item 一致 */
           border-radius: var(--border-radius-md, 8px);
           cursor: pointer;
-          transition: background 0.2s;
+          transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
           text-decoration: none;
           color: inherit;
           box-sizing: border-box;
         }
         
         .nav-user-card:hover {
-          background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.2));
+          background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.15));
+        }
+
+        .nav-user-card:active {
+          transform: scale(0.96);
         }
 
         .nav-user-avatar-small {
@@ -172,6 +176,8 @@ class NavigateBar extends HTMLElement {
         /* 未登录时的样式调整 */
         .nav-login-btn {
           justify-content: center;
+          padding: 10px 14px;
+          font-size: 14px;
           font-weight: 600;
           color: var(--primary-color, #007aff);
         }
@@ -218,9 +224,6 @@ class NavigateBar extends HTMLElement {
             <!-- 分体式菜单：分割线 -->
             <div class="nav-separator"></div>
 
-            <!-- 分体式菜单：用户区域 -->
-            <div class="nav-user-slot">${userHtml}</div>
-
             <a 
               href="javascript:void(0);" 
               class="dropdown-item nav-settings-btn"
@@ -228,6 +231,9 @@ class NavigateBar extends HTMLElement {
             >
               网站设置
             </a>
+
+            <!-- 分体式菜单：用户区域 -->
+            <div class="nav-user-slot">${userHtml}</div>
           </div>
         </div>
       </nav>
