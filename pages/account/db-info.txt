@@ -278,8 +278,8 @@ async function performAIModeration(env, commentId, content, pageId) {
   try {
     console.log(`Starting AI moderation for comment ${commentId}...`);
     
-    // 使用 Llama 3 模型
-    const model = '@cf/meta/llama-3-8b-instruct';
+    // 使用 Llama 4 模型
+    const model = '@cf/meta/llama-4-scout-17b-16e-instruct';
     
     // System Prompt: 定义 AI 的角色和输出格式
     const systemPrompt = `You are a strict content moderation AI. 
