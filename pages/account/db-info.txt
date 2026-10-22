@@ -37,7 +37,7 @@ export default {
     
     // 设置 CORS 头，允许你的前端访问
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "*", // 生产环境请改为 "https://satinau.cn"
+      "Access-Control-Allow-Origin": "https://satinau.cn",
       "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     };
