@@ -35,11 +35,15 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     
-    // 设置 CORS 头，允许你的前端访问
+    // 设置 CORS 头
+    const origin = request.headers.get("Origin") || "";
+    const isAllowedOrigin = /^https:\/\/(?:[a-zA-Z0-9-]+\.)*satinau\.cn(?::\d+)?$/.test(origin);
+
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "https://satinau.cn",
+      "Access-Control-Allow-Origin": isAllowedOrigin ? origin : "https://satinau.cn",
       "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Vary": "Origin",
     };
 
     if (request.method === "OPTIONS") {
