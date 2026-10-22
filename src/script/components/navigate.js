@@ -184,7 +184,7 @@ class NavigateBar extends HTMLElement {
       </style>
 
       <nav class="bottom-nav ${isMoreActive ? 'more-active' : ''}">
-        <div class="nav-avatar" onclick="window.location.href='/'">
+        <div class="nav-avatar" onclick="window.navigateTo ? window.navigateTo('/') : window.location.href='/'">
           <img src="/favicon.ico" alt="Avatar">
         </div>
         ${navItems.map(item => `
@@ -214,7 +214,7 @@ class NavigateBar extends HTMLElement {
               <a 
                 href="/pages/${item.href}.html" 
                 class="dropdown-item ${isActive ? 'active' : ''}"
-                onclick="window.location.href=href; return false;"
+                onclick="if(window.navigateTo){ window.navigateTo(this.getAttribute('href')); return false; }"
                 ${item.target ? `target="${item.target}"` : ''}
               >
                 ${item.label}
@@ -294,7 +294,7 @@ class NavigateBar extends HTMLElement {
   getUserHtml(user) {
     const avatarUrl = user.avatar || '/public/guest.png';
     return `
-      <div class="nav-user-card" onclick="window.location.href='/pages/account/index.html'">
+      <div class="nav-user-card" onclick="window.navigateTo ? window.navigateTo('/pages/account/index.html') : window.location.href='/pages/account/index.html'">
         <img src="${avatarUrl}" class="nav-user-avatar-small" alt="Avatar">
         <div class="nav-user-info">
           <span class="nav-user-name">${user.nickname}</span>
@@ -307,7 +307,7 @@ class NavigateBar extends HTMLElement {
   // 辅助方法：生成未登录HTML
   getLoginHtml() {
     return `
-      <div class="nav-user-card nav-login-btn" onclick="window.location.href='/pages/account/login.html'">
+      <div class="nav-user-card nav-login-btn" onclick="window.navigateTo ? window.navigateTo('/pages/account/login.html') : window.location.href='/pages/account/login.html'">
         <span>登录 / 注册</span>
       </div>
     `;

@@ -210,16 +210,6 @@ function showToast(msg) {
 window.addEventListener('DOMContentLoaded', function() {
   // 优先显示页面UI
   document.body.style.opacity = 1;
-  
-  // 页面进入动画（目标是 .page 而不是 body）
-  const PAGE = document.querySelector('.page') || document.body;
-  const from = sessionStorage.getItem("from");
-  if (from === "index") {
-    PAGE.classList.add("slide-in-right");
-  } else if (from === "zelynn") {
-    PAGE.classList.add("slide-in-left");
-  }
-  sessionStorage.removeItem("from");
 
   // 处理卡片入场动画
   document.querySelectorAll('.contact-card, h2').forEach((element, index) => {
@@ -256,80 +246,69 @@ window.addEventListener('DOMContentLoaded', function() {
   }, 100); // 给UI渲染留一点时间
 });
 
-/* ===================== Unified 3-page left/right transitions ===================== */
-(function(){
-  var ORDER = ["index","blog","zelynn"];
+/* ========== 全局页面跳转通用加载动画 ========== */
+function ensureLoadingOverlay() {
+  let loader = document.getElementById("loadingOverlay");
+  if (!loader) {
+    loader = document.createElement("div");
+    loader.id = "loadingOverlay";
+    loader.className = "loading-overlay";
+    loader.innerHTML = '<div class="spinner"></div>';
+    document.body.appendChild(loader);
+  }
+  return loader;
+}
 
-  function pageIdFromHref(href){
-    if(!href) return null;
-    var name = href.split("?")[0].split("#")[0].split("/").pop();
-    if (name.indexOf("zelynn")>-1) return "zelynn";
-    if (name.indexOf("blog")>-1) return "blog";
-    if (name.indexOf("index")>-1) return "index";
-    return null;
-  }
-  function currentId(){
-    var id = (document.body && document.body.id) || "";
-    return id.replace("-page","") || "index";
-  }
-  function clearAnims(el){
-    ["slide-in-right","slide-in-left","slide-out-right","slide-out-left"].forEach(function(c){ el.classList.remove(c); });
-  }
-  function animateEnter(){
-    try{
-      var from = sessionStorage.getItem("from");
-      if(!from) return;
-      var to = currentId();
-      var fromIdx = ORDER.indexOf(from);
-      var toIdx = ORDER.indexOf(to);
-      var page = document.querySelector(".page") || document.body;
-      clearAnims(page);
-      if (fromIdx>-1 && toIdx>-1){
-        page.classList.add(toIdx>fromIdx ? "slide-in-right" : "slide-in-left");
-        page.addEventListener("animationend", function handler(){ page.classList.remove("slide-in-right","slide-in-left"); page.removeEventListener("animationend", handler); }, { once:true });
-      }
-      sessionStorage.removeItem("from");
-    }catch(e){}
-  }
-  function animateExit(toId, href){
-    var cur = currentId();
-    var page = document.querySelector(".page") || document.body;
-    clearAnims(page);
-    var curIdx = ORDER.indexOf(cur);
-    var toIdx = ORDER.indexOf(toId);
-    var dirClass = (toIdx>curIdx) ? "slide-out-left" : "slide-out-right";
-    page.classList.add(dirClass);
-    var navigated = false;
-    var go = function(){ if(navigated) return; navigated = true; window.location.href = href; };
-    page.addEventListener("animationend", go, { once:true });
-    setTimeout(go, 480);
-    try{ sessionStorage.setItem("from", cur); }catch(e){}
+window.navigateTo = function(url) {
+  if (!url) return;
+  const loader = ensureLoadingOverlay();
+  loader.classList.add("show");
+  setTimeout(() => {
+    window.location.href = url;
+  }, 240);
+};
+
+// 拦截站内链接点击统一触发加载动画
+document.addEventListener("click", function(e) {
+  const link = e.target.closest("a");
+  if (!link) return;
+
+  const href = link.getAttribute("href");
+  if (
+    !href ||
+    href.startsWith("#") ||
+    href.startsWith("javascript:") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:") ||
+    link.target === "_blank" ||
+    link.hasAttribute("download") ||
+    e.metaKey || e.ctrlKey || e.shiftKey || e.altKey ||
+    e.defaultPrevented
+  ) {
+    return;
   }
 
-  function interceptNav(){
-    var links = document.querySelectorAll('.bottom-nav a[href$=".html"]');
-    links.forEach(function(a){
-      a.addEventListener("click", function(e){
-        var href = a.getAttribute("href");
-        var toId = pageIdFromHref(href);
-        if(!toId) return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        animateExit(toId, href);
-      }, true);
-    });
+  try {
+    const targetUrl = new URL(link.href, window.location.href);
+    if (targetUrl.origin !== window.location.origin) return;
+    if (targetUrl.pathname === window.location.pathname && targetUrl.search === window.location.search && targetUrl.hash) return;
+  } catch (err) {
+    return;
   }
 
-  if (document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", function(){
-      interceptNav();
-      animateEnter();
-    });
-  } else {
-    interceptNav();
-    animateEnter();
+  e.preventDefault();
+  window.navigateTo(link.href);
+});
+
+// 浏览器从前进/后退缓存 (bfcache) 恢复时隐藏加载动画
+window.addEventListener("pageshow", function(e) {
+  const loader = document.getElementById("loadingOverlay");
+  if (loader) {
+    if (e.persisted || document.body.id !== "blog-page") {
+      loader.classList.remove("show");
+    }
   }
-})();
+});
 
 // 更多菜单控制
 let moreMenuVisible = false;
@@ -525,13 +504,19 @@ document.addEventListener('DOMContentLoaded', function() {
       if (isMenuOpen && !bottomNav.contains(e.target)) closeMenu();
     });
     
-    // 菜单内子链接控制
+   // 菜单内子链接控制
     mobileMenuWrapper.querySelectorAll('.dropdown-item').forEach(item => {
       item.addEventListener('click', function(e) {
-        const isExternal = this.target === '_blank' || this.href.startsWith('http');
-        if (!isExternal) {
-          e.preventDefault();
-          window.location.href = this.getAttribute('href');
+        const targetUrl = this.getAttribute('href');
+        // 排除脚本执行类链接或空锚点（如网站设置弹窗）
+        if (targetUrl && !targetUrl.startsWith('javascript:') && !targetUrl.startsWith('#')) {
+          const isExternal = this.target === '_blank' || targetUrl.startsWith('http');
+          if (!isExternal) {
+            e.preventDefault();
+            closeMenu();
+            window.navigateTo(targetUrl);
+            return;
+          }
         }
         closeMenu();
       });

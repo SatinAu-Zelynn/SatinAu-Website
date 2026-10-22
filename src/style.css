@@ -243,46 +243,6 @@ body {
   100% { transform: translate(0, 0); }
 }
 
-/* ===================== iOS-like parallel page transitions (3 pages) ===================== */
-.page { transform: translateZ(0); }
-
-/* Exit current page */
-@keyframes slideOutToLeft {
-  from { transform: translateX(0); opacity: 1; filter: blur(0); }
-  to   { transform: translateX(-22px); opacity: 0.01; filter: blur(6px); }
-}
-@keyframes slideOutToRight {
-  from { transform: translateX(0); opacity: 1; filter: blur(0); }
-  to   { transform: translateX(22px); opacity: 0.01; filter: blur(6px); }
-}
-
-/* Enter new page */
-@keyframes slideInFromRight {
-  from { transform: translateX(22px); opacity: 0.01; filter: blur(6px); }
-  to   { transform: translateX(0); opacity: 1; filter: blur(0); }
-}
-@keyframes slideInFromLeft {
-  from { transform: translateX(-22px); opacity: 0.01; filter: blur(6px); }
-  to   { transform: translateX(0); opacity: 1; filter: blur(0); }
-}
-
-/* Classes used by JS */
-.page.slide-out-left  { animation: slideOutToLeft 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-.page.slide-out-right { animation: slideOutToRight 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-.page.slide-in-right  { animation: slideInFromRight 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-.page.slide-in-left   { animation: slideInFromLeft 420ms cubic-bezier(0.22,0.61,0.36,1) both; }
-
-/* Disable fancy motion for users who prefer reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .page.slide-out-left,
-  .page.slide-out-right,
-  .page.slide-in-right,
-  .page.slide-in-left {
-    animation: none !important;
-    transition: opacity 240ms ease;
-  }
-}
-
 /* ========== Header ========== */
 header {
   text-align: center;
