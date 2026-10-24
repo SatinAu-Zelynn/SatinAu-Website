@@ -612,6 +612,90 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
+  // CDN 线路优选与选择弹窗
+  // ==========================================
+  showCdnSelector() {
+    const currentMode = localStorage.getItem('setting_cdn_source') || 'auto';
+
+    const getBadgeHtml = (latency) => {
+      if (latency === null) return `<span class="cdn-latency-badge">测速中...</span>`;
+      if (latency <= 0) return `<span class="cdn-latency-badge slow">超时</span>`;
+      const level = latency < 120 ? 'fast' : (latency < 280 ? 'medium' : 'slow');
+      return `<span class="cdn-latency-badge ${level}">${latency} ms</span>`;
+    };
+
+    const getAutoCurrentText = () => {
+      const picked = localStorage.getItem('setting_cdn_auto_picked') || 'cf';
+      return picked === 'eo' ? '线路二' : '线路一';
+    };
+
+    this.open({
+      className: 'modal cdn-modal',
+      content: `
+        <div class="cdn-modal-title">静态资源线路</div>
+        <p class="cdn-modal-desc">测速并选择图片与资源下载源，下次加载或刷新时生效</p>
+
+        <div class="cdn-option-list">
+          <div class="cdn-option-item ${currentMode === 'auto' ? 'active' : ''}" data-value="auto">
+            <span class="cdn-option-name">自动</span>
+            <div id="cdnPingAuto"><span class="cdn-current-badge">${getAutoCurrentText()}</span></div>
+          </div>
+
+          <div class="cdn-option-item ${currentMode === 'cf' ? 'active' : ''}" data-value="cf">
+            <span class="cdn-option-name">线路一 (Cloudflare)</span>
+            <div id="cdnPingCf">${getBadgeHtml(window.cdnLatencies.cf)}</div>
+          </div>
+
+          <div class="cdn-option-item ${currentMode === 'eo' ? 'active' : ''}" data-value="eo">
+            <span class="cdn-option-name">线路二 (EdgeOne)</span>
+            <div id="cdnPingEo">${getBadgeHtml(window.cdnLatencies.eo)}</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="cancel" id="modalCdnClose" style="width:100%;">关闭</button>
+        </div>
+      `,
+      onMount: ({ modal, close }) => {
+        modal.querySelector('#modalCdnClose').onclick = close;
+
+        // 监听测速结果更新，刷新弹窗内的延迟数据显示与自动优选结果
+        const updatePings = () => {
+          const autoBadge = modal.querySelector('#cdnPingAuto');
+          const cfBadge = modal.querySelector('#cdnPingCf');
+          const eoBadge = modal.querySelector('#cdnPingEo');
+          if (autoBadge) autoBadge.innerHTML = `<span class="cdn-current-badge">${getAutoCurrentText()}</span>`;
+          if (cfBadge) cfBadge.innerHTML = getBadgeHtml(window.cdnLatencies.cf);
+          if (eoBadge) eoBadge.innerHTML = getBadgeHtml(window.cdnLatencies.eo);
+        };
+
+        window.addEventListener('cdn-ping-updated', updatePings);
+        if (typeof window.detectCdnLatencies === 'function') {
+          window.detectCdnLatencies();
+        }
+
+        // 绑定点击切换逻辑
+        modal.querySelectorAll('.cdn-option-item').forEach(item => {
+          item.onclick = () => {
+            const val = item.dataset.value;
+            localStorage.setItem('setting_cdn_source', val);
+
+            const nameMap = {
+              'auto': '自动优选',
+              'cf': '线路一 (Cloudflare)',
+              'eo': '线路二 (EdgeOne)'
+            };
+
+            this.showToast(`已切换为：${nameMap[val]}，即将刷新应用...`);
+            close();
+            setTimeout(() => location.reload(), 800);
+          };
+        });
+      }
+    });
+  }
+
+  // ==========================================
   // 分享文章卡片
   // ==========================================
   async share(title, excerpt, url, date) {

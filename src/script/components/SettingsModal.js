@@ -188,18 +188,9 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
             静态资源线路
             <span class="tooltip">切换图片和数据的加载源，若加载缓慢可尝试切换</span>
           </label>
-          
-          <div class="custom-select-wrapper" id="cdnSelectComponent">
-            <div class="custom-select-trigger" tabindex="0">
-              <span class="selected-value">线路一 (Cloudflare)</span>
-              <div class="arrow"></div>
-            </div>
-            
-            <div class="custom-options">
-              <div class="custom-option selected" data-value="cf">线路一 (Cloudflare)</div>
-              <div class="custom-option" data-value="eo">线路二 (EdgeOne)</div>
-            </div>
-          </div>
+          <button class="more-btn" id="modalCdnBtn" style="width:auto; height:auto; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight:600; text-decoration:none; background:rgba(128,128,128,0.2);">
+            <span id="modalCdnCurrentName">自动</span>
+          </button>
         </div>
       </section>
 
@@ -310,14 +301,26 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
     });
   }
 
-  // 3. 初始化 CDN 选择下拉
-  const cdnWrapper = modalInstance.querySelector('#cdnSelectComponent');
-  if (cdnWrapper && typeof initCustomSelect === 'function') {
-    initCustomSelect(cdnWrapper, 'setting_cdn_source', (mode) => {
-      const nameMap = { 'eo': 'EdgeOne', 'cf': 'Cloudflare' };
-      modalInstance.showToast(`线路已切换为：${nameMap[mode] || mode}，即将刷新...`);
-      setTimeout(() => location.reload(), 1000);
-    });
+  // 3. 初始化 CDN 线路选择弹窗触发
+  const cdnBtn = modalInstance.querySelector('#modalCdnBtn');
+  const cdnNameEl = modalInstance.querySelector('#modalCdnCurrentName');
+  if (cdnBtn) {
+    const mode = localStorage.getItem('setting_cdn_source') || 'auto';
+    const nameMap = {
+      'auto': '自动',
+      'cf': '线路一 (Cloudflare)',
+      'eo': '线路二 (EdgeOne)'
+    };
+    if (cdnNameEl) cdnNameEl.textContent = nameMap[mode] || '自动';
+
+    cdnBtn.onclick = (e) => {
+      let modal = document.querySelector('global-modal');
+      if (!modal) {
+        modal = document.createElement('global-modal');
+        document.body.appendChild(modal);
+      }
+      modal.with(e.currentTarget).showCdnSelector();
+    };
   }
 
   // 4. 初始化颜色模式 (Segmented Control)

@@ -16,18 +16,78 @@
 
 /* ========== 公用逻辑 ========== */
 
-/* ========== CDN 线路切换逻辑 ========== */
+/* ========== CDN 线路切换与自动测速优选逻辑 ========== */
 const CDN_KEY = 'setting_cdn_source';
+const CDN_AUTO_PICKED_KEY = 'setting_cdn_auto_picked';
 
-// 获取当前 CDN 域名 (供全局调用)
+// 全局存储测速延迟结果 (ms)
+window.cdnLatencies = {
+  cf: null,
+  eo: null
+};
+
+// 获取当前有效 CDN 域名
 window.getCdnBaseUrl = function() {
-  const source = localStorage.getItem(CDN_KEY);
-  // 如果明确设置为 'eo' 则使用 EdgeOne，否则默认使用 Cloudflare ('cf' 或 null)
+  const source = localStorage.getItem(CDN_KEY) || 'auto';
   if (source === 'eo') {
     return 'https://cdn-eo.satinau.cn';
   }
-  return 'https://cdn-cf.satinau.cn';
+  if (source === 'cf') {
+    return 'https://cdn-cf.satinau.cn';
+  }
+  // 自动模式：使用上次测速出的更优线路（默认 cf）
+  const picked = localStorage.getItem(CDN_AUTO_PICKED_KEY) || 'cf';
+  return picked === 'eo' ? 'https://cdn-eo.satinau.cn' : 'https://cdn-cf.satinau.cn';
 };
+
+// 单源延迟探测
+async function testCdnPing(baseUrl) {
+  const testUrl = `${baseUrl}/data/notice.json?_t=${Date.now()}`;
+  const start = performance.now();
+  try {
+    const res = await fetch(testUrl, { method: 'HEAD', cache: 'no-cache', mode: 'cors' });
+    if (!res.ok && res.status !== 304) throw new Error('status error');
+    return Math.round(performance.now() - start);
+  } catch (e) {
+    try {
+      const resFallback = await fetch(testUrl, { method: 'GET', cache: 'no-cache', mode: 'cors' });
+      if (!resFallback.ok && resFallback.status !== 304) throw new Error('status error');
+      return Math.round(performance.now() - start);
+    } catch (err) {
+      return -1; // 测速失败或超时
+    }
+  }
+}
+
+// 自动检测两个线路延迟并在自动模式下挑选最优解
+window.detectCdnLatencies = async function() {
+  const [cfPing, eoPing] = await Promise.all([
+    testCdnPing('https://cdn-cf.satinau.cn'),
+    testCdnPing('https://cdn-eo.satinau.cn')
+  ]);
+
+  window.cdnLatencies.cf = cfPing;
+  window.cdnLatencies.eo = eoPing;
+
+  // 派发测速完成事件，便于弹窗实时刷新数值
+  window.dispatchEvent(new CustomEvent('cdn-ping-updated', { detail: window.cdnLatencies }));
+
+  // 计算优选线路
+  let best = 'cf';
+  if (cfPing > 0 && eoPing > 0) {
+    best = eoPing < cfPing ? 'eo' : 'cf';
+  } else if (eoPing > 0) {
+    best = 'eo';
+  }
+
+  // 记录优选线路，在下次刷新、切页或下次进入时生效
+  localStorage.setItem(CDN_AUTO_PICKED_KEY, best);
+};
+
+// 进入站点后自动触发延迟探测
+document.addEventListener('DOMContentLoaded', () => {
+  window.detectCdnLatencies();
+});
 
 /* ========== Live2D 设置逻辑 ========== */
 const LIVE2D_KEY = 'setting_live2d_enabled';
@@ -701,17 +761,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 如果不在设置页，仅应用字体
     const savedMode = localStorage.getItem(FONT_KEY) || 'sans';
     applyFontMode(savedMode);
-  }
-
-  // --- CDN 选择器初始化 ---
-  const cdnWrapper = document.getElementById('cdnSelectComponent');
-  if (cdnWrapper) {
-    initCustomSelect(cdnWrapper, CDN_KEY, (mode) => {
-      const nameMap = { 'eo': 'EdgeOne', 'cf': 'Cloudflare' };
-      showToast(`线路已切换为：${nameMap[mode] || mode}，即将刷新...`);
-      // CDN 切换必须刷新页面才能生效
-      setTimeout(() => location.reload(), 1000);
-    });
   }
 });
 
@@ -1433,6 +1482,7 @@ window.restoreDefaultSettings = function(triggerElement) {
       'setting_custom_context_menu_enabled', // 右键菜单
       'enableHDR',                           // HDR 模式
       'setting_cdn_source',                  // 重置 CDN 设置
+      'setting_cdn_auto_picked',             // 重置 CDN 优选结果
       'setting_live2d_enabled'
     ];
 
@@ -1526,7 +1576,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
   // 检查开关，若关闭则中止加载
   if (!isLive2DEnabled()) return; 
 
-  const MODEL_PATH = 'https://cdn-cf.satinau.cn/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json';
+  const MODEL_PATH = `${getCdnBaseUrl()}/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json`;
   const CORE_PATH = '/src/script/components/live2dcubismcore.min.js';
 
   function loadScript(url) {
