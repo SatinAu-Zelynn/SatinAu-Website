@@ -104,11 +104,12 @@ class NavigateBar extends HTMLElement {
     // 构建HTML结构
     this.innerHTML = `
       <style>
-        .nav-avatar {
-          cursor: pointer;
-        }
         .more-btn-svg {
           fill: light-dark(#111, #f5f5f5);
+        }
+        .notify-btn-svg {
+          stroke: light-dark(#111, #f5f5f5);
+          transition: stroke 0.2s ease;
         }
         
         /* --- 分体式菜单分割线 --- */
@@ -184,8 +185,23 @@ class NavigateBar extends HTMLElement {
       </style>
 
       <nav class="bottom-nav ${isMoreActive ? 'more-active' : ''}">
-        <div class="nav-avatar" onclick="window.navigateTo ? window.navigateTo('/') : window.location.href='/'">
-          <img src="/favicon.ico" alt="Avatar">
+        <div class="notify-menu-container">
+          <button class="notify-btn" onclick="toggleNotifyMenu()" aria-label="通知中心">
+            <svg class="notify-btn-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="notify-badge" id="desktopNotifyBadge"></span>
+          </button>
+          <div class="notify-dropdown">
+            <div class="notify-dropdown-header notify-stagger-item">
+              <span class="notify-dropdown-title">通知中心</span>
+              <span class="notify-mark-read" onclick="if(window.markAllNoticesRead) window.markAllNoticesRead(event)">全部已读</span>
+            </div>
+            <div class="notify-dropdown-body" id="desktopNotifyList">
+              <div class="notify-empty-tip notify-stagger-item">正在加载公告...</div>
+            </div>
+          </div>
         </div>
         ${navItems.map(item => `
           <a 
@@ -257,15 +273,21 @@ class NavigateBar extends HTMLElement {
           // 1. 向下滚动：隐藏
           if (currentScrollY > lastScrollY && currentScrollY > 50) {
             nav.classList.add('nav-hidden');
+            if (typeof closeMoreMenu === 'function') closeMoreMenu();
+            if (typeof closeNotifyMenu === 'function') closeNotifyMenu();
             // 顺便关闭可能打开的一体式移动端菜单
             if (nav.classList.contains('menu-open')) {
-              nav.classList.remove('menu-open');
-              const mobileMenu = document.querySelector('.mobile-more-menu');
-              if (mobileMenu) {
-                mobileMenu.style.height = '0px';
-                mobileMenu.style.opacity = '0';
+              if (typeof window.closeMobileMoreMenu === 'function') {
+                window.closeMobileMoreMenu();
+              } else {
+                nav.classList.remove('menu-open');
+                const mobileMenu = document.querySelector('.mobile-more-menu');
+                if (mobileMenu) {
+                  mobileMenu.style.height = '0px';
+                  mobileMenu.style.opacity = '0';
+                }
+                document.body.style.overflow = ''; // 释放页面滚动锁定
               }
-              document.body.style.overflow = ''; // 释放页面滚动锁定
             }
           }
           // 2. 向上滚动：显示

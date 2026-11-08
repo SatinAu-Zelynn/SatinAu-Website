@@ -370,23 +370,70 @@ window.addEventListener("pageshow", function(e) {
   }
 });
 
-// 更多菜单控制
+// 更多菜单与通知菜单控制 (桌面端)
 let moreMenuVisible = false;
+let notifyMenuVisible = false;
+
+function closeMoreMenu() {
+  const dropdown = document.querySelector('.more-dropdown');
+  if (dropdown) dropdown.classList.remove('show');
+  moreMenuVisible = false;
+}
+
+function closeNotifyMenu() {
+  const dropdown = document.querySelector('.notify-dropdown');
+  const btn = document.querySelector('.notify-btn');
+  if (dropdown) dropdown.classList.remove('show');
+  if (btn) btn.classList.remove('active');
+  const hadUnread = document.querySelector('.notify-dropdown .nav-notice-item.unread');
+  notifyMenuVisible = false;
+  if (hadUnread && typeof window.renderNoticeCenter === 'function') {
+    setTimeout(() => {
+      if (!notifyMenuVisible) window.renderNoticeCenter();
+    }, 300);
+  }
+}
 
 function toggleMoreMenu() {
   const dropdown = document.querySelector('.more-dropdown');
   if (dropdown) {
+    if (!moreMenuVisible && notifyMenuVisible) {
+      closeNotifyMenu();
+    }
     moreMenuVisible = !moreMenuVisible;
     dropdown.classList.toggle('show', moreMenuVisible);
   }
 }
 
+function toggleNotifyMenu() {
+  const dropdown = document.querySelector('.notify-dropdown');
+  const btn = document.querySelector('.notify-btn');
+  if (dropdown) {
+    if (!notifyMenuVisible && moreMenuVisible) {
+      closeMoreMenu();
+    }
+    notifyMenuVisible = !notifyMenuVisible;
+    dropdown.classList.toggle('show', notifyMenuVisible);
+    if (btn) btn.classList.toggle('active', notifyMenuVisible);
+    if (notifyMenuVisible && typeof window.markAllNoticesRead === 'function') {
+      window.markAllNoticesRead();
+    } else if (!notifyMenuVisible && typeof window.renderNoticeCenter === 'function') {
+      setTimeout(() => {
+        if (!notifyMenuVisible) window.renderNoticeCenter();
+      }, 300);
+    }
+  }
+}
+
 // 点击其他区域关闭菜单
 document.addEventListener('click', function(e) {
-  const container = document.querySelector('.more-menu-container');
-  if (moreMenuVisible && !container.contains(e.target)) {
-    document.querySelector('.more-dropdown').classList.remove('show');
-    moreMenuVisible = false;
+  const moreContainer = document.querySelector('.more-menu-container');
+  if (moreMenuVisible && moreContainer && !moreContainer.contains(e.target)) {
+    closeMoreMenu();
+  }
+  const notifyContainer = document.querySelector('.notify-menu-container');
+  if (notifyMenuVisible && notifyContainer && !notifyContainer.contains(e.target)) {
+    closeNotifyMenu();
   }
 });
 
@@ -436,7 +483,7 @@ function consoleBeautify() {
 window.addEventListener('load', consoleBeautify);
 
 document.addEventListener('DOMContentLoaded', function() {
-  // === 重构：移动端一体式下拉菜单初始化 ===
+  // === 重构：移动端一体式下拉菜单（双页左右平移：更多菜单 + 通知中心）初始化 ===
   const desktopDropdown = document.querySelector('.more-dropdown');
   const bottomNav = document.querySelector('.bottom-nav');
   
@@ -444,23 +491,117 @@ document.addEventListener('DOMContentLoaded', function() {
     // 融入底栏的构建
     const mobileMenuWrapper = document.createElement('div');
     mobileMenuWrapper.className = 'mobile-more-menu';
-    
+
+    const viewport = document.createElement('div');
+    viewport.className = 'mobile-menu-viewport';
+
+    const menuTrack = document.createElement('div');
+    menuTrack.className = 'mobile-menu-track';
+
+    // 第一页（左页，默认打开）：更多菜单
+    const pageMore = document.createElement('div');
+    pageMore.className = 'mobile-menu-page mobile-page-more';
     const innerContent = document.createElement('div');
     innerContent.className = 'mobile-menu-inner';
     innerContent.innerHTML = desktopDropdown.innerHTML;
-    
-    mobileMenuWrapper.appendChild(innerContent);
+    pageMore.appendChild(innerContent);
+
+    // 第二页（右页）：通知中心
+    const pageNotify = document.createElement('div');
+    pageNotify.className = 'mobile-menu-page mobile-page-notify';
+    const notifyInner = document.createElement('div');
+    notifyInner.className = 'mobile-notify-inner';
+    notifyInner.innerHTML = `
+      <div class="notify-dropdown-header mobile-notify-header">
+        <span class="notify-dropdown-title">通知中心</span>
+        <span class="notify-mark-read" onclick="if(window.markAllNoticesRead) window.markAllNoticesRead(event)">全部已读</span>
+      </div>
+      <div class="notify-dropdown-body mobile-notify-list" id="mobileNotifyList">
+        <div class="notify-empty-tip">正在加载公告...</div>
+      </div>
+    `;
+    pageNotify.appendChild(notifyInner);
+
+    menuTrack.appendChild(pageMore);
+    menuTrack.appendChild(pageNotify);
+    viewport.appendChild(menuTrack);
+
+    // 底部双页指示点
+    const paginationEl = document.createElement('div');
+    paginationEl.className = 'mobile-menu-pagination';
+    paginationEl.innerHTML = `
+      <span class="mobile-page-dot active" data-page="0" aria-label="更多菜单"></span>
+      <span class="mobile-page-dot" data-page="1" aria-label="通知中心">
+        <i class="notify-badge mobile-dot-badge" id="mobileNotifyBadge"></i>
+      </span>
+    `;
+
+    mobileMenuWrapper.appendChild(viewport);
+    mobileMenuWrapper.appendChild(paginationEl);
     bottomNav.prepend(mobileMenuWrapper); // 插至最前
     
     const navLinks = bottomNav.querySelectorAll('a:not(.dropdown-item)'); 
-    let startY = 0, currentY = 0;
+    let startX = 0, startY = 0, currentX = 0, currentY = 0;
     let isDragging = false, isMenuOpen = false, isNavLinkTouched = false;
+    let gestureMode = null; // null | 'vertical' | 'horizontal' | 'scroll'
+    let currentPage = 0; // 0: 更多菜单(左页), 1: 通知中心(右页)
     let maxMenuHeight = 0, currentHeight = 0, touchStartTime = 0;
+    let didMoveSignificantly = false;
     
+    // 同步通知页高度与更多菜单页一致，保持左右平移高度稳定
+    function syncNotifyPageHeight() {
+      const moreH = innerContent.offsetHeight;
+      if (moreH > 0) {
+        notifyInner.style.height = `${moreH}px`;
+      }
+    }
+
     // 获取实际内容的精准高度
     function getMenuMaxHeight() {
-      return innerContent.offsetHeight;
+      syncNotifyPageHeight();
+      const paginationH = paginationEl.offsetHeight || 18;
+      return innerContent.offsetHeight + paginationH;
     }
+
+    // 切换移动端双页 (0: 更多菜单, 1: 通知中心)
+    function switchMobileMenuPage(pageIdx, animate = true) {
+      const prevPage = currentPage;
+      currentPage = pageIdx === 1 ? 1 : 0;
+      if (animate) {
+        menuTrack.style.transition = 'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)';
+      } else {
+        menuTrack.style.transition = 'none';
+      }
+      menuTrack.style.transform = currentPage === 1 ? 'translateX(-50%)' : 'translateX(0%)';
+      paginationEl.querySelectorAll('.mobile-page-dot').forEach(dot => {
+        dot.classList.toggle('active', parseInt(dot.dataset.page, 10) === currentPage);
+      });
+      if (currentPage === 1 && typeof window.markAllNoticesRead === 'function') {
+        window.markAllNoticesRead();
+      } else if (prevPage === 1 && currentPage === 0 && typeof window.renderNoticeCenter === 'function') {
+        setTimeout(() => {
+          if (currentPage === 0) window.renderNoticeCenter();
+        }, 300);
+      }
+    }
+
+    // 点击分页指示点切换页面
+    paginationEl.querySelectorAll('.mobile-page-dot').forEach(dot => {
+      dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetPage = parseInt(dot.dataset.page, 10);
+        switchMobileMenuPage(targetPage, true);
+      });
+    });
+
+    // 拦截拖拽释放后的误触点击
+    mobileMenuWrapper.addEventListener('click', function(e) {
+      if (didMoveSignificantly) {
+        e.preventDefault();
+        e.stopPropagation();
+        didMoveSignificantly = false;
+      }
+    }, true);
 
     // 区分日常点击与误判
     navLinks.forEach(link => {
@@ -470,41 +611,104 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 手势开始
     bottomNav.addEventListener('touchstart', function(e) {
-      if (e.target.closest('.dropdown-item') || e.target.closest('button')) return; // 释放原生交互区域
+      if (e.touches.length !== 1) return;
+      // 菜单未展开时，释放按钮原生交互
+      if (!isMenuOpen && (e.target.closest('.dropdown-item') || e.target.closest('button'))) return;
 
+      startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
+      currentX = startX;
       currentY = startY;
       isDragging = true;
+      gestureMode = null;
+      didMoveSignificantly = false;
       isNavLinkTouched = false;
       touchStartTime = Date.now();
       
       maxMenuHeight = getMenuMaxHeight();
       currentHeight = isMenuOpen ? maxMenuHeight : 0;
-      
-      mobileMenuWrapper.style.transition = 'none';
-      bottomNav.classList.add('is-dragging'); 
     }, { passive: false });
     
-    // 手指滑动 (实时反馈)
+    // 手指滑动 (实时反馈：纵向抽拉展开/收起 + 展开后横向双页平移)
     bottomNav.addEventListener('touchmove', function(e) {
-      if (!isDragging) return;
+      if (!isDragging || e.touches.length !== 1) return;
       
+      currentX = e.touches[0].clientX;
       currentY = e.touches[0].clientY;
-      const diff = startY - currentY; // 向上划为正值
-      let newHeight = currentHeight + diff;
-      
-      if (newHeight < 0) {
-        newHeight = 0; // 收底硬锁死
-      } else if (newHeight > maxMenuHeight) {
-        const over = newHeight - maxMenuHeight;
-        newHeight = maxMenuHeight + over * 0.2; // 抽拉过头时的顶部物理阻尼
+      const diffX = currentX - startX; // 向右划为正，向左划为负
+      const diffY = startY - currentY; // 向上划为正，向下划为负
+
+      if (!gestureMode) {
+        if (Math.abs(diffX) < 6 && Math.abs(diffY) < 6) return;
+        didMoveSignificantly = true;
+
+        // 菜单已展开且横向位移主导时，触发内部双页左右平移
+        if (isMenuOpen && Math.abs(diffX) > Math.abs(diffY)) {
+          gestureMode = 'horizontal';
+          menuTrack.style.transition = 'none';
+          bottomNav.classList.add('is-dragging');
+        } else {
+          // 若当前在通知页且手指在通知列表内纵向滑动，优先允许列表内部滚动
+          const scrollList = e.target.closest('.mobile-notify-list');
+          if (isMenuOpen && currentPage === 1 && scrollList && scrollList.scrollHeight > scrollList.clientHeight) {
+            const atTop = scrollList.scrollTop <= 0;
+            const atBottom = scrollList.scrollTop + scrollList.clientHeight >= scrollList.scrollHeight - 1;
+            if ((diffY > 0 && !atBottom) || (diffY < 0 && !atTop)) {
+              gestureMode = 'scroll';
+              return;
+            }
+          }
+          gestureMode = 'vertical';
+          mobileMenuWrapper.style.transition = 'none';
+          bottomNav.classList.add('is-dragging');
+        }
+      }
+
+      if (gestureMode === 'scroll') {
+        return;
+      }
+
+      if (gestureMode === 'horizontal') {
+        e.preventDefault();
+        const pageWidth = viewport.offsetWidth || bottomNav.offsetWidth || 300;
+        let targetOffset;
+        if (currentPage === 0) {
+          // 在左页（更多菜单）时，支持右滑或左滑平滑过渡至右页（通知中心）
+          const moveDist = Math.abs(diffX);
+          if (moveDist <= pageWidth) {
+            targetOffset = -moveDist;
+          } else {
+            targetOffset = -pageWidth - (moveDist - pageWidth) * 0.2;
+          }
+        } else {
+          // 在右页（通知中心）时，滑动平滑返回左页（更多菜单）
+          const moveDist = Math.abs(diffX);
+          if (moveDist <= pageWidth) {
+            targetOffset = -pageWidth + moveDist;
+          } else {
+            targetOffset = (moveDist - pageWidth) * 0.2;
+          }
+        }
+        menuTrack.style.transform = `translateX(${targetOffset}px)`;
+        return;
       }
       
-      if (Math.abs(diff) > 5) e.preventDefault(); // 阻断页面本体滑动乱跳
-      
-      if (newHeight >= 0) {
-        mobileMenuWrapper.style.height = `${newHeight}px`;
-        mobileMenuWrapper.style.opacity = Math.min(newHeight / (maxMenuHeight * 0.8), 1);
+      if (gestureMode === 'vertical') {
+        let newHeight = currentHeight + diffY;
+        
+        if (newHeight < 0) {
+          newHeight = 0; // 收底硬锁死
+        } else if (newHeight > maxMenuHeight) {
+          const over = newHeight - maxMenuHeight;
+          newHeight = maxMenuHeight + over * 0.2; // 抽拉过头时的顶部物理阻尼
+        }
+        
+        if (Math.abs(diffY) > 5) e.preventDefault(); // 阻断页面本体滑动乱跳
+        
+        if (newHeight >= 0) {
+          mobileMenuWrapper.style.height = `${newHeight}px`;
+          mobileMenuWrapper.style.opacity = Math.min(newHeight / (maxMenuHeight * 0.8), 1);
+        }
       }
     }, { passive: false });
     
@@ -523,15 +727,44 @@ document.addEventListener('DOMContentLoaded', function() {
       mobileMenuWrapper.style.opacity = '0';
       bottomNav.classList.remove('menu-open');
       document.body.style.overflow = '';
+      setTimeout(() => {
+        if (!isMenuOpen) {
+          switchMobileMenuPage(0, false);
+        }
+      }, 400);
     }
+
+    window.closeMobileMoreMenu = closeMenu;
 
     // 释放判断 (回弹动画)
     bottomNav.addEventListener('touchend', function() {
       if (!isDragging) return;
       isDragging = false;
+      bottomNav.classList.remove('is-dragging');
+
+      const touchDuration = Math.max(Date.now() - touchStartTime, 1);
+
+      if (gestureMode === 'scroll') {
+        gestureMode = null;
+        return;
+      }
+
+      if (gestureMode === 'horizontal') {
+        const diffX = currentX - startX;
+        const pageWidth = viewport.offsetWidth || bottomNav.offsetWidth || 300;
+        const velocityX = Math.abs(diffX) / touchDuration;
+        const shouldSwitch = Math.abs(diffX) > pageWidth / 4 || velocityX > 0.35;
+
+        if (shouldSwitch) {
+          switchMobileMenuPage(currentPage === 0 ? 1 : 0, true);
+        } else {
+          switchMobileMenuPage(currentPage, true);
+        }
+        gestureMode = null;
+        return;
+      }
       
       const diff = startY - currentY;
-      const touchDuration = Date.now() - touchStartTime;
       const velocity = diff / touchDuration; // 滑动速率判断
       
       let shouldOpen = isMenuOpen;
@@ -548,15 +781,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       mobileMenuWrapper.style.transition = '';
-      bottomNav.classList.remove('is-dragging'); 
-      
       void mobileMenuWrapper.offsetHeight;
       
       if (shouldOpen && !isNavLinkTouched) {
-          openMenu();
+        openMenu();
       } else {
-          closeMenu();
+        closeMenu();
       }
+      gestureMode = null;
     });
     
     // 点击非底栏区域时自动关合
@@ -564,9 +796,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (isMenuOpen && !bottomNav.contains(e.target)) closeMenu();
     });
     
-   // 菜单内子链接控制
+    // 菜单内子链接控制
     mobileMenuWrapper.querySelectorAll('.dropdown-item').forEach(item => {
       item.addEventListener('click', function(e) {
+        if (didMoveSignificantly) return;
         const targetUrl = this.getAttribute('href');
         // 排除脚本执行类链接或空锚点（如网站设置弹窗）
         if (targetUrl && !targetUrl.startsWith('javascript:') && !targetUrl.startsWith('#')) {
@@ -581,6 +814,11 @@ document.addEventListener('DOMContentLoaded', function() {
         closeMenu();
       });
     });
+
+    // 若公告数据已就绪，立即渲染到移动端通知列表
+    if (typeof window.renderNoticeCenter === 'function') {
+      window.renderNoticeCenter();
+    }
   }
 
   // 初始化原生通知开关状态
@@ -1417,46 +1655,202 @@ window.toggleNativeNotifications = function() {
   }
 };
 
-/* ========== 自动获取远程通知逻辑 ========== */
-function fetchRemoteNotice() {
-  const NOTICE_URL = `${getCdnBaseUrl()}/data/notice.json`;
-  const LAST_ID_KEY = 'last_processed_notice_id';
+/* ========== 站点公告与通知中心集成逻辑 ========== */
+const LAST_PUSHED_NOTICE_ID_KEY = 'last_processed_notice_id';
+const LAST_READ_NOTICE_ID_KEY = 'last_read_notice_id';
+window.siteNoticesData = [];
+window.siteNoticesLoadError = false;
 
-  fetch(NOTICE_URL, { cache: 'no-cache' })
-    .then(response => response.json())
-    .then(data => {
-      const notices = Array.isArray(data) ? data : [data];
-      let lastId = parseInt(localStorage.getItem(LAST_ID_KEY) || '0');
-      let maxIdFound = lastId;
+window.markAllNoticesRead = function(event = null) {
+  if (event) event.stopPropagation();
 
-      notices.forEach(notice => {
-        const currentId = parseInt(notice.id);
-        if (notice.active && currentId > lastId) {
-          
-          // 使用统一接口
-          window.pushNotification(notice.title, {
-            body: notice.content,
-            tag: `remote-notice-${currentId}`, 
-            // 远程通知默认不要求用户交互，自动消失
-            requireInteraction: false
-          }, notice.url);
+  let maxId = parseInt(localStorage.getItem(LAST_READ_NOTICE_ID_KEY) || '0', 10);
+  (window.siteNoticesData || []).forEach((n, idx) => {
+    const cid = parseInt(n.id, 10) || (idx + 1);
+    if (cid > maxId) maxId = cid;
+  });
+  localStorage.setItem(LAST_READ_NOTICE_ID_KEY, String(maxId));
 
-          if (currentId > maxIdFound) {
-            maxIdFound = currentId;
-          }
+  // 移除导航栏与分页点的未读红点
+  document.querySelectorAll('.notify-badge').forEach(badge => badge.classList.remove('show'));
+  const nav = document.querySelector('.bottom-nav');
+  if (nav) nav.classList.remove('has-unread-notice');
+
+  // 若是手动点击“全部已读”，立即移除列表内各条目的未读标记并提示
+  if (event) {
+    document.querySelectorAll('.nav-notice-item.unread').forEach(el => el.classList.remove('unread'));
+    document.querySelectorAll('.nav-notice-unread-dot').forEach(el => el.remove());
+    if (typeof showToast === 'function') showToast('已全部标为已读');
+  }
+};
+
+window.renderNoticeCenter = function() {
+  const desktopList = document.getElementById('desktopNotifyList');
+  const mobileList = document.getElementById('mobileNotifyList');
+  const notices = Array.isArray(window.siteNoticesData) ? window.siteNoticesData : [];
+  const lastReadId = parseInt(localStorage.getItem(LAST_READ_NOTICE_ID_KEY) || '0', 10);
+
+  if (window.siteNoticesLoadError && notices.length === 0) {
+    const errHtmlDesktop = `<div class="notify-empty-tip notify-retry notify-stagger-item" onclick="if(window.refreshSiteNotices) window.refreshSiteNotices()">公告加载失败，点击重试</div>`;
+    const errHtmlMobile = `<div class="notify-empty-tip notify-retry" onclick="if(window.refreshSiteNotices) window.refreshSiteNotices()">公告加载失败，点击重试</div>`;
+    if (desktopList) desktopList.innerHTML = errHtmlDesktop;
+    if (mobileList) mobileList.innerHTML = errHtmlMobile;
+    return;
+  }
+
+  const activeNotices = notices.filter(item => item && item.active);
+  const historyNotices = notices.filter(item => item && !item.active);
+
+  let hasUnread = false;
+  notices.forEach((item, idx) => {
+    const cid = parseInt(item.id, 10) || (idx + 1);
+    if (cid > lastReadId) {
+      hasUnread = true;
+    }
+  });
+
+  // 同步未读红点状态
+  document.querySelectorAll('.notify-badge').forEach(badge => {
+    badge.classList.toggle('show', hasUnread);
+  });
+  const nav = document.querySelector('.bottom-nav');
+  if (nav) nav.classList.toggle('has-unread-notice', hasUnread);
+
+  const buildListHtml = (isDesktop) => {
+    const stagger = isDesktop ? 'notify-stagger-item' : '';
+    if (activeNotices.length === 0 && historyNotices.length === 0) {
+      return `<div class="notify-empty-tip ${stagger}">暂无站点公告</div>`;
+    }
+
+    let html = '';
+
+    if (activeNotices.length > 0) {
+      html += `<div class="notify-section-label ${stagger}">当前公告</div>`;
+      activeNotices.forEach((item, idx) => {
+        const cid = parseInt(item.id, 10) || (idx + 1);
+        const isUnread = cid > lastReadId;
+        html += `
+          <div class="nav-notice-item active-notice ${isUnread ? 'unread' : ''} ${stagger}" data-notice-id="${cid}">
+            <div class="nav-notice-item-header">
+              <span class="nav-notice-tag">公告</span>
+              <span class="nav-notice-title">${item.title || '站点公告'}</span>
+              ${isUnread ? '<span class="nav-notice-unread-dot" title="未读"></span>' : ''}
+            </div>
+            <div class="nav-notice-content">${item.content || ''}</div>
+            ${item.url ? `<div class="nav-notice-action" data-url="${item.url}">查看详情 →</div>` : ''}
+          </div>
+        `;
+      });
+    } else {
+      html += `<div class="notify-empty-active ${stagger}">暂无最新公告</div>`;
+    }
+
+    if (historyNotices.length > 0) {
+      html += `<div class="notify-section-label history-label ${stagger}">历史通知</div>`;
+      historyNotices.forEach((item, idx) => {
+        const cid = parseInt(item.id, 10) || (idx + 1);
+        const isUnread = cid > lastReadId;
+        html += `
+          <div class="nav-notice-item history-notice ${isUnread ? 'unread' : ''} ${stagger}" data-notice-id="${cid}">
+            <div class="nav-notice-item-header">
+              <span class="nav-notice-title">${item.title || '历史通知'}</span>
+              ${isUnread ? '<span class="nav-notice-unread-dot" title="未读"></span>' : ''}
+            </div>
+            <div class="nav-notice-content">${item.content || ''}</div>
+            ${item.url ? `<div class="nav-notice-action" data-url="${item.url}">查看详情 →</div>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    return html;
+  };
+
+  const bindListActions = (container) => {
+    if (!container) return;
+    container.querySelectorAll('.nav-notice-action[data-url]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = btn.getAttribute('data-url');
+        if (url) {
+          window.markAllNoticesRead();
+          if (typeof closeNotifyMenu === 'function') closeNotifyMenu();
+          if (typeof window.closeMobileMoreMenu === 'function') window.closeMobileMoreMenu();
+          window.open(url, '_blank');
         }
       });
+    });
+  };
 
-      if (maxIdFound > lastId) {
-        localStorage.setItem(LAST_ID_KEY, maxIdFound);
-      }
+  if (desktopList) {
+    desktopList.innerHTML = buildListHtml(true);
+    bindListActions(desktopList);
+  }
+  if (mobileList) {
+    mobileList.innerHTML = buildListHtml(false);
+    bindListActions(mobileList);
+  }
+};
+
+function fetchRemoteNotice(shouldPushPopup = true) {
+  const NOTICE_URL = `${getCdnBaseUrl()}/data/notice.json`;
+
+  fetch(NOTICE_URL, { cache: 'no-cache' })
+    .then(response => {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
     })
-    .catch(err => console.error('获取远程通知失败:', err));
+    .then(data => {
+      const notices = Array.isArray(data) ? data : [data];
+      window.siteNoticesData = notices;
+      window.siteNoticesLoadError = false;
+      window.renderNoticeCenter();
+
+      if (!shouldPushPopup) return;
+
+      // 延迟弹出新公告悬浮/系统通知，避开首屏加载峰值
+      setTimeout(() => {
+        let lastPushedId = parseInt(localStorage.getItem(LAST_PUSHED_NOTICE_ID_KEY) || '0', 10);
+        let maxIdFound = lastPushedId;
+
+        notices.forEach(notice => {
+          const currentId = parseInt(notice.id, 10);
+          if (notice && notice.active && !isNaN(currentId) && currentId > lastPushedId) {
+            window.pushNotification(notice.title, {
+              body: notice.content,
+              tag: `remote-notice-${currentId}`,
+              requireInteraction: false
+            }, notice.url);
+
+            if (currentId > maxIdFound) {
+              maxIdFound = currentId;
+            }
+          }
+        });
+
+        if (maxIdFound > lastPushedId) {
+          localStorage.setItem(LAST_PUSHED_NOTICE_ID_KEY, String(maxIdFound));
+        }
+      }, 2500);
+    })
+    .catch(err => {
+      console.error('获取远程通知失败:', err);
+      window.siteNoticesLoadError = true;
+      window.renderNoticeCenter();
+    });
 }
 
-// 页面加载 3 秒后检查一次通知（避开启动峰值）
+window.refreshSiteNotices = function() {
+  const desktopList = document.getElementById('desktopNotifyList');
+  const mobileList = document.getElementById('mobileNotifyList');
+  if (desktopList) desktopList.innerHTML = '<div class="notify-empty-tip notify-stagger-item">正在加载公告...</div>';
+  if (mobileList) mobileList.innerHTML = '<div class="notify-empty-tip">正在加载公告...</div>';
+  fetchRemoteNotice(false);
+};
+
+// 页面加载后立即获取公告填充通知中心，并自动检查新通知推送
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(fetchRemoteNotice, 3000);
+  fetchRemoteNotice(true);
 });
 
 /* ========== 恢复默认设置 ========== */
