@@ -91,17 +91,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ========== Live2D 设置逻辑 ========== */
 const LIVE2D_KEY = 'setting_live2d_enabled';
+const LIVE2D_POS_KEY = 'setting_live2d_position';
+const LIVE2D_SIZE_KEY = 'setting_live2d_size';
 
 function isLive2DEnabled() {
   const setting = localStorage.getItem(LIVE2D_KEY);
   return setting === null ? true : setting === 'true'; // 默认开启
 }
 
+function getLive2DPosition() {
+  const pos = localStorage.getItem(LIVE2D_POS_KEY);
+  return pos === 'right' ? 'right' : 'left'; // 默认左下
+}
+
+function getLive2DSizeSetting() {
+  const size = localStorage.getItem(LIVE2D_SIZE_KEY);
+  return (size === 'small' || size === 'large') ? size : 'medium'; // 默认中
+}
+
+function getLive2DSizeInPixels(sizeSetting) {
+  const sizeMap = {
+    small: 240,
+    medium: 300,
+    large: 360
+  };
+  return sizeMap[sizeSetting] || 300;
+}
+
+window.isLive2DEnabled = isLive2DEnabled;
+window.getLive2DPosition = getLive2DPosition;
+window.getLive2DSizeSetting = getLive2DSizeSetting;
+window.getLive2DSizeInPixels = getLive2DSizeInPixels;
+
+window.applyLive2DPosition = function(pos) {
+  const wrapper = document.getElementById('live2d-wrapper');
+  if (!wrapper) return;
+  if (pos === 'right') {
+    wrapper.classList.remove('pos-left');
+    wrapper.classList.add('pos-right');
+  } else {
+    wrapper.classList.remove('pos-right');
+    wrapper.classList.add('pos-left');
+  }
+};
+
+window.applyLive2DSize = function(sizeSetting) {
+  const targetSize = getLive2DSizeInPixels(sizeSetting);
+  const wrapper = document.getElementById('live2d-wrapper');
+  if (wrapper) {
+    wrapper.style.width = `${targetSize}px`;
+    wrapper.style.height = `${targetSize}px`;
+  }
+  if (typeof window.__live2dResizeLayout === 'function') {
+    window.__live2dResizeLayout(targetSize);
+  }
+};
+
+window.setLive2DPosition = function(pos) {
+  const validPos = pos === 'right' ? 'right' : 'left';
+  localStorage.setItem(LIVE2D_POS_KEY, validPos);
+  window.applyLive2DPosition(validPos);
+};
+
+window.setLive2DSize = function(size) {
+  const validSize = (size === 'small' || size === 'large') ? size : 'medium';
+  localStorage.setItem(LIVE2D_SIZE_KEY, validSize);
+  window.applyLive2DSize(validSize);
+};
+
 window.toggleLive2D = function() {
   const checkbox = document.getElementById('live2dToggle');
   if (!checkbox) return;
   const enabled = checkbox.checked;
   localStorage.setItem(LIVE2D_KEY, enabled);
+
+  // 联动更新设置面板中子项的显示状态
+  const subSettings = document.getElementById('live2dSubSettings');
+  if (subSettings) {
+    subSettings.style.display = enabled ? '' : 'none';
+    if (enabled && typeof initSegmentedControls === 'function') {
+      requestAnimationFrame(() => initSegmentedControls());
+    }
+  }
+
   showToast(enabled ? "Live2D：已启用，正在刷新..." : "Live2D：已禁用，正在刷新...");
   setTimeout(() => location.reload(), 800); // 刷新页面以应用
 };
@@ -2619,7 +2691,9 @@ window.restoreDefaultSettings = function(triggerElement) {
       'enableHDR',                           // HDR 模式
       'setting_cdn_source',                  // 重置 CDN 设置
       'setting_cdn_auto_picked',             // 重置 CDN 优选结果
-      'setting_live2d_enabled'
+      'setting_live2d_enabled',              // Live2D 开关
+      'setting_live2d_position',             // Live2D 位置
+      'setting_live2d_size'                  // Live2D 大小
     ];
 
     // 移除这些 Key
@@ -2682,6 +2756,12 @@ function initSegmentedControls() {
       // 这里的 setTimeout 确保在 DOM 渲染完成后再计算位置，避免宽度为 0
       requestAnimationFrame(() => moveGliderTo(currentActive));
     }
+
+    // 防止重复绑定事件
+    if (control.dataset.segmentedInit === 'true') {
+      return;
+    }
+    control.dataset.segmentedInit = 'true';
 
     // 绑定点击事件
     buttons.forEach(btn => {
@@ -2748,6 +2828,13 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       // 构建容器和菜单
       const wrapper = document.createElement('div');
       wrapper.id = 'live2d-wrapper';
+      const pos = getLive2DPosition();
+      wrapper.classList.add(pos === 'right' ? 'pos-right' : 'pos-left');
+
+      const sizeKey = getLive2DSizeSetting();
+      const currentSize = getLive2DSizeInPixels(sizeKey);
+      wrapper.style.width = `${currentSize}px`;
+      wrapper.style.height = `${currentSize}px`;
       
       const menu = document.createElement('div');
       menu.className = 'live2d-menu';
@@ -2786,8 +2873,8 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         view: canvas,
         autoStart: true,
         backgroundAlpha: 0,
-        width: 300,
-        height: 300,
+        width: currentSize,
+        height: currentSize,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true,
       });
@@ -2799,14 +2886,28 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       app.stage.addChild(model);
 
       // 缩放并居中
-      const targetWidth = 300;
-      const targetHeight = 300;
-      const scaleX = targetWidth / model.width;
-      const scaleY = targetHeight / model.height;
-      const scale = Math.min(scaleX, scaleY) * 0.95; 
-      model.scale.set(scale);
-      model.x = (targetWidth - model.width) / 2;
-      model.y = targetHeight - model.height;
+      const origWidth = model.width;
+      const origHeight = model.height;
+
+      const updateLayout = (size) => {
+        const scaleX = size / origWidth;
+        const scaleY = size / origHeight;
+        const scale = Math.min(scaleX, scaleY) * 0.95; 
+        model.scale.set(scale);
+        model.x = (size - origWidth * scale) / 2;
+        model.y = size - origHeight * scale;
+      };
+
+      updateLayout(currentSize);
+
+      window.__live2dResizeLayout = (targetSize) => {
+        try {
+          app.renderer.resize(targetSize, targetSize);
+          updateLayout(targetSize);
+        } catch (e) {
+          console.error('Error resizing Live2D:', e);
+        }
+      };
 
       // 监听快捷键
       window.addEventListener('keydown', (e) => {

@@ -94,14 +94,42 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
           </div>
         </div>
 
-        <div class="setting-item" id="live2d-setting-anchor">
-          <label for="live2dToggle">
-            虚拟形象 (Live2D)
-            <span class="tooltip">在屏幕左下角显示小雪狐泽凌（默认开启）</span>
-          </label>
-          <div class="toggle-switch">
-            <input type="checkbox" id="live2dToggle" onchange="toggleLive2D()">
-            <label for="live2dToggle" class="switch-slider"></label>
+        <!-- 虚拟形象 (Live2D) 设置组 -->
+        <div class="setting-item-group" id="live2d-setting-anchor">
+          <div class="setting-item" id="live2d-main-setting">
+            <label for="live2dToggle">
+              虚拟形象 (Live2D)
+              <span class="tooltip">在屏幕边缘显示小雪狐泽凌（默认开启）</span>
+            </label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="live2dToggle" onchange="toggleLive2D()">
+              <label for="live2dToggle" class="switch-slider"></label>
+            </div>
+          </div>
+
+          <div class="live2d-sub-settings" id="live2dSubSettings">
+            <div class="setting-item live2d-sub-setting" id="live2d-pos-setting">
+              <label>
+                虚拟形象位置
+                <span class="tooltip">设置小雪狐在屏幕中的停靠位置（默认左下）</span>
+              </label>
+              <div class="segmented-control" id="live2dPosControl">
+                <button data-value="left">左下</button>
+                <button data-value="right">右下</button>
+              </div>
+            </div>
+
+            <div class="setting-item live2d-sub-setting" id="live2d-size-setting">
+              <label>
+                虚拟形象大小
+                <span class="tooltip">调整虚拟形象的显示尺寸（小: 240px / 中: 300px / 大: 360px）</span>
+              </label>
+              <div class="segmented-control" id="live2dSizeControl">
+                <button data-value="small">小</button>
+                <button data-value="medium">中</button>
+                <button data-value="large">大</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -286,6 +314,11 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
   };
   initToggle('hdrModeToggle', () => localStorage.getItem('enableHDR') === 'true');
   initToggle('live2dToggle', () => typeof isLive2DEnabled === 'function' ? isLive2DEnabled() : true);
+  const l2dSubSettings = modalInstance.querySelector('#live2dSubSettings');
+  if (l2dSubSettings) {
+    const isL2dEnabled = typeof isLive2DEnabled === 'function' ? isLive2DEnabled() : true;
+    l2dSubSettings.style.display = isL2dEnabled ? '' : 'none';
+  }
   initToggle('performanceModeToggle', () => typeof isPerformanceMode === 'function' ? isPerformanceMode() : false);
   initToggle('autoHideNavToggle', () => typeof isAutoHideNavEnabled === 'function' ? isAutoHideNavEnabled() : false);
   initToggle('customRightClickMenuToggle', () => typeof getCustomMenuSetting === 'function' ? getCustomMenuSetting() : true);
@@ -353,6 +386,55 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
   if (themeSelector && typeof initThemeColorSelector === 'function') {
     const savedColor = localStorage.getItem('setting_theme_color') || 'default';
     initThemeColorSelector(themeSelector, savedColor);
+  }
+
+  // 初始化 Live2D 位置 (Segmented Control)
+  const live2dPosControl = modalInstance.querySelector('#live2dPosControl');
+  if (live2dPosControl) {
+    const savedPos = (typeof getLive2DPosition === 'function') ? getLive2DPosition() : (localStorage.getItem('setting_live2d_position') || 'left');
+    const btns = live2dPosControl.querySelectorAll('button');
+    btns.forEach(btn => {
+      if (btn.dataset.value === savedPos) btn.classList.add('active');
+      else btn.classList.remove('active');
+
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const selected = btn.dataset.value;
+        if (typeof setLive2DPosition === 'function') {
+          setLive2DPosition(selected);
+        } else {
+          localStorage.setItem('setting_live2d_position', selected);
+          if (typeof applyLive2DPosition === 'function') applyLive2DPosition(selected);
+        }
+        modalInstance.showToast(`虚拟形象位置已设置为：${selected === 'right' ? '右下' : '左下'}`);
+      });
+    });
+  }
+
+  // 初始化 Live2D 大小 (Segmented Control)
+  const live2dSizeControl = modalInstance.querySelector('#live2dSizeControl');
+  if (live2dSizeControl) {
+    const savedSize = (typeof getLive2DSizeSetting === 'function') ? getLive2DSizeSetting() : (localStorage.getItem('setting_live2d_size') || 'medium');
+    const btns = live2dSizeControl.querySelectorAll('button');
+    const sizeNameMap = { small: '小', medium: '中', large: '大' };
+    btns.forEach(btn => {
+      if (btn.dataset.value === savedSize) btn.classList.add('active');
+      else btn.classList.remove('active');
+
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const selected = btn.dataset.value;
+        if (typeof setLive2DSize === 'function') {
+          setLive2DSize(selected);
+        } else {
+          localStorage.setItem('setting_live2d_size', selected);
+          if (typeof applyLive2DSize === 'function') applyLive2DSize(selected);
+        }
+        modalInstance.showToast(`虚拟形象大小已设置为：${sizeNameMap[selected] || '中'}`);
+      });
+    });
   }
 
   // 6. 统一初始化滑块动效

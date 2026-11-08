@@ -2020,6 +2020,42 @@ body#index-page {
   scroll-margin-top: 50vh;
 }
 
+/* ========== 设置组合卡片 (Setting Item Group) ========== */
+.setting-item-group {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 20px auto;
+  box-sizing: border-box;
+  scroll-margin-top: 50vh;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.setting-item-group .setting-item {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  scroll-margin-top: 0;
+}
+
+.live2d-sub-settings {
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+}
+
+.live2d-sub-settings .setting-item:not(:last-child) {
+  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08)) !important;
+}
+
 .setting-label {
   display: flex;
   flex-direction: column;
@@ -4137,6 +4173,7 @@ iframe#webFrame {
   position: fixed;
   bottom: 0;
   left: 0;
+  right: auto;
   z-index: 1000;
   width: 300px;
   height: 300px;
@@ -4145,11 +4182,24 @@ iframe#webFrame {
   opacity: 0;
 }
 
+#live2d-wrapper.pos-left {
+  left: 0;
+  right: auto;
+}
+
+#live2d-wrapper.pos-right {
+  left: auto;
+  right: 0;
+}
+
 #live2d-wrapper.loaded {
   opacity: 1;
 }
 
 #live2d-wrapper #live2d-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   pointer-events: auto;
@@ -4161,6 +4211,7 @@ iframe#webFrame {
   position: absolute;
   top: 10px;
   right: 10px;
+  left: auto;
   background: light-dark(rgba(255, 255, 255, 0.65), rgba(40, 40, 40, 0.65));
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -4173,10 +4224,17 @@ iframe#webFrame {
   
   opacity: 0;
   transform: translateY(10px) scale(0.95);
+  transform-origin: top right;
   pointer-events: none;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   z-index: 1001;
+}
+
+#live2d-wrapper.pos-right .live2d-menu {
+  right: auto;
+  left: 10px;
+  transform-origin: top left;
 }
 
 .live2d-menu.show {
@@ -4214,7 +4272,7 @@ iframe#webFrame {
 }
 
 @media (max-width: 768px) {
-  #live2d-wrapper, #live2d-setting-anchor {
+  #live2d-wrapper, #live2d-setting-anchor, .live2d-sub-setting {
     display: none !important;
   }
 }
@@ -4352,7 +4410,8 @@ iframe#webFrame {
 
 .settings-modal-body section h2,
 .settings-modal-body section p,
-.settings-modal-body section .setting-item {
+.settings-modal-body section .setting-item,
+.settings-modal-body section .setting-item-group {
   opacity: 1;
   animation: none;
 }

@@ -92,12 +92,16 @@
 .bottom-nav, footer,
 .modal, pre,
 .toast,
-.setting-item, .mobile-more-menu,
+.setting-item, .setting-item-group, .mobile-more-menu,
 #loginBtn, #logoutBtn, .back-button, .post-actions .back-button,
 .satin-notify-card,
 .hero-overlay,
 .live2d-menu {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
+}
+
+.setting-item-group .setting-item {
+  background: transparent !important;
 }
 
 .ios-alert button,
