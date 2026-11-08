@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+(function() {
 const API_BASE = 'https://db.satinau.cn';
 
 let pollingInterval = null;
@@ -24,6 +25,11 @@ window.cleanupPageComments = function() {
         pollingInterval = null;
     }
 };
+
+// 监听全局登录状态变动，实时同步评论区登录态显示
+window.addEventListener('auth-status-changed', () => {
+    checkLoginState();
+});
 
 // 为了让全局函数能获取 pageId
 const originalInit = window.initPageComments;
@@ -88,6 +94,7 @@ function checkLoginState() {
     const guestView = document.getElementById('guestView');
     const myAvatar = document.getElementById('myAvatar');
     const myNickname = document.getElementById('myNickname');
+    if (!loggedInView || !guestView) return;
 
     if (token && userStr) {
         const user = JSON.parse(userStr);
@@ -373,7 +380,13 @@ window.openReplyBox = function(commentId, nickname) {
     // 检查登录
     if (!localStorage.getItem('auth_token')) {
         showToast('请先登录');
-        setTimeout(() => window.location.href = '/pages/account/login.html', 1000);
+        setTimeout(() => {
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('/pages/account/login.html');
+            } else {
+                window.location.href = '/pages/account/login.html';
+            }
+        }, 1000);
         return;
     }
 
@@ -430,3 +443,4 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+})();

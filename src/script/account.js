@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+(function() {
 // 配置 Cloudflare Worker 后端地址
 const API_BASE = 'https://db.satinau.cn';
 
@@ -392,3 +393,4 @@ function setLoading(btn, isLoading) {
         btn.disabled = false;
     }
 }
+})();
