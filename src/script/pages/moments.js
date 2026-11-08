@@ -191,8 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
         moments.forEach((item, index) => {
             const card = document.createElement('div');
             card.className = 'moment-card';
-            // 设置动画延迟，形成阶梯出现效果
-            card.style.animation = `blurFadeUp 0.8s ease forwards ${index * 0.15}s`;
 
             // 处理图片 HTML
             let imagesHtml = '';
@@ -244,6 +242,10 @@ document.addEventListener('DOMContentLoaded', function() {
         resizeAllGridItems();
         window.addEventListener('resize', resizeAllGridItems);
 
+        if (typeof window.refreshScrollAnimations === 'function') {
+            window.refreshScrollAnimations(false);
+        }
+
         // 初始化图片查看器
         initViewer();
     }
@@ -256,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const rowHeight = 10;
         const rowGap = window.innerWidth <= 992 ? 16 : 24; // 对应纵向 margin-bottom 间距
-        const height = item.getBoundingClientRect().height;
+        const height = item.offsetHeight || item.getBoundingClientRect().height;
         const rowSpan = Math.ceil((height + rowGap) / rowHeight);
         item.style.gridRowEnd = `span ${rowSpan}`;
     }

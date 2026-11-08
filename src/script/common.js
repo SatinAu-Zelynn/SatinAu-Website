@@ -266,45 +266,305 @@ function showToast(msg) {
   }
 }
 
-/* 页面加载动画 & 卡片入场 */
-window.addEventListener('DOMContentLoaded', function() {
-  // 优先显示页面UI
-  document.body.style.opacity = 1;
+/* ========== 跟随页面滚动的标题、文字与卡片动画系统 ========== */
+(function initScrollBoundAnimations() {
+  const TARGET_SELECTOR = [
+    'main.page h2',
+    'main.page section > p',
+    'main.page section .grid-column > p',
+    'main.page section > pre',
+    'main.page .contact-card',
+    'main.page .moment-card',
+    'main.page .video-wrapper',
+    'main.page .am-container',
+    'main.page .gallery-item',
+    'main.page .filter-container',
+    'main.page .search-container',
+    'main.page .profile-container',
+    'main.page .ai-summary-card',
+    'main.page .post-actions-panel',
+    'main.page .comments-title',
+    'main.page .comment-input-wrapper',
+    'main.page .comment-item'
+  ].join(', ');
 
-  // 处理卡片入场动画
-  document.querySelectorAll('.contact-card, h2').forEach((element, index) => {
-    if (document.body.id !== "blog-page") {
-      new IntersectionObserver((entries, observer) => {
-        entries.forEach(e => {
-          if (e.isIntersecting) {
-            // 区分元素类型设置延迟
-            const delay = element.tagName === 'H2' 
-              ? `${0.2 + Math.floor(index / 2) * 0.2}s`  // H2延迟稍缓
-              : `${0.2 + index * 0.2}s`;  // 卡片保持原有延迟
-              
-            e.target.style.animationDelay = delay;
-            e.target.classList.add('visible');
-            observer.unobserve(e.target);
+  const trackedStates = new Map();
+  let rafId = null;
+  let lastFrameTime = 0;
+
+  function shouldExcludeElement(el) {
+    if (!el || !(el instanceof HTMLElement)) return true;
+    // 排除首页大标题与首屏简介、关于我粘性开场、博客正文/Markdown正文、协议正文及各类弹窗内部
+    if (el.closest('.intro-screen, #scroll-sequence, #postView, .md-article, .md-body, .agreement-content, .modal')) {
+      return true;
+    }
+    // 排除用于对齐占位的透明不可见元素（例如泽凌页面的透明占位文字）
+    if (el.style.pointerEvents === 'none' && el.style.opacity === '0') {
+      return true;
+    }
+    // 若祖先节点已作为动画单元（如卡片内部的子标题/子卡片），不再重复叠加动画
+    if (el.parentElement && el.parentElement.closest('.scroll-anim-item')) {
+      return true;
+    }
+    return false;
+  }
+
+  function applyElementStyle(state, p) {
+    const el = state.el;
+    if (el.closest('.disable-animation') || el.classList.contains('is-animating')) {
+      state.ty = 0;
+      state.scale = 1;
+      el.classList.remove('is-scroll-animating');
+      el.style.opacity = '';
+      el.style.transform = '';
+      el.style.filter = '';
+      el.style.pointerEvents = '';
+      return;
+    }
+
+    if (p >= 0.999) {
+      state.ty = 0;
+      state.scale = 1;
+      el.classList.remove('is-scroll-animating');
+      el.style.opacity = '';
+      el.style.transform = '';
+      el.style.filter = '';
+      el.style.pointerEvents = '';
+      return;
+    }
+
+    el.classList.add('is-scroll-animating');
+
+    if (p <= 0.001) {
+      const initTy = 42;
+      const initScale = 0.84;
+      const perfMode = typeof isPerformanceMode === 'function' && isPerformanceMode();
+      state.ty = initTy;
+      state.scale = initScale;
+      el.style.opacity = '0';
+      el.style.transform = `translate3d(0, ${initTy}px, 0) scale(${initScale})`;
+      el.style.filter = perfMode ? 'none' : 'blur(10px)';
+      el.style.pointerEvents = 'none';
+      return;
+    }
+
+    // 缓动曲线：上移进入视口时从底部模糊放大至原尺寸，下移离开视口时沿同曲线反向缩小模糊消失
+    const eased = 1 - Math.pow(1 - p, 2.5);
+    const opacity = Math.min(1, Math.pow(p, 0.75));
+    const ty = (1 - eased) * 42;
+    const scale = 0.84 + 0.16 * eased;
+    const perfMode = typeof isPerformanceMode === 'function' && isPerformanceMode();
+    const blur = perfMode ? 0 : (1 - eased) * 10;
+
+    state.ty = ty;
+    state.scale = scale;
+
+    el.style.opacity = opacity.toFixed(3);
+    el.style.transform = `translate3d(0, ${ty.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+    el.style.filter = blur > 0.12 ? `blur(${blur.toFixed(2)}px)` : 'none';
+    el.style.pointerEvents = p < 0.15 ? 'none' : '';
+  }
+
+  function computeTargetProgress(state, vh, vw, scrollY, docScrollHeight) {
+    const el = state.el;
+    if (el.closest('.disable-animation') || el.classList.contains('is-animating')) {
+      return 1;
+    }
+
+    const rect = el.getBoundingClientRect();
+    // 跳过 display: none 的隐藏元素
+    if (rect.width === 0 && rect.height === 0) {
+      return null;
+    }
+
+    const layoutHeight = el.offsetHeight || rect.height;
+    // 还原未施加 transform 时的真实视口纵坐标，避免 scale/translateY 造成测量反馈抖动
+    const layoutTop = rect.top - state.ty - layoutHeight * (1 - state.scale) * 0.5;
+
+    const maxScroll = Math.max(0, docScrollHeight - vh);
+    if (maxScroll <= 8) {
+      return 1;
+    }
+
+    // 视口底部进出场区间：从视口底部 96% 处开始进入，上移至约 68% 处完全清晰放大；下移时反向退场
+    const baseStartY = vh * 0.96;
+    const animDistance = Math.max(180, Math.min(300, vh * 0.28));
+    const baseEndY = baseStartY - animDistance;
+
+    // 同一行多列卡片根据横向位置赋予微小的视差错落感
+    const colRatio = Math.max(0, Math.min(1, rect.left / Math.max(1, vw)));
+    const staggerOffset = colRatio * 32;
+
+    const startY = baseStartY - staggerOffset;
+    const normalEndY = baseEndY - staggerOffset;
+
+    // 页面最底部元素补偿：确保滚到底部时位于页面末端的卡片也能到达 100% 清晰状态，且往回滚时平滑逆向
+    const remainingScroll = Math.max(0, maxScroll - scrollY);
+    const minTopAtMaxScroll = layoutTop - remainingScroll;
+    const effectiveEndY = Math.max(normalEndY, Math.min(startY - 60, minTopAtMaxScroll + 16));
+
+    const span = Math.max(40, startY - effectiveEndY);
+    const rawP = (startY - layoutTop) / span;
+    return Math.max(0, Math.min(1, rawP));
+  }
+
+  function collectTargets(snapImmediate = false) {
+    const mainEl = document.querySelector('main.page');
+    if (!mainEl) return;
+
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const docScrollHeight = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight
+    );
+
+    const candidates = document.querySelectorAll(TARGET_SELECTOR);
+    candidates.forEach(el => {
+      if (trackedStates.has(el)) {
+        if (snapImmediate) {
+          const st = trackedStates.get(el);
+          const tp = computeTargetProgress(st, vh, vw, scrollY, docScrollHeight);
+          if (tp !== null) {
+            st.targetP = tp;
+            st.currentP = tp;
+            applyElementStyle(st, tp);
           }
-        });
-      }, { threshold: 0.2, rootMargin: '0px 0px -50px 0px' }).observe(element);
-    }
-  });
-
-  // 延迟加载需要后端数据的内容
-  setTimeout(() => {
-    document.body.style.width = '100%';
-    window.dispatchEvent(new Event('resize'));
-    if (document.body.id === "blog-page") {
-      // 显示加载动画
-      const loader = document.getElementById("loadingOverlay");
-      if (loader) {
-        loader.classList.add("show");
+        }
+        return;
       }
-      initBlog(); // 博客数据加载
+
+      if (shouldExcludeElement(el)) return;
+
+      el.classList.add('scroll-anim-item');
+      const state = {
+        el,
+        currentP: 0,
+        targetP: 0,
+        ty: 0,
+        scale: 1
+      };
+
+      const tp = computeTargetProgress(state, vh, vw, scrollY, docScrollHeight);
+      state.targetP = tp !== null ? tp : 0;
+      // 若要求立即对齐（如从博客文章返回列表），直接同步进度；否则从 0 开始平滑过渡到目标进度
+      state.currentP = snapImmediate ? state.targetP : 0;
+      applyElementStyle(state, state.currentP);
+
+      trackedStates.set(el, state);
+    });
+  }
+
+  function tick(now) {
+    rafId = null;
+    const dt = lastFrameTime ? Math.min(64, Math.max(8, now - lastFrameTime)) : 16.67;
+    lastFrameTime = now;
+
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const docScrollHeight = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight
+    );
+
+    // 阻尼插值系数（基于帧间隔自适应），兼顾跟手响应与滚轮平滑过渡
+    const lerpFactor = 1 - Math.pow(1 - 0.2, dt / 16.67);
+    let needsMoreFrames = false;
+
+    trackedStates.forEach((state, el) => {
+      if (!el.isConnected) {
+        trackedStates.delete(el);
+        return;
+      }
+
+      const tp = computeTargetProgress(state, vh, vw, scrollY, docScrollHeight);
+      if (tp === null) return;
+
+      state.targetP = tp;
+      const diff = state.targetP - state.currentP;
+
+      if (Math.abs(diff) > 0.0015) {
+        state.currentP += diff * lerpFactor;
+        needsMoreFrames = true;
+      } else {
+        state.currentP = state.targetP;
+      }
+
+      applyElementStyle(state, state.currentP);
+    });
+
+    if (needsMoreFrames) {
+      rafId = requestAnimationFrame(tick);
+    } else {
+      lastFrameTime = 0;
     }
-  }, 100); // 给UI渲染留一点时间
-});
+  }
+
+  function scheduleUpdate() {
+    if (!rafId) {
+      rafId = requestAnimationFrame(tick);
+    }
+  }
+
+  window.refreshScrollAnimations = function(snapImmediate = false) {
+    collectTargets(snapImmediate);
+    scheduleUpdate();
+  };
+
+  window.addEventListener('DOMContentLoaded', function() {
+    document.body.style.opacity = 1;
+
+    collectTargets(false);
+    scheduleUpdate();
+
+    // 监听滚动与尺寸变化，实时驱动进出场动画
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', () => {
+      collectTargets(false);
+      scheduleUpdate();
+    }, { passive: true });
+
+    // 监听图片等资源加载完成导致页面高度变化
+    document.addEventListener('load', (e) => {
+      if (e.target && e.target.tagName === 'IMG') {
+        scheduleUpdate();
+      }
+    }, true);
+
+    // 监听异步渲染插入的卡片与标题（如博客列表、友链、动态、画廊、歌单、评论等）
+    const domObserver = new MutationObserver((mutations) => {
+      let hasAddedNodes = false;
+      for (const m of mutations) {
+        if (m.addedNodes && m.addedNodes.length > 0) {
+          hasAddedNodes = true;
+          break;
+        }
+      }
+      if (hasAddedNodes) {
+        collectTargets(false);
+        scheduleUpdate();
+      }
+    });
+    domObserver.observe(document.body, { childList: true, subtree: true });
+
+    // 延迟加载需要后端数据的内容
+    setTimeout(() => {
+      document.body.style.width = '100%';
+      window.dispatchEvent(new Event('resize'));
+      if (document.body.id === "blog-page") {
+        const loader = document.getElementById("loadingOverlay");
+        if (loader) {
+          loader.classList.add("show");
+        }
+        if (typeof initBlog === 'function') {
+          initBlog(); // 博客数据加载
+        }
+      }
+    }, 100);
+  });
+})();
 
 /* ========== 全局页面跳转通用加载动画 ========== */
 function ensureLoadingOverlay() {

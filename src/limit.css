@@ -72,6 +72,10 @@
   }
 }
 
+.scroll-anim-item.is-scroll-animating {
+  filter: none !important;
+}
+
 *,
 *::before,
 *::after {

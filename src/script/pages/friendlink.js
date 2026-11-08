@@ -33,18 +33,6 @@ function initFriendLinks() {
       
       container.innerHTML = ""; // 清空
 
-      const observer = new IntersectionObserver((entries) => {
-        let batchIndex = 0;
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.style.animationDelay = `${batchIndex * 0.1}s`;
-            entry.target.classList.add("visible");
-            observer.unobserve(entry.target);
-            batchIndex++;
-          }
-        });
-      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-
       list.forEach((item) => {
         const a = document.createElement("a");
         a.className = "contact-card";
@@ -65,8 +53,11 @@ function initFriendLinks() {
         `;
 
         container.appendChild(a);
-        observer.observe(a);
       });
+
+      if (typeof window.refreshScrollAnimations === 'function') {
+        window.refreshScrollAnimations(false);
+      }
     })
     .catch(err => {
       console.error("友情链接加载失败：", err);

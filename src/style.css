@@ -326,18 +326,14 @@ section {
     line-height: 1.6; 
     margin: 8px 0; 
   }
-
-  p, pre, .setting-item, .image-gallery {
-    opacity: 0; 
-    animation: blurFadeUp 1.2s ease forwards;
-    animation-delay: 0.3s;
-  }
 }
 
-/* 为文字设置递增延迟，在标题动画后依次出现 */
-body#index-page section p {
+/* 首页首屏简介文字：保持原有递增延迟淡入动画不动 */
+body#index-page .intro-screen section p {
   font-family: MiSans, sans-serif;
   font-weight: 500;
+  opacity: 0;
+  animation: blurFadeUp 1.2s ease forwards;
   &:nth-of-type(1) { animation-delay: 2s; }     /* 标题动画结束后立即 */
   &:nth-of-type(2) { animation-delay: 2.3s; }   /* 延迟0.3s */
   &:nth-of-type(3) { animation-delay: 2.6s; }   /* 延迟0.6s */
@@ -365,11 +361,6 @@ h1 {
 h2 { 
   font-size: clamp(1.4rem, 4vw, 1.6rem); /* 字号将在 1.4rem 和 1.6rem 之间平滑缩放 */ 
   margin: 20px 0 30px; 
-  opacity: 0; /* 初始隐藏 */
-
-  &.visible {
-    animation: blurFadeUp 1.2s ease forwards;
-  }
 }
 
 @media (max-width: 768px) {
@@ -420,7 +411,6 @@ body#zelynn-page .zelynn-top-grid .contact-wrapper {
   box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
   text-decoration: none;
   color: inherit;
-  opacity: 0; transform: translateY(40px) translateX(-20px) scale(0.96);
   position: relative;
   overflow: hidden;
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
@@ -430,46 +420,24 @@ body#zelynn-page .zelynn-top-grid .contact-wrapper {
   isolation: isolate;
 }
 
-/* ========== 卡片进场动画逻辑 ========== */
-
-/* 通用规则：任何页面只要卡片进入视野并获得 visible 类，就播放淡入动画 */
-.contact-card.visible {
-  animation: staggerFade 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+/* ========== 跟随滚动的标题、文字与卡片动画样式 ========== */
+.scroll-anim-item {
+  transform-origin: center center;
 }
 
-/* 特例：仅在博客列表处于“已恢复”状态时，强制禁止动画并直接显示 */
-/* 利用更高的优先级覆盖上面的通用规则 */
-.contact-wrapper.list-restored .contact-card {
-  opacity: 1;
-  transform: none;
-  filter: none;
-  animation: none;
-  /* 保留 transition 以允许鼠标 Hover 效果 */
+.scroll-anim-item.is-scroll-animating {
+  transition: box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              background 0.5s ease !important;
+  will-change: transform, opacity, filter;
 }
 
-/* 3. 动画过程中的绝对静止 */
+/* 动画过程中的绝对静止（用于博客卡片展开/收起 Hero 过渡） */
 .contact-wrapper.disable-animation .contact-card {
   animation: none !important;
   transition: none !important;
   opacity: 1 !important;
   transform: translate(0, 0) scale(1) !important;
   filter: none !important;
-}
-
-@keyframes staggerFade {
-  0% {
-    opacity: 0;
-    transform: translateY(40px) scale(0.8);
-    filter: blur(8px); /* 初始轻微模糊 */
-  }
-  60% {
-    opacity: 0.8;
-    transform: translateY(-2px) scale(1.015); /* 轻微上冲 */
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 /* 光泽扫过效果 */
@@ -3323,9 +3291,6 @@ input:checked + .switch-slider {
 .search-container {
   margin: 10px 0 30px;
   width: 100%;
-  opacity: 0;
-  /* 复用现有的进场动画 */
-  animation: blurFadeUp 1.2s ease forwards; 
 }
 
 .search-wrapper {
@@ -3992,7 +3957,6 @@ iframe#webFrame {
   justify-content: center;
   gap: 10px;
   margin-bottom: 24px;
-  animation: blurFadeUp 1s ease forwards;
 }
 
 .filter-tag {

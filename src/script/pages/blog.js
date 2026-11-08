@@ -162,6 +162,10 @@ function resetBlogView() {
     if (!activeCardElement && listScrollY > 0) {
         window.scrollTo(0, listScrollY);
     }
+
+    if (typeof window.refreshScrollAnimations === 'function') {
+        window.refreshScrollAnimations(true);
+    }
     
     // 只有在手动点击返回按钮时才 pushState，浏览器后退(popstate)不需要
     // 这里需要根据调用来源区分，但简化起见，popstate 触发时通常 URL 已经变了
@@ -214,6 +218,8 @@ return Promise.all([
     if (posts.length === 0) {
         listEl.style.display = "none";
         emptyState.style.display = "block";
+    } else if (typeof window.refreshScrollAnimations === 'function') {
+        window.refreshScrollAnimations(false);
     }
     })
     .catch(err => {
@@ -274,28 +280,6 @@ posts.forEach((post, index) => {
     }, 300));
     
     listEl.appendChild(card);
-
-    // 错位淡入动画
-    const cards = document.querySelectorAll('.contact-card, h2');
-    const observer = new IntersectionObserver((entries) => {
-      // 收集当前可见的卡片
-      const visibleCards = entries
-        .filter(e => e.isIntersecting)
-        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-
-      // 对可见卡片按顺序添加动画，每组最多3张同时显示
-      visibleCards.forEach((entry, index) => {
-        if (!entry.target.classList.contains('visible')) {
-          entry.target.style.animationDelay = `${Math.floor(index / 3) * 0.2 + (index % 3) * 0.2}s`;
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { 
-      threshold: 0.2,
-      rootMargin: '0px 0px -100px 0px'
-    });
-
-    cards.forEach(card => observer.observe(card));
 });
 }
 
@@ -401,6 +385,10 @@ function animateHeroClose(callback) {
     // 这行代码迫使浏览器立刻计算布局，确保卡片回到了正确位置，且没有动画干扰
     void listEl.offsetHeight; 
 
+    if (typeof window.refreshScrollAnimations === 'function') {
+        window.refreshScrollAnimations(true);
+    }
+
     // 重新计算目标位置
     // 此时卡片是静止的，获取的坐标是 100% 准确的
     let targetRect = activeCardRect; 
@@ -440,6 +428,9 @@ function animateHeroClose(callback) {
             // 注意：此时 .list-restored 依然保留，所以不会触发进场动画
             requestAnimationFrame(() => {
                 listEl.classList.remove('disable-animation');
+                if (typeof window.refreshScrollAnimations === 'function') {
+                    window.refreshScrollAnimations(true);
+                }
             });
 
             if (callback) callback();
@@ -933,4 +924,8 @@ searchInput.addEventListener('input', (e) => {
             card.style.display = 'none'; // 隐藏
         }
     });
+
+    if (typeof window.refreshScrollAnimations === 'function') {
+        window.refreshScrollAnimations(false);
+    }
 });
