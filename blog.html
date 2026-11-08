@@ -54,15 +54,7 @@
     </header>
 
     <section>
-      <div class="search-container">
-        <div class="search-wrapper">
-          <input type="text" id="blogSearchInput" placeholder="搜索文章..." autocomplete="off">
-          <svg class="search-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-      </div>
-      <div id="momentsCard" class="contact-wrapper" style="margin-bottom: 40px; grid-template-columns: 1fr;">
+      <div id="momentsCard" class="contact-wrapper" style="margin-bottom: 24px; grid-template-columns: 1fr;">
         <a href="pages/moments.html" class="contact-card">
           <div class="icon" style="background: linear-gradient(135deg, #FF9999, #fad0c4);">
             <span style="font-size: 20px;">📸</span>
@@ -78,7 +70,71 @@
           </svg>
         </a>
       </div>
+
+      <div class="search-container">
+        <div class="search-box-row">
+          <div class="search-wrapper">
+            <input type="text" id="blogSearchInput" placeholder="搜索文章..." autocomplete="off">
+            <svg class="search-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <button id="searchClearBtn" class="search-clear-btn" type="button" aria-label="清空搜索" style="display: none;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <button id="searchCancelBtn" class="search-cancel-btn" type="button">取消</button>
+        </div>
+
+        <div id="searchHistoryContainer" class="search-history-container" style="display: none;">
+          <div class="search-history-header">
+            <span class="search-history-title">
+              <svg class="history-clock-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              搜索历史
+            </span>
+            <button type="button" id="clearHistoryBtn" class="search-history-clear-btn" style="display: none;">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              清空
+            </button>
+          </div>
+          <div id="searchHistoryList" class="search-history-list"></div>
+        </div>
+
+        <div class="search-actions" id="searchActions" style="display: none;">
+          <button type="button" id="deepSearchToggle" class="deep-search-btn" aria-pressed="false" title="开启后将搜索全部文章的正文内容">
+            <svg class="deep-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+            </svg>
+            <span class="deep-search-label">开启深度搜索</span>
+          </button>
+          <div id="searchStats" class="search-stats"></div>
+        </div>
+      </div>
+
       <div id="blogList" class="contact-wrapper"></div>
+      <div id="searchEmptyState" class="search-empty-state" style="display: none;">
+        <p id="searchEmptyMsg" class="search-empty-msg">未找到相关文章</p>
+        <button id="searchEmptyDeepBtn" class="deep-search-btn" type="button" style="display: none; margin: 0 auto;">
+          <svg class="deep-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+            <line x1="11" y1="8" x2="11" y2="14"/>
+          </svg>
+          开启深度搜索
+        </button>
+      </div>
       <div id="emptyState" style="display: none; text-align: center; padding: 40px 20px;">
         <p>没有找到文章，请稍后再试</p>
       </div>
