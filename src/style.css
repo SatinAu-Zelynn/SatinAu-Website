@@ -3644,6 +3644,14 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   position: relative;
   width: 100%;
   max-width: 100%;
+  transform-origin: center center;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 聚焦状态：容器整体平滑放大，保证内部 input 与 svg 图标等比缩放并锁定相对位置 */
+.search-wrapper:focus-within {
+  transform: scale(1.02);
+  z-index: 5;
 }
 
 .search-wrapper input {
@@ -3662,19 +3670,20 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   -webkit-backdrop-filter: var(--filter-blur);
   
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   
   /* 移除默认外观 */
   -webkit-appearance: none;
   appearance: none;
 }
 
-/* 聚焦状态：轻微放大、提亮、主色描边 */
+/* 聚焦状态：提亮、主色描边与更深阴影 */
 .search-wrapper input:focus {
   outline: none;
   background: light-dark(rgba(255, 255, 255, 0.45), rgba(60, 60, 60, 0.4));
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  transform: scale(1.02);
   border-color: var(--primary-color);
 }
 
@@ -3693,6 +3702,9 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   height: 22px;
   color: light-dark(#666, #aaa);
   pointer-events: none; /* 让点击穿透图标到 input */
+  z-index: 2; /* 确保置于 input 背景与 backdrop-filter 之上 */
+  display: block;
+  flex-shrink: 0;
   transition: color 0.3s ease;
   fill: none;
 }
@@ -4058,24 +4070,34 @@ body.hero-open {
 .modal.web-modal {
   /* 基础尺寸：使用 dvh 适配移动端动态高度 */
   width: 90vw;
+  max-width: 1200px;
   height: 85vh; 
   height: 85dvh; /* 适配移动端浏览器工具栏 */
   
-  max-width: 1200px;
   padding: 0;
   overflow: hidden;
   background: #fff;
-  border-radius: var(--border-radius-lg);
-  
-  /* 确保过渡动画包含所有变化的属性 */
+  border-radius: var(--border-radius-lg, 24px);
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.25));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+
+  /* 核心：与 .modal 保持完全一致的弹窗出现/消失动效，同时支持最大化/还原平滑插值 */
   transition: 
-    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    top 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    left 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 0.4s ease,
-    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), /* 关键：平滑过渡 transform */
-    opacity 0.4s ease;
+    opacity 0.4s cubic-bezier(0.22, 1.4, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1.4, 0.36, 1),
+    width 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    max-width 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.38s ease,
+    box-shadow 0.38s ease;
+  will-change: transform, opacity, width, height, max-width, border-radius;
+}
+
+/* 尺寸缩放过渡期间禁用 iframe 内交互，避免高频重绘卡顿 */
+.modal.web-modal.is-resizing iframe {
+  pointer-events: none;
 }
 
 /* 内部 iframe */
@@ -4109,26 +4131,29 @@ iframe#webFrame {
   flex-direction: column;
   gap: 12px;
   z-index: 20; /* 保证在 iframe 之上 */
+  transition: right 0.42s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .doc-float-btn {
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.2));
-  background: light-dark(rgba(255,255,255,0.8), rgba(40,40,40,0.8));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.2));
+  background: light-dark(rgba(255, 255, 255, 0.85), rgba(40, 40, 40, 0.85));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   color: var(--word-color);
   padding: 0;
   /* 防止触摸时产生高亮背景块 */
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
 }
 
 @media (hover: hover) {
@@ -4137,6 +4162,7 @@ iframe#webFrame {
     background: var(--primary-color);
     color: white;
     border-color: transparent;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -4145,33 +4171,55 @@ iframe#webFrame {
 }
 
 .doc-float-btn svg {
+  position: absolute;
   width: 20px;
   height: 20px;
   fill: currentColor;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 全屏与还原图标切换动画 */
+.doc-float-btn #icon-expand {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.doc-float-btn #icon-compress {
+  opacity: 0;
+  transform: scale(0.5) rotate(-90deg);
+  pointer-events: none;
+}
+
+.modal.web-modal.fullscreen-mode .doc-float-btn #icon-expand {
+  opacity: 0;
+  transform: scale(0.5) rotate(90deg);
+  pointer-events: none;
+}
+
+.modal.web-modal.fullscreen-mode .doc-float-btn #icon-compress {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  pointer-events: auto;
 }
 
 @media (hover: hover) {
   .doc-float-btn.close-btn:hover {
     background: light-dark(#ff3b30, #ff453a);
+    color: white;
   }
 }
 
 /* 全屏模式样式 (覆盖默认 Modal 样式) */
 .modal.web-modal.fullscreen-mode {
-  /* 强制铺满屏幕 */
+  /* 强制铺满屏幕，max-width 同样设为 100vw 支持连续插值过渡 */
   width: 100vw !important;
+  max-width: 100vw !important;
   height: 100vh !important;
   height: 100dvh !important; /* 解决移动端遮挡 */
-  max-width: none !important;
-  
-  /* 强制定位到左上角 */
-  top: 0 !important;
-  left: 0 !important;
-  margin: 0 !important;
-  transform: none !important; 
+
   border-radius: 0 !important;
-  border: none !important;
-  z-index: 10000; /* 极高层级，覆盖导航栏 */
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* 移动端适配微调 */

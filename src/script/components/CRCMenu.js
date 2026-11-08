@@ -1006,8 +1006,6 @@ const testAction = (ctx) => {
     alert('我是测试');
 };
 const openSettingsSectionAction = (anchorId) => {
-    const settingsPath = '/pages/settings.html';
-    // 判断当前是否已经在设置页面
     if (typeof window.openSettingsModal === 'function') {
         window.openSettingsModal(anchorId);
     } else {

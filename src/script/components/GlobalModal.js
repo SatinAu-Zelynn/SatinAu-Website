@@ -35,9 +35,17 @@ class GlobalModal extends HTMLElement {
 
   bindEvents() {
     document.addEventListener('keydown', (e) => {
-      // 按 Escape 键时，统一关闭当前最顶层图层
+      // 按 Escape 键时，如果最顶层弹窗正处于全屏模式，优先退出全屏；否则关闭弹窗
       if (e.key === 'Escape' && this.layers.length > 0) {
-        this.layers[this.layers.length - 1].close();
+        const topLayer = this.layers[this.layers.length - 1];
+        if (topLayer.modal && topLayer.modal.classList.contains('fullscreen-mode')) {
+          const zoomBtn = topLayer.modal.querySelector('#docZoomBtn');
+          if (zoomBtn) {
+            zoomBtn.click();
+            return;
+          }
+        }
+        topLayer.close();
       }
     });
   }
@@ -207,8 +215,9 @@ class GlobalModal extends HTMLElement {
     this._lockScroll();
 
     // 4. 统一动画核心：显示
-    // 如果没有触发源，降级为默认淡入动画
+    // 如果没有触发源，降级为默认缩放淡入动画
     if (!trigger) {
+      void modal.offsetHeight; // 强制回流，确保初始未激活状态(scale 0.9, opacity 0)被浏览器记录
       requestAnimationFrame(() => {
         overlay.classList.add('show');
         modal.classList.add('show');
@@ -264,6 +273,17 @@ class GlobalModal extends HTMLElement {
         modal.style.transform = 'translate(-50%, -50%) scale(1)';
         modal.style.opacity = '1';
         contentWrapper.style.opacity = '1';
+
+        // 动画完成后清除内联样式与动画标记类，使弹窗完全由 CSS 响应控制
+        setTimeout(() => {
+          if (!layer.isClosing) {
+            modal.classList.remove('hero-animating');
+            modal.style.transition = '';
+            modal.style.transform = '';
+            modal.style.transformOrigin = '';
+            contentWrapper.style.transition = '';
+          }
+        }, 550);
       });
     }
 
@@ -415,7 +435,7 @@ class GlobalModal extends HTMLElement {
             <!-- 全屏切换按钮 -->
             <button id="docZoomBtn" class="doc-float-btn" title="全屏查看 / Fullscreen">
               <svg id="icon-expand" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
-              <svg id="icon-compress" viewBox="0 0 24 24" style="display: none;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5z"/></svg>
+              <svg id="icon-compress" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5z"/></svg>
             </button>
             
             <!-- 关闭按钮 -->
@@ -429,8 +449,6 @@ class GlobalModal extends HTMLElement {
         // 绑定事件
         const zoomBtn = modal.querySelector('#docZoomBtn');
         const closeBtn = modal.querySelector('#docCloseBtn');
-        const iconExpand = modal.querySelector('#icon-expand');
-        const iconCompress = modal.querySelector('#icon-compress');
         const webFrame = modal.querySelector('#webFrame');
         const loadingOverlay = modal.querySelector('#webLoadingOverlay');
 
@@ -442,33 +460,30 @@ class GlobalModal extends HTMLElement {
           });
         }
 
-        // 关闭逻辑
+        // 关闭逻辑：直接优雅关闭，无需延时割裂动画
         closeBtn.onclick = () => {
-          // 如果处于全屏模式，先退出全屏再关闭，动画更自然
-          if (modal.classList.contains('fullscreen-mode')) {
-            modal.classList.remove('fullscreen-mode');
-            // 延迟一点点再执行真正的关闭动画
-            setTimeout(close, 100);
-          } else {
-            close();
-          }
+          close();
         };
 
-        // 全屏切换逻辑
+        // 全屏/最大化切换逻辑（防抖与平滑过渡）
+        let isResizing = false;
         zoomBtn.onclick = () => {
-          // 切换 class
+          if (isResizing) return;
+          isResizing = true;
+
+          // 清理任何残留的内联动画样式，确保由 CSS 接管平滑尺寸过渡
+          modal.classList.remove('hero-animating');
+          modal.style.transition = '';
+          modal.style.transform = '';
+
+          modal.classList.add('is-resizing');
           const isFullscreen = modal.classList.toggle('fullscreen-mode');
-          
-          // 切换图标
-          if (isFullscreen) {
-            iconExpand.style.display = 'none';
-            iconCompress.style.display = 'block';
-            zoomBtn.title = "退出全屏 / Exit Fullscreen";
-          } else {
-            iconExpand.style.display = 'block';
-            iconCompress.style.display = 'none';
-            zoomBtn.title = "全屏查看 / Fullscreen";
-          }
+          zoomBtn.title = isFullscreen ? "退出全屏 / Exit Fullscreen" : "全屏查看 / Fullscreen";
+
+          setTimeout(() => {
+            modal.classList.remove('is-resizing');
+            isResizing = false;
+          }, 450);
         };
       }
     });
