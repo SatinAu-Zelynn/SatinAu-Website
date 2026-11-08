@@ -93,7 +93,7 @@
 .modal, pre,
 .toast,
 .setting-item, .mobile-more-menu,
-#loginBtn, #logoutBtn, .post-actions .back-button,
+#loginBtn, #logoutBtn, .back-button, .post-actions .back-button,
 .satin-notify-card,
 .hero-overlay,
 .live2d-menu {
@@ -103,6 +103,8 @@
 .ios-alert button,
 .email-item,
 .actions .cancel,
+.share-actions button.secondary-btn,
+.share-actions button.cancel-btn,
 #authModal .tab-btn,
 #emailLoginBtn,
 #signupBtn,

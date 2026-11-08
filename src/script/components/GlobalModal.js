@@ -126,9 +126,14 @@ class GlobalModal extends HTMLElement {
 
     let cleanupTimer = null;
     let audioInstance = null;
+    let destroyCallback = null;
 
     // 2. 清理状态并从 DOM 中移除图层
     const destroyLayer = () => {
+      if (typeof destroyCallback === 'function') {
+        try { destroyCallback(); } catch (e) {}
+        destroyCallback = null;
+      }
       overlay.remove();
       modal.remove();
       this.layers = this.layers.filter(l => l !== layer);
@@ -192,7 +197,8 @@ class GlobalModal extends HTMLElement {
       content: contentWrapper,
       close: closeLayer,
       isClosing: false,
-      setAudio: (audio) => { audioInstance = audio; }
+      setAudio: (audio) => { audioInstance = audio; },
+      onDestroy: (fn) => { destroyCallback = fn; }
     };
 
     this.layers.push(layer);
@@ -701,75 +707,111 @@ class GlobalModal extends HTMLElement {
   async share(title, excerpt, url, date) {
     // 1. 显示加载中
     const layer = this.open({
-      className: 'modal share-modal', // 设置特定样式
+      className: 'modal share-modal',
       content: `
-        <div style="padding: 20px;">
-          <div class="ai-loading-spinner" style="margin: 0 auto 10px;"></div>
-          <p style="font-size:14px; color:var(--word-color)">正在生成分享卡片...</p>
+        <div class="share-loading-state">
+          <div class="ai-loading-spinner"></div>
+          <p style="margin: 0; font-size: 14px; color: var(--word-color);">正在生成分享卡片...</p>
         </div>
       `
     });
 
-    // 2. 创建用于生成的 DOM 结构
-    // 移除旧的容器（如果存在）
+    // 2. 创建用于生成的 DOM 结构（保留原有图片内容结构）
     const oldContainer = document.getElementById('share-card-container');
     if (oldContainer) oldContainer.remove();
 
     const container = document.createElement('div');
     container.id = 'share-card-container';
-    
-    // 截取摘要，限制字数
-    const cleanExcerpt = excerpt.replace(/[\r\n]/g, '').substring(0, 120) + '...';
-    // 确保 URL 是绝对路径
-    const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
-    // 二维码 API (使用 cors 代理或支持 cors 的 api)
+
+    const safeTitle = (title || '未命名文章').trim();
+    const safeDate = (date || '').trim();
+    const rawExcerpt = (excerpt || '').replace(/\s+/g, ' ').trim();
+    const cleanExcerpt = rawExcerpt.length > 120
+      ? rawExcerpt.substring(0, 120) + '...'
+      : (rawExcerpt ? rawExcerpt + '...' : safeTitle);
+
+    const fullUrl = url && url.startsWith('http') ? url : window.location.origin + (url || window.location.pathname);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
 
     container.innerHTML = `
-      <div class="share-card-title">${title}</div>
-      <div class="share-card-date">${date}</div>
-      <div class="share-card-excerpt">${cleanExcerpt}</div>
+      <div class="share-card-title"></div>
+      <div class="share-card-date"></div>
+      <div class="share-card-excerpt"></div>
       <div class="share-card-footer">
         <div class="share-info">
           <span class="share-site-name">缎金SatinAu</span>
           <span class="share-site-url">satinau.cn</span>
         </div>
         <div class="share-qr">
-          <img src="${qrUrl}" crossOrigin="anonymous" alt="QR">
+          <img crossOrigin="anonymous" alt="QR">
         </div>
       </div>
     `;
+
+    container.querySelector('.share-card-title').textContent = safeTitle;
+    container.querySelector('.share-card-date').textContent = safeDate;
+    container.querySelector('.share-card-excerpt').textContent = cleanExcerpt;
     document.body.appendChild(container);
 
     try {
-      // 3. 等待二维码图片加载完成
+      // 3. 等待二维码图片加载完成（加入超时保护防止卡死）
       const qrImg = container.querySelector('.share-qr img');
       await new Promise((resolve) => {
-        if (qrImg.complete) resolve();
-        else {
-          qrImg.onload = resolve;
-          qrImg.onerror = () => resolve(); // 即使失败也继续生成
+        const timer = setTimeout(resolve, 4000);
+        qrImg.onload = () => { clearTimeout(timer); resolve(); };
+        qrImg.onerror = () => { clearTimeout(timer); resolve(); };
+        qrImg.src = qrUrl;
+        if (qrImg.complete && qrImg.naturalWidth > 0) {
+          clearTimeout(timer);
+          resolve();
         }
       });
 
-      // 4. 使用 html2canvas 生成图片
+      // 4. 使用 html2canvas 生成高清图片（锁定 375px 宽度并归零滚动偏移，避免页面滚动导致裁切或尺寸异常）
       if (!window.html2canvas) throw new Error("组件未加载");
 
       const canvas = await html2canvas(container, {
-        useCORS: true, // 允许跨域图片
-        scale: 2, // 高清
+        useCORS: true,
+        allowTaint: false,
+        scale: 2,
+        width: 375,
+        windowWidth: 375,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
         backgroundColor: '#ffffff'
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      // 转换为 Blob URL，使自定义右键菜单和浏览器原生菜单均可识别、新标签页打开并下载
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      const imgUrl = blob ? URL.createObjectURL(blob) : canvas.toDataURL('image/png');
+
+      if (blob && typeof layer.onDestroy === 'function') {
+        layer.onDestroy(() => URL.revokeObjectURL(imgUrl));
+      }
+
+      // 预解码生成的图片，确保插入弹窗时尺寸一步到位
+      await new Promise((resolve) => {
+        const preImg = new Image();
+        preImg.onload = resolve;
+        preImg.onerror = resolve;
+        preImg.src = imgUrl;
+      });
+
+      if (layer.isClosing) return;
+
+      const fileSafeTitle = safeTitle.replace(/[\\/:*?"<>|]/g, '_').slice(0, 50) || '文章分享';
+      const downloadFileName = `缎金SatinAu-${fileSafeTitle}.png`;
 
       // 5. 更新弹窗内容
       layer.content.innerHTML = `
-        <img src="${imgData}" class="generated-share-img" alt="Share Card">
-        <p style="font-size:12px; color:#888; margin-bottom:12px;">长按图片保存或分享</p>
+        <img src="${imgUrl}" class="generated-share-img" alt="Share Card" data-download-name="${downloadFileName}">
+        <p class="share-tip-text">右键或长按图片可保存，也可使用下方按钮</p>
         <div class="share-actions">
-          <button id="shareCopyLink" class="confirm" style="background:var(--primary-color); color:#fff; border:none; border-radius:10px; padding:10px; cursor:pointer;">复制链接</button>
-          <button id="shareClose" class="cancel" style="background:rgba(128,128,128,0.2); color:var(--word-color); border:none; border-radius:10px; padding:10px; cursor:pointer;">关闭</button>
+          <button id="shareDownloadImg" class="primary-btn" type="button">保存图片</button>
+          <button id="shareCopyLink" class="secondary-btn" type="button">复制链接</button>
+          <button id="shareClose" class="cancel-btn" type="button">关闭</button>
         </div>
       `;
 
@@ -778,13 +820,25 @@ class GlobalModal extends HTMLElement {
       layer.modal.querySelector('#shareCopyLink').onclick = () => {
         this.copyToClipboard(fullUrl);
       };
+      layer.modal.querySelector('#shareDownloadImg').onclick = () => {
+        const a = document.createElement('a');
+        a.href = imgUrl;
+        a.download = downloadFileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        this.showToast('💾 已开始下载分享卡片');
+      };
 
     } catch (err) {
       console.error("生成分享图失败:", err);
-      layer.content.innerHTML = `<p style="padding:20px;">生成失败，请刷新重试</p>`;
-      setTimeout(layer.close, 2000);
+      if (!layer.isClosing) {
+        layer.content.innerHTML = `<p style="padding:20px; margin:0;">生成失败，请刷新重试</p>`;
+        setTimeout(layer.close, 2000);
+      }
     } finally {
-      // 清理 DOM
+      // 清理临时 DOM
       container.remove();
     }
   }

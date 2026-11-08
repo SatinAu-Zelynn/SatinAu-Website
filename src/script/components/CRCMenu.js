@@ -32,6 +32,7 @@ class CustomRightClickMenu extends HTMLElement {
         this.contextMenuX = 0;
         this.contextMenuY = 0;
         this.currentImageUrl = null;
+        this.currentImageElement = null;
         this.currentLinkUrl = null;
         this.selectedText = '';
         this.isMenuVisible = false;
@@ -79,7 +80,7 @@ class CustomRightClickMenu extends HTMLElement {
           border-radius: 12px;
           box-shadow: var(--menu-shadow);
           padding: 0.5rem 0;
-          z-index: 9989;
+          z-index: 10010;
           min-width: 180px;
           white-space: var(--menu-white-space);
           transition: all var(--transition-speed) ease-out;
@@ -110,7 +111,7 @@ class CustomRightClickMenu extends HTMLElement {
           white-space: var(--menu-white-space);
           backdrop-filter: var(--menu-backdrop);
           border: var(--menu-border);
-          z-index: 9990;
+          z-index: 10011;
           pointer-events: none;
           contain: layout paint;
           user-select: none;
@@ -284,6 +285,7 @@ class CustomRightClickMenu extends HTMLElement {
         this.selectedText = window.getSelection().toString();
         this.currentLinkUrl = this.getCurrentLink(e.target);
         this.currentImageUrl = this.getCurrentImage(e.target);
+        this.currentImageElement = e.target?.closest ? e.target.closest('img') : null;
         this.contextMenuX = e.clientX;
         this.contextMenuY = e.clientY;
 
@@ -291,6 +293,7 @@ class CustomRightClickMenu extends HTMLElement {
             selectedText: this.selectedText,
             currentLinkUrl: this.currentLinkUrl,
             currentImageUrl: this.currentImageUrl,
+            currentImageElement: this.currentImageElement,
             isInputFocused: this.focusedElementBeforeMenu &&
                 (this.focusedElementBeforeMenu.tagName === 'INPUT' ||
                     this.focusedElementBeforeMenu.tagName === 'TEXTAREA' ||
@@ -781,6 +784,7 @@ class CustomRightClickMenu extends HTMLElement {
             this.isMenuVisible = false;
             this.currentLinkUrl = null;
             this.currentImageUrl = null;
+            this.currentImageElement = null;
             this.selectedText = '';
             this.hideMenuTimer = null;
         }, 150);
@@ -876,7 +880,73 @@ const backToHomeAction = () => {
     window.location.href = '/';
 };
 const openImageInNewTabAction = (ctx) => {
-    if (ctx.currentImageUrl) window.open(ctx.currentImageUrl, '_blank');
+    const imageUrl = ctx.currentImageUrl;
+    if (!imageUrl) return;
+    if (imageUrl.startsWith('data:')) {
+        fetch(imageUrl)
+            .then((res) => res.blob())
+            .then((blob) => {
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            })
+            .catch(() => window.open(imageUrl, '_blank'));
+        return;
+    }
+    window.open(imageUrl, '_blank');
+};
+const downloadImageAction = async (ctx) => {
+    const imageUrl = ctx.currentImageUrl;
+    if (!imageUrl) return;
+
+    const imgEl = ctx.currentImageElement;
+    const customName = imgEl?.getAttribute('data-download-name') || '';
+
+    const deriveFileName = (mimeType = 'image/png') => {
+        if (customName) return customName;
+        const ext = (mimeType.split('/')[1] || 'png').replace('jpeg', 'jpg').split('+')[0];
+        if (!imageUrl.startsWith('data:') && !imageUrl.startsWith('blob:')) {
+            try {
+                const urlObj = new URL(imageUrl, window.location.href);
+                const base = decodeURIComponent(urlObj.pathname.split('/').pop() || '');
+                if (base && /\.[a-zA-Z0-9]{2,5}$/.test(base)) {
+                    return base;
+                }
+            } catch {
+                // ignore URL parse error
+            }
+        }
+        return `SatinAu-image-${Date.now()}.${ext}`;
+    };
+
+    const triggerDownload = (href, filename) => {
+        const a = document.createElement('a');
+        a.href = href;
+        a.download = filename;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    if (imageUrl.startsWith('blob:') || imageUrl.startsWith('data:')) {
+        triggerDownload(imageUrl, deriveFileName('image/png'));
+        showToast('💾 已触发图片下载');
+        return;
+    }
+
+    try {
+        const response = await fetch(imageUrl, { mode: 'cors' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        triggerDownload(objectUrl, deriveFileName(blob.type || 'image/png'));
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+        showToast('💾 已触发图片下载');
+    } catch {
+        triggerDownload(imageUrl, deriveFileName('image/png'));
+        showToast('💾 已触发图片下载');
+    }
 };
 const copyImageUrlAction = (ctx) => {
     if (ctx.currentImageUrl) {
@@ -1062,7 +1132,15 @@ const createRightClickMenu = () => {
                         // fa-external-link
                         icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M320 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l82.7 0L201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L448 109.3l0 82.7c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160c0-17.7-14.3-32-32-32L320 0zM80 32C35.8 32 0 67.8 0 112L0 432c0 44.2 35.8 80 80 80l320 0c44.2 0 80-35.8 80-80l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 112c0 8.8-7.2 16-16 16L80 448c-8.8 0-16-7.2-16-16l0-320c0-8.8 7.2-16 16-16l112 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 32z"/></svg>',
                         callback: openImageInNewTabAction,
-                        context: (ctx) => !!ctx.currentImageUrl && !ctx.currentImageUrl.startsWith('data:')
+                        context: (ctx) => !!ctx.currentImageUrl
+                    },
+                    {
+                        id: 'download-image',
+                        label: '下载图片',
+                        // fa-download
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 242.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7 288 32zM64 352c-35.3 0-64 28.7-64 64l0 32c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-32c0-35.3-28.7-64-64-64l-101.5 0-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352 64 352zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"/></svg>',
+                        callback: downloadImageAction,
+                        context: (ctx) => !!ctx.currentImageUrl
                     },
                     {
                         id: 'copy-image-link',
@@ -1070,7 +1148,7 @@ const createRightClickMenu = () => {
                         // fa-link
                         icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" transform="scale(1.2)"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc. --><path d="M579.8 267.7c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114L422.3 334.8c-31.5 31.5-82.5 31.5-114 0c-27.9-27.9-31.5-71.8-8.6-103.8l1.1-1.6c10.3-14.4 6.9-34.4-7.4-44.6s-34.4-6.9-44.6 7.4l-1.1 1.6C206.5 251.2 213 330 263 380c56.5 56.5 148 56.5 204.5 0L579.8 267.7zM60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5L217.7 177.2c31.5-31.5 82.5-31.5 114 0c27.9 27.9 31.5 71.8 8.6 103.9l-1.1 1.6c-10.3 14.4-6.9 34.4 7.4 44.6s34.4 6.9 44.6-7.4l1.1-1.6C433.5 260.8 427 182 377 132c-56.5-56.5-148-56.5-204.5 0L60.2 244.3z"/></svg>',
                         callback: copyImageUrlAction,
-                        context: (ctx) => !!ctx.currentImageUrl && !ctx.currentImageUrl.startsWith('data:')
+                        context: (ctx) => !!ctx.currentImageUrl && !ctx.currentImageUrl.startsWith('data:') && !ctx.currentImageUrl.startsWith('blob:')
                     }
                 ]
             },

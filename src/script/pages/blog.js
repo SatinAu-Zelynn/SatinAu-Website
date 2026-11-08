@@ -682,11 +682,15 @@ function handleShare(e) {
      date = postDate.textContent.split('·')[0].trim();
   }
 
-  // 获取纯文本摘要
-  // 过滤掉 markdown 符号，只留前 100 字
-  let plainText = postContent ? postContent.innerText : '';
-  // 简单的清理逻辑，移除多余空行
-  plainText = plainText.replace(/\n+/g, ' ').trim(); 
+  // 获取纯文本摘要（排除 AI 摘要卡片和评论区内容）
+  let plainText = '';
+  if (postContent) {
+    const contentClone = postContent.cloneNode(true);
+    contentClone.querySelectorAll('.ai-summary-card, #comments-container, script, style').forEach(el => el.remove());
+    plainText = contentClone.innerText || contentClone.textContent || '';
+  }
+  // 清理多余空白与换行
+  plainText = plainText.replace(/\s+/g, ' ').trim(); 
 
   // 获取当前 URL
   const url = window.location.href;
