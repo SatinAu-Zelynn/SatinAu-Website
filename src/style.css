@@ -2236,10 +2236,28 @@ input:checked + .switch-slider {
   to { transform: translate(-50%, -50%) scale(1); }
 }
 
-/* ================= Viewer.js 自定义主题 ================= */
+/* ================= Viewer.js 自定义主题 (适配 v1.15.2) ================= */
+
+/* 打开图片时完全隐藏视口滚动条，同时保留 Viewer.js 计算的 padding-right 补偿避免页面向右跳动 */
+html.viewer-open,
+body.viewer-open,
+html:has(body.viewer-open) {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+html.viewer-open::-webkit-scrollbar,
+body.viewer-open::-webkit-scrollbar,
+html:has(body.viewer-open)::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
 
 /* 覆盖 Viewer.js 的全局背景和遮罩 */
 .viewer-container,
+.viewer-backdrop,
 .viewer-overlay {
   background: transparent !important;
 }
@@ -2251,7 +2269,7 @@ input:checked + .switch-slider {
   z-index: 9997 !important;
 }
 
-/* Viewer 画布容器 */
+/* Viewer 画布容器 - 作为全屏毛玻璃背景 */
 .viewer-canvas {
   background: light-dark(rgba(255, 255, 255, 0.3), rgba(30, 30, 30, 0.6));
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -2261,14 +2279,15 @@ input:checked + .switch-slider {
 }
 
 /* 图片主体 */
-.viewer-image {
-  border-radius:var(--border-radius-md);
+.viewer-image,
+.viewer-canvas > img {
+  border-radius: var(--border-radius-md);
   box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 16px rgba(255,255,255,0.1);
-  transition: transform 0.35s ease, filter 0.35s ease;
 }
 
 /* 图片加载动画 */
-.viewer-canvas.loading .viewer-image {
+.viewer-canvas.loading .viewer-image,
+.viewer-canvas.viewer-loading > img {
   opacity: 0;
   transform: scale(0.95) translateY(20px);
 }
@@ -2277,45 +2296,108 @@ input:checked + .switch-slider {
   transform: scale(1) translateY(0);
 }
 
-/* 工具栏 */
+/* 标题样式与位置适配 (v1.15.2 移除 .viewer-footer，根据下方组件情况精准定位) */
+.viewer-title {
+  color: var(--word-color) !important;
+  font-size: 13px;
+  line-height: 1.4;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  bottom: 20px;
+}
+
+/* 当工具栏在底部时 */
+.viewer-title.viewer-title-toolbar-bottom {
+  bottom: 76px !important;
+}
+
+/* 当缩略图栏在底部时 */
+.viewer-title.viewer-title-navbar-bottom {
+  bottom: 72px !important;
+}
+
+/* 当工具栏与缩略图栏均在底部时，标题置于工具栏上方 */
+.viewer-title.viewer-title-toolbar-bottom.viewer-title-navbar-bottom {
+  bottom: 128px !important;
+}
+
+/* 工具栏 (悬浮毛玻璃胶囊) */
 .viewer-toolbar {
   background: light-dark(rgba(255, 255, 255, 0.3), rgba(30, 30, 30, 0.5));
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
-  border-radius:var(--border-radius-md);
-  padding: 6px 10px;
+  border-radius: var(--border-radius-md);
+  padding: 6px 12px;
   box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.12);
   z-index: 2000;
   transition: background 0.3s ease;
-  width: 320px;
+  width: max-content;
+  width: -moz-fit-content;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
   margin: 0 auto;
+  bottom: 20px;
+}
+
+/* 当底部存在缩略图栏时，抬高工具栏避免重叠遮挡 */
+.viewer-toolbar.viewer-toolbar-navbar-bottom {
+  bottom: 72px !important;
 }
 
 :root[data-theme="light"] .viewer-toolbar > ul > li::before,
-:root[data-theme="light"] .viewer-button::before {
+:root[data-theme="light"] .viewer-button::before,
+:root[data-theme="light"] .viewer-navigation > .viewer-next::before,
+:root[data-theme="light"] .viewer-navigation > .viewer-prev::before {
   filter: invert(0.85);
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) .viewer-toolbar > ul > li::before,
-  :root:not([data-theme="dark"]) .viewer-button::before {
+  :root:not([data-theme="dark"]) .viewer-button::before,
+  :root:not([data-theme="dark"]) .viewer-navigation > .viewer-next::before,
+  :root:not([data-theme="dark"]) .viewer-navigation > .viewer-prev::before {
     filter: invert(0.85);
   }
 }
 
-.viewer-toolbar>ul {
+.viewer-toolbar > ul {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
   margin: 0 !important;
+  padding: 0 !important;
+  gap: 2px;
 }
 
-.viewer-toolbar>ul>li {
+.viewer-toolbar > ul > li {
+  float: none !important;
+  flex-shrink: 0;
+  margin-left: 0 !important;
   background-color: light-dark(rgba(255, 255, 255, 0.3), rgba(40, 40, 40, 0.3)) !important;
   border: 1px solid light-dark(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  cursor: var(--custom-cursor, pointer);
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
+.viewer-toolbar > ul > .viewer-large {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.viewer-toolbar > ul > li:hover {
+  background-color: light-dark(rgba(255, 255, 255, 0.5), rgba(60, 60, 60, 0.5)) !important;
+}
+
+/* 缩略图导航栏 */
 .viewer-navbar {
   background: none !important;
-  margin: 10px 0;
+  bottom: 10px !important;
+  margin: 0 !important;
+  height: 52px;
 }
 
 .viewer-list {
@@ -2326,10 +2408,29 @@ input:checked + .switch-slider {
   border-radius: 7px;
 }
 
-.viewer-list>li {
+.viewer-list > li {
   border-radius: 6px;
+  cursor: var(--custom-cursor, pointer);
 }
 
+/* 翻页导航按钮 (适配 v1.15+ 新增的 viewer-navigation) */
+.viewer-navigation > .viewer-next,
+.viewer-navigation > .viewer-prev {
+  background-color: light-dark(rgba(255, 255, 255, 0.4), rgba(40, 40, 40, 0.4)) !important;
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1)) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  cursor: var(--custom-cursor, pointer);
+  transition: all 0.3s ease;
+}
+
+.viewer-navigation > .viewer-next:hover,
+.viewer-navigation > .viewer-prev:hover {
+  background-color: light-dark(rgba(255, 255, 255, 0.7), rgba(60, 60, 60, 0.7)) !important;
+}
+
+/* 右上角关闭按钮 */
 .viewer-button.viewer-close {
   width: 44px;
   height: 44px;
@@ -2346,6 +2447,11 @@ input:checked + .switch-slider {
   align-items: center;
   justify-content: center;
   cursor: var(--custom-cursor, pointer);
+}
+
+.viewer-button.viewer-close:focus {
+  outline: 0;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
 
 .viewer-button.viewer-close::before {
@@ -2367,6 +2473,13 @@ input:checked + .switch-slider {
   transform: scale(0.9);
 }
 
+@media (max-width: 768px) {
+  .viewer-button.viewer-close {
+    top: 16px;
+    right: 16px;
+  }
+}
+
 .viewer-tooltip {
   background-color: light-dark(rgba(255,255,255,0.5), rgba(30,30,30,0.5)) !important;
   color: var(--word-color) !important;
@@ -2374,6 +2487,32 @@ input:checked + .switch-slider {
   backdrop-filter: blur(18px) saturate(180%);
   box-shadow: 0 8px 28px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
   border: 1px solid light-dark(rgba(255,255,255,0.25), rgba(60,60,60,0.25));
+}
+
+/* 全屏幻灯片播放器 (置于最顶层，覆盖所有控件与背景) */
+.viewer-player {
+  z-index: 2010 !important;
+}
+
+/* 播放幻灯片时隐藏标题、工具栏、缩略图栏、导航按钮、关闭按钮与提示框 */
+.viewer-container:has(.viewer-player.viewer-show) .viewer-title,
+.viewer-container:has(.viewer-player.viewer-show) .viewer-toolbar,
+.viewer-container:has(.viewer-player.viewer-show) .viewer-navbar,
+.viewer-container:has(.viewer-player.viewer-show) .viewer-button,
+.viewer-container:has(.viewer-player.viewer-show) .viewer-navigation,
+.viewer-container:has(.viewer-player.viewer-show) .viewer-tooltip,
+.viewer-container:has(.viewer-player.viewer-show) .viewer-magnifier,
+.viewer-container.viewer-playing .viewer-title,
+.viewer-container.viewer-playing .viewer-toolbar,
+.viewer-container.viewer-playing .viewer-navbar,
+.viewer-container.viewer-playing .viewer-button,
+.viewer-container.viewer-playing .viewer-navigation,
+.viewer-container.viewer-playing .viewer-tooltip,
+.viewer-container.viewer-playing .viewer-magnifier {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 /* 图片画廊样式 */

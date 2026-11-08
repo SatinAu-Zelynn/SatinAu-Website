@@ -3026,3 +3026,39 @@ function checkGlobalAuthStatus() {
 }
 
 document.addEventListener('DOMContentLoaded', checkGlobalAuthStatus);
+
+// 同步 Viewer.js 打开状态至 html 根节点以完全隐藏视口滚动条，同时保留并同步滚动条宽度补偿防止页面与固定导航栏抖动
+function syncViewerOpenToHtml() {
+  if (typeof Viewer === 'undefined' || !Viewer.prototype) return;
+  if (Viewer._htmlSyncPatched) return;
+  Viewer._htmlSyncPatched = true;
+
+  const origOpen = Viewer.prototype.open;
+  Viewer.prototype.open = function() {
+    // 重新测算滚动条真实宽度（应对初始化后动态加载内容导致页面高度变化的情况）
+    if (typeof this.initBody === 'function') {
+      this.initBody();
+    }
+    const scrollbarWidth = (typeof this.scrollbarWidth === 'number' && this.scrollbarWidth > 0)
+      ? this.scrollbarWidth
+      : Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+
+    if (origOpen) origOpen.call(this);
+    document.documentElement.classList.add('viewer-open');
+    if (scrollbarWidth > 0) {
+      document.documentElement.style.setProperty('--scrollbar-compensate', `${scrollbarWidth}px`);
+    }
+  };
+
+  const origClose = Viewer.prototype.close;
+  Viewer.prototype.close = function() {
+    if (origClose) origClose.call(this);
+    document.documentElement.classList.remove('viewer-open');
+    if (!window.globalModal || !window.globalModal.isScrollLocked) {
+      document.documentElement.style.removeProperty('--scrollbar-compensate');
+    }
+  };
+}
+
+syncViewerOpenToHtml();
+document.addEventListener('DOMContentLoaded', syncViewerOpenToHtml);

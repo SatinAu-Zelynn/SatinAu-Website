@@ -327,7 +327,13 @@ window.initMomentsPage = function() {
         },
         navbar: true,
         title: false,
-        transition: true
+        transition: true,
+        play: function() {
+            this.viewer?.classList.add('viewer-playing');
+        },
+        stop: function() {
+            this.viewer?.classList.remove('viewer-playing');
+        }
         });
         momentsViewers.push(v);
     });

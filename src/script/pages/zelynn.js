@@ -204,6 +204,12 @@ window.initZelynnPage = function() {
           transition: true,
           fullscreen: true,
           keyboard: true,
+          play: function() {
+            zelynnGalleryViewer?.viewer?.classList.add('viewer-playing');
+          },
+          stop: function() {
+            zelynnGalleryViewer?.viewer?.classList.remove('viewer-playing');
+          },
           // 当图片显示完成时触发
           viewed: function(event) {
             // 获取当前显示的原始图片元素

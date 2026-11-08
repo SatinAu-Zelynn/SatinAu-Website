@@ -1056,10 +1056,10 @@ function initImageViewer() {
                    !image.classList.contains('ai-icon');
         },
         title: function(img) {
-            const articleTitle = postTitle?.textContent;
-            const width = img.naturalWidth;
-            const height = img.naturalHeight;
-            return `${articleTitle} (${width} × ${height})`;
+            const articleTitle = postTitle?.textContent || img?.alt || '';
+            const width = img.naturalWidth || (window.imageViewer && window.imageViewer.imageData ? window.imageViewer.imageData.naturalWidth : 0);
+            const height = img.naturalHeight || (window.imageViewer && window.imageViewer.imageData ? window.imageViewer.imageData.naturalHeight : 0);
+            return width && height ? `${articleTitle} (${width} × ${height})` : articleTitle;
         },
         backdrop: true,
         toolbar: true,
@@ -1073,11 +1073,11 @@ function initImageViewer() {
         fullscreen: true,
         keyboard: true,
         className: 'viewer-custom',
-        beforeShow: function() {
-            document.body.style.overflow = 'hidden';
+        play: function() {
+            window.imageViewer?.viewer?.classList.add('viewer-playing');
         },
-        hidden: function() {
-            document.body.style.overflow = '';
+        stop: function() {
+            window.imageViewer?.viewer?.classList.remove('viewer-playing');
         }
     });
 }

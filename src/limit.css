@@ -130,11 +130,28 @@
     }
 }
 
+html.viewer-open,
+body.viewer-open,
+html:has(body.viewer-open) {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+html.viewer-open::-webkit-scrollbar,
+body.viewer-open::-webkit-scrollbar,
+html:has(body.viewer-open)::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .viewer-canvas {
   background-color: light-dark(rgba(0, 0, 0, 0.5), rgba(20, 20, 20, 0.5)) !important;
 }
 
-.viewer-toolbar, .viewer-list, .viewer-button.viewer-close {
+.viewer-toolbar, .viewer-list, .viewer-button.viewer-close,
+.viewer-navigation > .viewer-next, .viewer-navigation > .viewer-prev {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30));
 }
 
