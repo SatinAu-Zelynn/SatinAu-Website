@@ -4171,6 +4171,7 @@ iframe#webFrame {
 
 /* 关键修复：让 modal 内部的内容包装层承接 flex 列布局与高度约束 */
 .modal.settings-modal .modal-content-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -4179,16 +4180,52 @@ iframe#webFrame {
   overflow: hidden;
 }
 
-/* 浮窗固定头部 */
+/* 浮窗顶部渐进模糊叠加头部 */
 .settings-modal-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
-  background: light-dark(rgba(255, 255, 255, 0.4), rgba(20, 20, 20, 0.4));
-  flex-shrink: 0; /* 防止头部被压缩 */
+  padding: 16px 24px 28px;
+  background: transparent;
+  border-bottom: none;
   z-index: 10;
+  pointer-events: none;
+}
+
+/* 第一层渐进模糊（底层大范围轻度模糊过渡） */
+.settings-modal-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+}
+
+/* 第二层渐进模糊（顶层深度模糊过渡，纯模糊无底色遮罩） */
+.settings-modal-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: transparent;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 85%);
+}
+
+.settings-modal-title,
+.settings-modal-actions {
+  pointer-events: auto;
 }
 
 .settings-modal-actions {
@@ -4224,7 +4261,7 @@ iframe#webFrame {
   transform: scale(1.05);
 }
 
-/* 浮窗滚动内容区：限制在剩余高度内并允许滚动 */
+/* 浮窗滚动内容区：充满容器并从渐进模糊标题栏下方滚过 */
 .settings-modal-body {
   flex: 1 1 auto;
   min-height: 0; /* 关键：必须设置 min-height: 0 否则在 flex 容器内不会产生溢出滚动 */
@@ -4232,7 +4269,8 @@ iframe#webFrame {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain; /* 阻止向外层页面传递滚动链 */
-  padding: 20px 24px 60px; /* 底部预留充足留白，防止下拉菜单被遮挡 */
+  scroll-padding-top: 76px;
+  padding: 64px 24px 60px; /* 顶部预留叠加标题栏空间，底部预留充足留白防止下拉菜单被遮挡 */
 }
 
 .modal.settings-modal section {
@@ -4261,11 +4299,12 @@ iframe#webFrame {
   }
 
   .settings-modal-header {
-    padding: 14px 16px;
+    padding: 14px 16px 24px;
   }
 
   .settings-modal-body {
-    padding: 16px 16px 50px;
+    scroll-padding-top: 68px;
+    padding: 56px 16px 50px;
   }
 }
 
