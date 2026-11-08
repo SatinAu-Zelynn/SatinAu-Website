@@ -383,7 +383,7 @@ function showToast(msg) {
 
   function applyElementStyle(state, p) {
     const el = state.el;
-    if (el.closest('.disable-animation') || el.classList.contains('is-animating')) {
+    if (el.closest('.disable-animation')) {
       state.ty = 0;
       state.scale = 1;
       el.classList.remove('is-scroll-animating');
@@ -439,7 +439,7 @@ function showToast(msg) {
 
   function computeTargetProgress(state, vh, vw, scrollY, docScrollHeight) {
     const el = state.el;
-    if (el.closest('.disable-animation') || el.classList.contains('is-animating')) {
+    if (el.closest('.disable-animation')) {
       return 1;
     }
 

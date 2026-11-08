@@ -51,27 +51,57 @@ let currentPost = null;
 let activeCardElement = null; // 当前点击的卡片 DOM 元素
 let activeCardRect = null;    // 卡片点击时的位置尺寸信息
 let listScrollY = 0;
+let isHeroAnimating = false;
+let heroCleanupTimers = [];
+
+function clearHeroTimers() {
+    heroCleanupTimers.forEach(t => clearTimeout(t));
+    heroCleanupTimers = [];
+}
 
 window.cleanupBlogPage = function() {
+    clearHeroTimers();
+    isHeroAnimating = false;
     if (window.imageViewer) {
         window.imageViewer.destroy();
         window.imageViewer = null;
     }
     activeCardElement = null;
     activeCardRect = null;
-    document.body.classList.remove('hero-open');
+    document.body.classList.remove('hero-open', 'hero-list-leaving', 'hero-list-entering', 'list-restored-view');
     document.querySelectorAll('.hero-overlay').forEach(el => el.remove());
 };
 
-window.closeBlogPostToList = function() {
-    if (!postView || postView.style.display === 'none') return;
-    if (activeCardElement) {
+function findCardForPost(post) {
+    if (activeCardElement && activeCardElement.isConnected) {
+        return activeCardElement;
+    }
+    if (!listEl || !post || !post.title) return null;
+    const cards = listEl.querySelectorAll('.contact-card');
+    for (const card of cards) {
+        if (card.dataset.title === post.title) {
+            return card;
+        }
+    }
+    return null;
+}
+
+function closePostWithHero(pushHistory = true) {
+    if (isHeroAnimating) return;
+    const targetCard = findCardForPost(currentPost);
+    if (targetCard && postView && postView.style.display !== 'none') {
+        activeCardElement = targetCard;
         animateHeroClose(() => {
-            resetBlogView();
+            resetBlogView(pushHistory);
         });
     } else {
-        resetBlogView();
+        resetBlogView(pushHistory);
     }
+}
+
+window.closeBlogPostToList = function() {
+    if (!postView || postView.style.display === 'none') return;
+    closePostWithHero(true);
 };
 
 window.handleBlogPopState = function(event) {
@@ -87,21 +117,17 @@ window.handleBlogPopState = function(event) {
         const post = postCache.get(stateTitle) || 
                     postsData.find(p => p.title === stateTitle);
         if (post) {
-            loadPost(post);
+            const card = findCardForPost(post);
+            if (card && postView.style.display === 'none' && !isHeroAnimating) {
+                openPostWithHero(card, post, false);
+            } else {
+                loadPost(post);
+            }
         }
     } else {
         // 恢复默认页面 title
         document.title = "博客Blog - 缎金SatinAu";
-        
-        // 如果当前有激活的卡片（说明是从文章页退回来的），执行收缩动画
-        if (activeCardElement) {
-            animateHeroClose(() => {
-                resetBlogView();
-            });
-        } else {
-            // 否则直接重置视图（防止卡片消失）
-            resetBlogView();
-        }
+        closePostWithHero(false);
     }
 };
 
@@ -154,16 +180,10 @@ function initBlog() {
         }
     }
 
-    // 返回列表按钮事件 (保持之前的逻辑，它会调用 animateHeroClose)
+    // 返回列表按钮事件
     if (backToList && !backToList.dataset.bound) {
         backToList.addEventListener("click", () => {
-            if (activeCardElement) {
-                animateHeroClose(() => {
-                    resetBlogView();
-                });
-            } else {
-                resetBlogView();
-            }
+            closePostWithHero(true);
         });
         backToList.dataset.bound = "true";
     }
@@ -185,30 +205,34 @@ function initBlog() {
     }
 }
 
-function resetBlogView() {
+function resetBlogView(pushHistory = true) {
+    clearHeroTimers();
+    isHeroAnimating = false;
     document.title = "博客Blog - 缎金SatinAu";
     const header = document.querySelector('header');
     const searchContainer = document.querySelector('.search-container');
     const blogList = document.getElementById('blogList');
     const momentsCard = document.getElementById('momentsCard');
     
+    document.body.classList.add('list-restored-view');
     if (header) header.style.display = '';
     if (searchContainer) searchContainer.style.display = '';
     if (blogList) blogList.style.display = 'grid';
     if (momentsCard) momentsCard.style.display = '';
     
     postView.style.display = "none";
-    postView.classList.remove('hero-enter', 'show');
+    postView.classList.remove('hero-enter', 'hero-opening', 'hero-closing', 'show');
     
     // === 直接返回时也标记为已恢复，防止闪烁 ===
     listEl.classList.add('list-restored');
+    listEl.classList.remove('disable-animation');
     listEl.style.display = "grid";
 
-    // 清理 body 锁定
-    document.body.classList.remove('hero-open');
+    // 清理 body 锁定与替身
+    document.body.classList.remove('hero-open', 'hero-list-leaving', 'hero-list-entering');
+    document.querySelectorAll('.hero-overlay').forEach(el => el.remove());
     
     // === 确保所有卡片的隐藏状态被移除 ===
-    // 防止浏览器后退时卡片 opacity: 0
     document.querySelectorAll('.contact-card').forEach(card => {
         card.classList.remove('is-animating');
     });
@@ -222,13 +246,8 @@ function resetBlogView() {
         window.refreshScrollAnimations(true);
     }
     
-    // 只有在手动点击返回按钮时才 pushState，浏览器后退(popstate)不需要
-    // 这里需要根据调用来源区分，但简化起见，popstate 触发时通常 URL 已经变了
-    // 如果 URL 还是 blog.html，就不 push
-    if (!window.location.search) {
-       // 已经是列表页 URL，不做操作
-    } else {
-       history.pushState({}, "博客列表", "blog.html");
+    if (pushHistory && window.location.search) {
+        history.pushState({}, "博客列表", "blog.html");
     }
 
     activeCardElement = null;
@@ -268,7 +287,9 @@ return Promise.all([
     renderPostsList(postsData);
     
     // 隐藏加载状态，显示列表
-    listEl.style.display = "grid";
+    if (!postView || postView.style.display === 'none') {
+        listEl.style.display = "grid";
+    }
     
     // 如果没有文章，显示空状态
     if (posts.length === 0) {
@@ -293,7 +314,7 @@ return Promise.all([
 function renderPostsList(posts) {
 listEl.innerHTML = "";
 
-posts.forEach((post, index) => {
+posts.forEach((post) => {
     const card = document.createElement("a");
     card.className = "contact-card";
     if (post.cover) card.classList.add("has-cover");
@@ -314,264 +335,483 @@ posts.forEach((post, index) => {
     </div>
     `;
     
-    // 点击事件 - 增加动画逻辑
-    card.addEventListener("click", debounce((e) => {
-        // === 修复 Issue 2: 记录当前滚动位置 ===
-        listScrollY = window.scrollY;
-        
-        activeCardElement = card;
-        activeCardRect = card.getBoundingClientRect(); // 记录相对于视口的位置
-
-        currentPost = post;
-        postCache.set(post.title, post);
-        
-        // 锁定 body 防止滚动
-        document.body.classList.add('hero-open');
-
-        animateHeroOpen(card, post, () => {
-            const encodedTitle = encodeURIComponent(post.title);
-            history.pushState({ title: post.title }, post.title, `?title=${encodedTitle}`);
-            loadPost(post);
-        });
-    }, 300));
+    // 点击事件 - 立即触发连贯的 Hero 展开动画
+    card.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (isHeroAnimating) return;
+        openPostWithHero(card, post, true);
+    });
     
     listEl.appendChild(card);
 });
 }
 
-// Hero 展开动画逻辑
-function animateHeroOpen(card, post, onAnimationStart) {
-    // 创建替身元素 (Hero Overlay)
-    const overlay = document.createElement('div');
-    overlay.className = 'hero-overlay';
-    
-    // 设置初始位置（与卡片完全重合）
-    const rect = activeCardRect;
-    overlay.style.top = `${rect.top}px`;
-    overlay.style.left = `${rect.left}px`;
-    overlay.style.width = `${rect.width}px`;
-    overlay.style.height = `${rect.height}px`;
-    
-    // 填充内容以实现平滑过渡
-    overlay.innerHTML = `
-        <div class="text-container">
-            <div class="hero-title">${post.title}</div>
-            <div class="hero-date">${post.date}</div>
-        </div>
-    `;
-    
-    document.body.appendChild(overlay);
+function setPostHeaderMeta(title, dateStr, statsStr = '') {
+    if (postTitle) postTitle.textContent = title || '';
+    if (!postDate) return;
+    postDate.innerHTML = '';
+    const mainSpan = document.createElement('span');
+    mainSpan.className = 'post-date-main';
+    mainSpan.textContent = dateStr || '';
+    postDate.appendChild(mainSpan);
+    if (statsStr) {
+        const statsSpan = document.createElement('span');
+        statsSpan.className = 'post-date-stats';
+        statsSpan.textContent = ` · ${statsStr}`;
+        postDate.appendChild(statsSpan);
+    }
+}
 
-    // 隐藏原卡片
-    requestAnimationFrame(() => {
-        card.classList.add('is-animating');
-        
-        // 强制重绘后执行动画到全屏
-        requestAnimationFrame(() => {
-            overlay.classList.add('expanded');
-            
-            // 目标位置：全屏覆盖
-            overlay.style.top = '0px';
-            overlay.style.left = '0px';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            
-            // 回调：开始加载数据
-            if (onAnimationStart) onAnimationStart();
-            
-            // 动画结束后处理
-            setTimeout(() => {
-                // 显示真正的文章容器，但内容由 loadPost 控制 fade in
-                // 这里的 500ms 对应 CSS transition 时间
-                overlay.remove(); 
-            }, 500);
-        });
+function captureTextMetrics(el) {
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    const cs = window.getComputedStyle(el);
+    const fontSizeNum = parseFloat(cs.fontSize) || 15;
+    const lineHeightNum = parseFloat(cs.lineHeight) || fontSizeNum * 1.3;
+    const lines = Math.max(1, Math.round(rect.height / Math.max(1, lineHeightNum)));
+    return {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        fontSize: cs.fontSize,
+        fontSizeNum,
+        lineHeight: Number.isFinite(parseFloat(cs.lineHeight)) ? cs.lineHeight : `${(fontSizeNum * 1.3).toFixed(2)}px`,
+        lineHeightNum,
+        fontWeight: cs.fontWeight,
+        lines
+    };
+}
+
+function createFloatingTextElement(className, text, cardMetrics, headerMetrics, initialAtHeader) {
+    const el = document.createElement('div');
+    el.className = className;
+    if (!cardMetrics || !headerMetrics) {
+        el.textContent = text;
+        const m = headerMetrics || cardMetrics;
+        if (m) {
+            el.style.top = `${m.top}px`;
+            el.style.left = `${m.left}px`;
+            el.style.width = `${m.width + 2}px`;
+            el.style.fontSize = m.fontSize;
+            el.style.lineHeight = m.lineHeight;
+            el.style.fontWeight = m.fontWeight;
+        }
+        return el;
+    }
+
+    const scale = headerMetrics.fontSizeNum > 0 ? (cardMetrics.fontSizeNum / headerMetrics.fontSizeNum) : 1;
+    const singleLineBoth = cardMetrics.lines === 1 && headerMetrics.lines === 1;
+
+    el.style.top = `${headerMetrics.top}px`;
+    el.style.left = `${headerMetrics.left}px`;
+
+    if (singleLineBoth) {
+        const minWidthNeeded = scale > 0 ? (cardMetrics.width / scale) : headerMetrics.width;
+        el.textContent = text;
+        el.style.width = `${Math.max(headerMetrics.width, minWidthNeeded) + 4}px`;
+        el.style.fontSize = headerMetrics.fontSize;
+        el.style.lineHeight = headerMetrics.lineHeight;
+        el.style.fontWeight = headerMetrics.fontWeight;
+        el.style.whiteSpace = 'nowrap';
+    } else {
+        // 多行或跨行宽折行：使用双层等比 GPU 缩放与透明度融合，彻底避免飞行途中文字重排跳行
+        el.style.width = `${headerMetrics.width + 2}px`;
+        el.style.height = `${headerMetrics.height}px`;
+
+        const cardLayer = document.createElement('div');
+        cardLayer.className = 'hero-text-layer hero-layer-card';
+        cardLayer.textContent = text;
+        cardLayer.style.width = `${cardMetrics.width + 1}px`;
+        cardLayer.style.fontSize = cardMetrics.fontSize;
+        cardLayer.style.lineHeight = cardMetrics.lineHeight;
+        cardLayer.style.fontWeight = cardMetrics.fontWeight;
+        cardLayer.style.transform = `scale(${(scale > 0 ? (1 / scale) : 1).toFixed(4)})`;
+
+        const headerLayer = document.createElement('div');
+        headerLayer.className = 'hero-text-layer hero-layer-header';
+        headerLayer.textContent = text;
+        headerLayer.style.width = `${headerMetrics.width + 1}px`;
+        headerLayer.style.fontSize = headerMetrics.fontSize;
+        headerLayer.style.lineHeight = headerMetrics.lineHeight;
+        headerLayer.style.fontWeight = headerMetrics.fontWeight;
+        headerLayer.style.transform = 'scale(1)';
+
+        el.appendChild(cardLayer);
+        el.appendChild(headerLayer);
+    }
+
+    setFloatingTextState(el, cardMetrics, headerMetrics, initialAtHeader);
+    return el;
+}
+
+function setFloatingTextState(el, cardMetrics, headerMetrics, toHeader) {
+    if (!el || !cardMetrics || !headerMetrics) return;
+    const scale = headerMetrics.fontSizeNum > 0 ? (cardMetrics.fontSizeNum / headerMetrics.fontSizeNum) : 1;
+    const dx = cardMetrics.left - headerMetrics.left;
+    const dy = cardMetrics.top - headerMetrics.top;
+
+    el.style.transform = toHeader
+        ? 'translate3d(0px, 0px, 0) scale(1)'
+        : `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+
+    const cardLayer = el.querySelector('.hero-layer-card');
+    const headerLayer = el.querySelector('.hero-layer-header');
+    if (cardLayer && headerLayer) {
+        cardLayer.style.opacity = toHeader ? '0' : '1';
+        headerLayer.style.opacity = toHeader ? '1' : '0';
+    }
+}
+
+function fetchPostMarkdown(post, forceRefresh = false) {
+    if (!forceRefresh && postCache.has(post.file)) {
+        return Promise.resolve(postCache.get(post.file));
+    }
+    return fetch(`${getCdnBaseUrl()}/blog/${post.file}`).then(res => {
+        if (!res.ok) throw new Error("文章加载失败");
+        return res.text();
+    }).then(md => {
+        postCache.set(post.file, md);
+        return md;
     });
 }
 
-// Hero 收起动画逻辑
-function animateHeroClose(callback) {
-    // 创建全屏替身 (从当前全屏状态开始)
-    const overlay = document.createElement('div');
-    overlay.className = 'hero-overlay expanded';
-    overlay.style.top = '0px';
-    overlay.style.left = '0px';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    
-    const title = postTitle.textContent;
-    const dateText = postDate.textContent ? postDate.textContent.split('·')[0] : '';
-    
-    overlay.innerHTML = `
-        <div class="text-container" style="opacity: 0;">
-            <div class="hero-title">${title}</div>
-            <div class="hero-date">${dateText}</div>
-        </div>
-    `;
-    
-    document.body.appendChild(overlay);
-    
-    // 隐藏文章视图，恢复列表环境
-    postView.style.display = 'none';
-    
+function openPostWithHero(card, post, pushHistory = true) {
+    clearHeroTimers();
+    isHeroAnimating = true;
+    listScrollY = window.scrollY;
+    activeCardElement = card;
+    activeCardRect = card.getBoundingClientRect();
+    currentPost = post;
+    postCache.set(post.title, post);
+
+    if (pushHistory) {
+        const encodedTitle = encodeURIComponent(post.title);
+        history.pushState({ title: post.title }, post.title, `?title=${encodedTitle}`);
+    }
+
+    postError.style.display = "none";
+    postContent.innerHTML = "";
+
+    const mdPromise = fetchPostMarkdown(post, false);
+    let mdResult = null;
+    let mdError = null;
+    let heroRevealed = false;
+    let heroFinished = false;
+
+    mdPromise.then(md => {
+        mdResult = md;
+        if (heroRevealed && currentPost === post) {
+            renderPostBodyContent(post, md);
+            showLoading(false);
+        }
+    }).catch(err => {
+        mdError = err;
+        console.error("加载文章失败:", err);
+        if (heroRevealed && currentPost === post) {
+            showLoading(false);
+            postContent.innerHTML = "";
+            postError.style.display = "block";
+        }
+    });
+
+    animateHeroOpen(
+        card,
+        post,
+        // onRevealPostView: 在列表淡出后提前挂载文章容器，使返回按钮与正文在标题飞行后半程同步淡入
+        () => {
+            heroRevealed = true;
+            if (mdResult !== null) {
+                renderPostBodyContent(post, mdResult);
+            } else if (mdError) {
+                postContent.innerHTML = "";
+                postError.style.display = "block";
+            }
+        },
+        // onComplete: 标题替身精准落位至吸顶标题栏后无缝交接
+        () => {
+            heroFinished = true;
+            if (mdResult === null && !mdError) {
+                showLoading(true);
+            }
+        }
+    );
+}
+
+// Hero 展开动画逻辑：使卡片铺满全屏、标题与日期沿单一连续曲线移动至顶部吸顶标题栏
+function animateHeroOpen(card, post, onRevealPostView, onComplete) {
     const header = document.querySelector('header');
     const searchContainer = document.querySelector('.search-container');
-    const blogList = document.getElementById('blogList');
     const momentsCard = document.getElementById('momentsCard');
-    
+
+    // 1. 先标记卡片动画态以解除 :active 缩放，再测量卡片起点几何与排版属性
+    card.classList.add('is-animating');
+    const cardRect = card.getBoundingClientRect();
+    const cardTitleEl = card.querySelector('.value');
+    const cardDateEl = card.querySelector('.label');
+    const cardTitleMetrics = captureTextMetrics(cardTitleEl);
+    const cardDateMetrics = captureTextMetrics(cardDateEl);
+
+    // 2. 在动画启动前一次性完成文章视图切换与目标坐标测量，避免动画中途 DOM 重排顿挫
+    document.title = `${post.title} - 缎金SatinAu`;
+    setPostHeaderMeta(post.title, post.date);
+    if (header) header.style.display = 'none';
+    if (searchContainer) searchContainer.style.display = 'none';
+    if (momentsCard) momentsCard.style.display = 'none';
+    if (listEl) listEl.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+    if (errorState) errorState.style.display = 'none';
+
+    document.body.classList.remove('hero-list-entering', 'hero-list-leaving');
+    postView.classList.add('hero-enter', 'hero-opening', 'show');
+    postView.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    const headerTitleMetrics = captureTextMetrics(postTitle);
+    const dateMainEl = postDate.querySelector('.post-date-main') || postDate;
+    const headerDateMetrics = captureTextMetrics(dateMainEl);
+
+    if (onRevealPostView) onRevealPostView();
+
+    // 3. 构建分层 Hero 替身（背景卡片层 + 独立视口坐标系的标题与日期层）
+    document.querySelectorAll('.hero-overlay').forEach(el => el.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'hero-overlay';
+
+    const surface = document.createElement('div');
+    surface.className = 'hero-surface';
+    surface.style.top = `${cardRect.top}px`;
+    surface.style.left = `${cardRect.left}px`;
+    surface.style.width = `${cardRect.width}px`;
+    surface.style.height = `${cardRect.height}px`;
+    if (post.cover) {
+        const coverDiv = document.createElement('div');
+        coverDiv.className = 'card-cover';
+        coverDiv.style.backgroundImage = `url('${post.cover}')`;
+        surface.appendChild(coverDiv);
+    }
+
+    const floatingTitle = createFloatingTextElement(
+        'hero-floating-title',
+        post.title,
+        cardTitleMetrics,
+        headerTitleMetrics,
+        false
+    );
+    const floatingDate = createFloatingTextElement(
+        'hero-floating-date',
+        post.date,
+        cardDateMetrics,
+        headerDateMetrics,
+        false
+    );
+
+    overlay.appendChild(surface);
+    overlay.appendChild(floatingTitle);
+    overlay.appendChild(floatingDate);
+    document.body.appendChild(overlay);
+    document.body.classList.add('hero-open');
+
+    // 强制重排以确立初始状态
+    void overlay.offsetHeight;
+
+    // 4. 启动全程单一曲线的平滑展开与标题位移动画
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const vh = window.innerHeight;
+    requestAnimationFrame(() => {
+        overlay.classList.add('expanded');
+        surface.style.top = '0px';
+        surface.style.left = '0px';
+        surface.style.width = `${vw}px`;
+        surface.style.height = `${vh}px`;
+
+        setFloatingTextState(floatingTitle, cardTitleMetrics, headerTitleMetrics, true);
+        setFloatingTextState(floatingDate, cardDateMetrics, headerDateMetrics, true);
+    });
+
+    // 5. 动画结束，无缝交接给吸顶标题栏并移除替身
+    heroCleanupTimers.push(setTimeout(() => {
+        postView.classList.remove('hero-opening');
+        overlay.remove();
+        document.body.classList.remove('hero-open');
+        isHeroAnimating = false;
+        if (onComplete) onComplete();
+    }, 510));
+}
+
+// Hero 收起动画逻辑：一次性切换至列表布局并沿单一连续曲线从全屏与顶部吸顶栏飞回对应卡片
+function animateHeroClose(callback) {
+    clearHeroTimers();
+    isHeroAnimating = true;
+
+    const headerTitleMetrics = captureTextMetrics(postTitle);
+    const dateMainEl = postDate.querySelector('.post-date-main') || postDate;
+    const headerDateMetrics = captureTextMetrics(dateMainEl);
+    const titleText = postTitle.textContent || (currentPost ? currentPost.title : '');
+    const dateText = dateMainEl.textContent ? dateMainEl.textContent.split('·')[0].trim() : (currentPost ? currentPost.date : '');
+    const coverUrl = currentPost && currentPost.cover ? currentPost.cover : null;
+
+    // 1. 在动画启动前一次性完成列表布局挂载、滚动恢复与坐标测量，杜绝动画中途切换 DOM 造成的停顿感
+    const header = document.querySelector('header');
+    const searchContainer = document.querySelector('.search-container');
+    const momentsCard = document.getElementById('momentsCard');
+
+    document.body.classList.add('list-restored-view', 'hero-list-entering');
+    postView.style.display = 'none';
+    postView.classList.remove('hero-enter', 'hero-opening', 'hero-closing', 'show');
+
     if (header) header.style.display = '';
     if (searchContainer) searchContainer.style.display = '';
     if (momentsCard) momentsCard.style.display = '';
-    
-    // === 标记列表为“已恢复”状态 ===
-    // 这会让 CSS 跳过 staggerFade 动画，直接显示卡片
     listEl.classList.add('list-restored');
+    listEl.style.display = 'grid';
 
-    // 禁止动画（用于过渡期间的绝对静止）
-    listEl.classList.add('disable-animation');
-    listEl.style.display = "grid";
+    const targetCard = findCardForPost(currentPost);
+    if (targetCard) {
+        activeCardElement = targetCard;
+        targetCard.classList.add('is-animating');
+    }
 
-    // 恢复滚动位置
-    window.scrollTo(0, listScrollY);
-    
-    // 解锁 body 滚动
-    document.body.classList.remove('hero-open');
-
-    // === 强制浏览器重排 (Force Reflow) ===
-    // 这行代码迫使浏览器立刻计算布局，确保卡片回到了正确位置，且没有动画干扰
-    void listEl.offsetHeight; 
+    window.scrollTo({ top: listScrollY, behavior: 'instant' });
+    void listEl.offsetHeight;
 
     if (typeof window.refreshScrollAnimations === 'function') {
         window.refreshScrollAnimations(true);
     }
 
-    // 重新计算目标位置
-    // 此时卡片是静止的，获取的坐标是 100% 准确的
-    let targetRect = activeCardRect; 
-    if (activeCardElement) {
-        targetRect = activeCardElement.getBoundingClientRect();
+    let targetCardRect = targetCard ? targetCard.getBoundingClientRect() : activeCardRect;
+    // 若目标卡片不在当前视口清晰区（如通过直链访问文章后返回，或卡片过于贴近视口边缘），自动将列表定位至卡片居中处
+    if (targetCard && targetCardRect && (targetCardRect.bottom < 60 || targetCardRect.top > window.innerHeight * 0.72)) {
+        const centeredScrollY = Math.max(0, window.scrollY + targetCardRect.top - (window.innerHeight - targetCardRect.height) * 0.42);
+        listScrollY = centeredScrollY;
+        window.scrollTo({ top: centeredScrollY, behavior: 'instant' });
+        void listEl.offsetHeight;
+        if (typeof window.refreshScrollAnimations === 'function') {
+            window.refreshScrollAnimations(true);
+        }
+        targetCardRect = targetCard.getBoundingClientRect();
     }
 
-    // 执行收缩动画
-    requestAnimationFrame(() => {
-        // 移除 expanded 类，触发 CSS transition
-        overlay.classList.remove('expanded');
-        
-        const textContainer = overlay.querySelector('.text-container');
-        if (textContainer) textContainer.style.opacity = '1';
+    const cardTitleEl = targetCard ? targetCard.querySelector('.value') : null;
+    const cardDateEl = targetCard ? targetCard.querySelector('.label') : null;
+    const cardTitleMetrics = captureTextMetrics(cardTitleEl);
+    const cardDateMetrics = captureTextMetrics(cardDateEl);
 
-        // 飞回目标位置
-        // 增加容错：如果 targetRect 异常，淡出销毁
-        if (!targetRect || targetRect.width === 0) {
-             overlay.style.opacity = 0;
+    // 2. 构建分层 Hero 替身：卡片表面从全屏缩回目标卡片，标题与日期从吸顶栏飞回目标卡片
+    document.querySelectorAll('.hero-overlay').forEach(el => el.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'hero-overlay expanded';
+
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const vh = window.innerHeight;
+    const surface = document.createElement('div');
+    surface.className = 'hero-surface';
+    surface.style.top = '0px';
+    surface.style.left = '0px';
+    surface.style.width = `${vw}px`;
+    surface.style.height = `${vh}px`;
+    if (coverUrl) {
+        const coverDiv = document.createElement('div');
+        coverDiv.className = 'card-cover';
+        coverDiv.style.backgroundImage = `url('${coverUrl}')`;
+        surface.appendChild(coverDiv);
+    }
+
+    const floatingTitle = createFloatingTextElement(
+        'hero-floating-title',
+        titleText,
+        cardTitleMetrics,
+        headerTitleMetrics,
+        true
+    );
+    const floatingDate = createFloatingTextElement(
+        'hero-floating-date',
+        dateText,
+        cardDateMetrics,
+        headerDateMetrics,
+        true
+    );
+
+    overlay.appendChild(surface);
+    overlay.appendChild(floatingTitle);
+    overlay.appendChild(floatingDate);
+    document.body.appendChild(overlay);
+    document.body.classList.add('hero-open');
+
+    void overlay.offsetHeight;
+
+    // 3. 启动全程单一曲线（0.5s cubic-bezier(0.22, 1, 0.36, 1)）的缩回与标题飞回动画
+    requestAnimationFrame(() => {
+        overlay.classList.remove('expanded');
+
+        if (!targetCardRect || targetCardRect.width === 0) {
+            surface.style.opacity = '0';
         } else {
-            overlay.style.top = `${targetRect.top}px`;
-            overlay.style.left = `${targetRect.left}px`;
-            overlay.style.width = `${targetRect.width}px`;
-            overlay.style.height = `${targetRect.height}px`;
+            surface.style.top = `${targetCardRect.top}px`;
+            surface.style.left = `${targetCardRect.left}px`;
+            surface.style.width = `${targetCardRect.width}px`;
+            surface.style.height = `${targetCardRect.height}px`;
         }
 
-        // 动画结束后清理
-        setTimeout(() => {
-            // 移除替身
-            overlay.remove();
-            
-            if (activeCardElement) {
-                activeCardElement.classList.remove('is-animating');
-            }
-            
-            // 移除“禁止动画”锁，恢复鼠标 Hover 效果
-            // 注意：此时 .list-restored 依然保留，所以不会触发进场动画
-            requestAnimationFrame(() => {
-                listEl.classList.remove('disable-animation');
-                if (typeof window.refreshScrollAnimations === 'function') {
-                    window.refreshScrollAnimations(true);
-                }
-            });
-
-            if (callback) callback();
-        }, 500);
+        setFloatingTextState(floatingTitle, cardTitleMetrics, headerTitleMetrics, false);
+        setFloatingTextState(floatingDate, cardDateMetrics, headerDateMetrics, false);
     });
+
+    // 4. 替身精准落位至目标卡片后无缝交接
+    heroCleanupTimers.push(setTimeout(() => {
+        if (activeCardElement) {
+            activeCardElement.classList.remove('is-animating');
+        }
+        overlay.remove();
+        document.body.classList.remove('hero-open', 'hero-list-entering');
+        isHeroAnimating = false;
+
+        if (callback) callback();
+    }, 510));
 }
 
-// 加载单篇文章
+// 加载单篇文章（用于直链访问或重试）
 function loadPost(post, forceRefresh = false) {
-currentPost = post;
-postError.style.display = "none";
-postContent.innerHTML = "";
+    currentPost = post;
+    postError.style.display = "none";
+    postContent.innerHTML = "";
 
-// 显示加载动画
-showLoading(true);
+    showLoading(true);
 
-// 检查缓存
-if (!forceRefresh && postCache.has(post.file)) {
-    // 稍微延迟渲染，等待 Hero 动画遮盖住屏幕
-    setTimeout(() => {
-        renderPost(post, postCache.get(post.file));
-    }, 300); // 稍微延迟一点点，让 Hero 动画先跑起来，体验更流畅
-    return;
+    fetchPostMarkdown(post, forceRefresh)
+        .then(md => {
+            renderPost(post, md);
+        })
+        .catch(err => {
+            console.error("加载文章失败:", err);
+            showLoading(false);
+            postContent.innerHTML = "";
+            postError.style.display = "block";
+            postView.style.display = "block";
+            const header = document.querySelector('header');
+            const searchContainer = document.querySelector('.search-container');
+            const blogList = document.getElementById('blogList');
+            const momentsCard = document.getElementById('momentsCard');
+            if (header) header.style.display = 'none';
+            if (searchContainer) searchContainer.style.display = 'none';
+            if (blogList) blogList.style.display = 'none';
+            if (momentsCard) momentsCard.style.display = 'none';
+            setPostHeaderMeta(post.title, post.date);
+        });
 }
 
-// 从网络加载
-fetch(`${getCdnBaseUrl()}/blog/${post.file}`)
-    .then(res => {
-        if (!res.ok) throw new Error("文章加载失败");
-        return res.text();
-    })
-    .then(md => {
-        postCache.set(post.file, md);
-        renderPost(post, md);
-    })
-    .catch(err => {
-        console.error("加载文章失败:", err);
-        showLoading(false);
-        postContent.innerHTML = "";
-        postError.style.display = "block";
-        // 如果出错，也要显示视图容器以便显示错误信息
-        postView.style.display = "block";
-        // 隐藏列表等
-        const header = document.querySelector('header');
-        const searchContainer = document.querySelector('.search-container');
-        const blogList = document.getElementById('blogList');
-        if (header) header.style.display = 'none';
-        if (searchContainer) searchContainer.style.display = 'none';
-        if (blogList) blogList.style.display = 'none';
-    });
-}
-
-// 渲染文章内容
-function renderPost(post, mdContent) {
-    document.title = `${post.title} - 缎金SatinAu`;
-    // 隐藏"最新文章"及其上方所有元素
-    const header = document.querySelector('header');
-    const searchContainer = document.querySelector('.search-container'); // 最新文章标题
-    const blogList = document.getElementById('blogList');
-    const emptyState = document.getElementById('emptyState');
-    const errorState = document.getElementById('errorState');
-    const momentsCard = document.getElementById('momentsCard');
-    
-    // 隐藏头部和列表区域
-    if (header) header.style.display = 'none';
-    if (searchContainer) searchContainer.style.display = 'none';
-    if (blogList) blogList.style.display = 'none';
-    if (momentsCard) momentsCard.style.display = 'none';
-    if (emptyState) emptyState.style.display = 'none';
-    if (errorState) errorState.style.display = 'none';
-
-    postTitle.textContent = post.title;
-    // 字数统计 & 阅读时间
+// 渲染文章正文及统计信息（供直链加载与 Hero 动画共用）
+function renderPostBodyContent(post, mdContent) {
     const stats = calculateReadingStats(mdContent);
-    postDate.textContent = `${post.date} · ${stats}`;
+    setPostHeaderMeta(post.title, post.date, stats);
 
-    // 优化Markdown渲染
     try {
         // 处理图片路径
         const processedMd = mdContent.replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, src) => {
-        // 如果是相对路径，添加前缀
-        if (!src.startsWith('http://') && !src.startsWith('https://')) {
-            return `![${alt}](blog/${src})`;
-        }
-        return match;
+            if (!src.startsWith('http://') && !src.startsWith('https://')) {
+                return `![${alt}](blog/${src})`;
+            }
+            return match;
         });
         
         postContent.innerHTML = marked.parse(processedMd);
@@ -580,46 +820,37 @@ function renderPost(post, mdContent) {
         postContent.querySelectorAll('table').forEach(table => {
             const wrapper = document.createElement('div');
             wrapper.className = 'table-wrapper';
-            // 将 wrapper 插入到 table 之前
             table.parentNode.insertBefore(wrapper, table);
-            // 将 table 移入 wrapper 内部
             wrapper.appendChild(table);
         });
 
-        // 创建容器
+        // 创建 AI 摘要容器
         const summaryContainer = document.createElement('div');
         summaryContainer.className = 'ai-summary-card';
-        summaryContainer.style.display = 'none'; // 默认隐藏
+        summaryContainer.style.display = 'none';
 
-        // 插入到文章最顶部
         if (postContent.firstChild) {
             postContent.insertBefore(summaryContainer, postContent.firstChild);
         } else {
             postContent.appendChild(summaryContainer);
         }
 
-        // 检查缓存 (避免重复请求)
-        // 使用 "ai_summary_" + 文章文件名作为 key
         const cacheKey = `ai_summary_${post.file}`;
         const cachedSummary = sessionStorage.getItem(cacheKey);
 
         if (cachedSummary) {
-            // 如果有缓存，直接显示结果
             renderAiSummary(summaryContainer, cachedSummary);
         } else {
-            // 如果没缓存，显示生成按钮
             renderGenerateButton(summaryContainer, mdContent, cacheKey);
         }
 
         // 创建评论区容器
         const commentContainer = document.createElement('div');
         commentContainer.id = 'comments-container';
-        commentContainer.style.marginTop = '40px'; // 增加顶部间距
+        commentContainer.style.marginTop = '40px';
         postContent.appendChild(commentContainer);
 
-        // 初始化评论系统
         if (typeof window.initPageComments === 'function') {
-            // 使用 post.file (文件名) 作为唯一的 page_id
             window.initPageComments('comments-container', post.file);
         } else {
             console.warn('Comment system not initialized: initPageComments missing');
@@ -633,46 +864,57 @@ function renderPost(post, mdContent) {
         
         // 处理链接跳转
         postContent.querySelectorAll('a').forEach(link => {
-        const href = link.getAttribute('href');
-        if (href && !href.startsWith('#') && 
-            !href.startsWith('http://') && 
-            !href.startsWith('https://')) {
-            link.setAttribute('href', `blog/${href}`);
-        }
-        
-        // 外部链接处理
-        if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-            link.setAttribute('target', '_blank');
-            link.setAttribute('rel', 'noopener noreferrer');
-            
-            // 对于iOS设备使用弹窗确认
-            link.addEventListener('click', (e) => {
-            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                e.preventDefault();
-                showIosAlert(href);
+            const href = link.getAttribute('href');
+            if (href && !href.startsWith('#') && 
+                !href.startsWith('http://') && 
+                !href.startsWith('https://')) {
+                link.setAttribute('href', `blog/${href}`);
             }
-            });
-        }
+            
+            if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                link.setAttribute('target', '_blank');
+                link.setAttribute('rel', 'noopener noreferrer');
+                
+                link.addEventListener('click', (e) => {
+                    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+                        e.preventDefault();
+                        showIosAlert(href);
+                    }
+                });
+            }
         });
     } catch (err) {
         console.error("Markdown渲染失败:", err);
         postContent.innerHTML = "<p>文章解析错误，请稍后重试</p>";
     }
+}
 
-    // 显示文章视图
-    listEl.style.display = "none";
-    postView.style.display = "block";
-
-    // 添加 hero-enter 类，配合 CSS 实现内容淡入 (替代原本的 BlurFadeUp)
-    postView.classList.add("hero-enter");
+// 渲染文章内容（直链打开或强制刷新）
+function renderPost(post, mdContent) {
+    document.title = `${post.title} - 缎金SatinAu`;
+    const header = document.querySelector('header');
+    const searchContainer = document.querySelector('.search-container');
+    const blogList = document.getElementById('blogList');
+    const emptyState = document.getElementById('emptyState');
+    const errorState = document.getElementById('errorState');
+    const momentsCard = document.getElementById('momentsCard');
     
-    // 稍微延迟让 display:block 生效，然后添加 show 触发淡入
-    requestAnimationFrame(() => {
-        postView.classList.add("show");
-    });
+    if (header) header.style.display = 'none';
+    if (searchContainer) searchContainer.style.display = 'none';
+    if (blogList) blogList.style.display = 'none';
+    if (momentsCard) momentsCard.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+    if (errorState) errorState.style.display = 'none';
+
+    renderPostBodyContent(post, mdContent);
+
+    listEl.style.display = "none";
+    postView.classList.remove("hero-opening");
+    postView.style.display = "block";
+    postView.classList.add("hero-enter", "show");
 
     showLoading(false);
-    window.scrollTo({ top: 0, behavior: 'instant' }); // 瞬间滚到顶部，避免动画时看到半截
+    window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 // 显示/隐藏加载动画
@@ -700,14 +942,7 @@ function initBlogButtons() {
 const backToListBtn = document.getElementById('backToListBtn');
 if (backToListBtn && !backToListBtn.dataset.bound) {
     backToListBtn.addEventListener('click', () => {
-            // 复用动画关闭逻辑
-        if (activeCardRect && activeCardElement) {
-            animateHeroClose(() => {
-                resetBlogView();
-            });
-        } else {
-            resetBlogView();
-        }
+        closePostWithHero(true);
     });
     backToListBtn.dataset.bound = "true";
 }

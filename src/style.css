@@ -432,7 +432,7 @@ body#zelynn-page .zelynn-top-grid .contact-wrapper {
 }
 
 /* 动画过程中的绝对静止（用于博客卡片展开/收起 Hero 过渡） */
-.contact-wrapper.disable-animation .contact-card {
+.contact-wrapper.disable-animation .contact-card:not(.is-animating) {
   animation: none !important;
   transition: none !important;
   opacity: 1 !important;
@@ -467,7 +467,7 @@ body#zelynn-page .zelynn-top-grid .contact-wrapper {
     }
   }
   
-  &:active { transform: scale(0.98) !important; }
+  &:active:not(.is-animating) { transform: scale(0.98) !important; }
 }
 
 .content-grid {
@@ -564,8 +564,8 @@ body#zelynn-page .zelynn-top-grid .contact-wrapper {
 }
 
 .text{display:flex;flex-direction:column;text-align:left;}
-.label{font-size:12px;color:light-dark(#666, #aaa);}
-.value{font-size:15px;font-weight:600;color:var(--word-color);}
+.label{font-size:12px;line-height:1.35;color:light-dark(#666, #aaa);}
+.value{font-size:15px;line-height:1.3;font-weight:600;color:var(--word-color);text-wrap:wrap;}
 
 /* 渐变 paw */
 .paw-pink   { background: linear-gradient(135deg, #ff9a9e, #fad0c4); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -1704,8 +1704,69 @@ body#index-page {
 }
 
 /* ======== 博客 Markdown 正文排版（轻量） ======== */
-.md-article { max-width: 860px; margin: 0 auto; text-align: left; 
-  .post-meta { margin-bottom: 18px; padding-top: 54px; }}
+html:has(body#blog-page) {
+  overflow-y: scroll;
+}
+
+.md-article {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: left;
+
+  .post-meta {
+    position: sticky;
+    top: 0;
+    z-index: 1900;
+    margin-top: -30px;
+    margin-bottom: 14px;
+    padding: max(14px, calc(env(safe-area-inset-top, 0px) + 10px)) 0 20px 44px;
+    box-sizing: border-box;
+
+    @media (min-width: 768px) {
+      padding: 88px 0 22px 0;
+    }
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: -18px;
+      left: 50%;
+      width: 100vw;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: -1;
+      transition: opacity 0.35s ease;
+    }
+
+    /* 第一层渐进模糊：底层大范围轻度模糊过渡 */
+    &::before {
+      backdrop-filter: blur(10px) saturate(160%);
+      -webkit-backdrop-filter: blur(10px) saturate(160%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+    }
+
+    /* 第二层渐进模糊：顶层深度毛玻璃与柔和底色承托 */
+    &::after {
+      background: light-dark(rgba(255, 255, 255, 0.58), rgba(20, 20, 20, 0.58));
+      backdrop-filter: blur(22px) saturate(190%);
+      -webkit-backdrop-filter: blur(22px) saturate(190%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.35) 76%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.35) 76%, transparent 100%);
+    }
+  }
+}
+
+.md-article #postTitle {
+  margin: 0 0 4px 0;
+  font-size: clamp(1.18rem, 3.6vw, 1.55rem);
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--word-color);
+  text-wrap: wrap;
+}
 
 /* 返回按钮样式 */
 .back-button {
@@ -1756,7 +1817,15 @@ body#index-page {
   }
 }
 
-.md-article .post-date { margin: 6px 0 16px; color: #666; font-size: clamp(0.8rem, 3vw, 1rem); }
+.md-article .post-date {
+  margin: 0;
+  color: light-dark(#666, #aaa);
+  font-size: clamp(0.78rem, 2.5vw, 0.92rem);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .md-body { font-size: clamp(0.8rem, 3vw, 1rem); line-height: 1.8; 
   h1, h2, h3, h4 { margin: 1.2em 0 0.6em; }
@@ -3553,8 +3622,8 @@ input:checked + .switch-slider {
 /* ========== Hero Animation (卡片放大转场) ========== */
 
 /* ========== 列表动画冲突 (强制静止) ========== */
-/* 当列表容器有 disable-animation 类时，强制所有卡片瞬间显示且无动画 */
-.contact-wrapper.disable-animation .contact-card {
+/* 当列表容器有 disable-animation 类时，强制非动画中卡片瞬间显示且无动画 */
+.contact-wrapper.disable-animation .contact-card:not(.is-animating) {
   animation: none !important;       /* 禁止关键帧动画 */
   transition: none !important;      /* 禁止过渡效果 */
   opacity: 1 !important;            /* 强制不透明 */
@@ -3562,89 +3631,160 @@ input:checked + .switch-slider {
   filter: none !important;          /* 去除模糊 */
 }
 
-/* Hero Overlay 基础样式微调 */
+/* Hero Overlay 容器与分层替身动画 */
 .hero-overlay {
   position: fixed;
-  z-index: 9000;
-  background: light-dark(rgba(255,255,255,0.5),rgba(30,30,30,0.5));
-  backdrop-filter: blur(28px) saturate(220%);
-  -webkit-backdrop-filter: blur(28px) saturate(220%);
-  border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
-  border-radius: var(--border-radius-lg);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.15);
-  transform-origin: top left;
+  inset: 0;
+  z-index: 2000;
   pointer-events: none;
   overflow: hidden;
-  
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  /* 确保收起状态下文字左对齐，与卡片一致 */
-  align-items: flex-start; 
-  /* 这里的 padding 对应卡片的 padding: 20px 18px */
-  padding: 20px 18px; 
+}
+
+.hero-surface {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.12));
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), inset 0 0 20px rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
-
-  transition: 
-    top 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    left 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.4s ease,
-    padding-top 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+  pointer-events: none;
+  will-change: top, left, width, height, border-radius, opacity;
+  transition:
+    top 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 替身层内的文字样式 */
-.hero-overlay .text-container {
-  opacity: 1;
-  transition: opacity 0.2s ease;
+.hero-surface .card-cover {
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.hero-overlay .hero-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--word-color);
-  margin-bottom: 4px;
-}
-.hero-overlay .hero-date {
-  font-size: 12px;
-  color: light-dark(#666, #aaa);
-}
-
-/* 确保 Hero 展开后的样式与上面完全一致，避免跳动 */
-.hero-overlay.expanded {
+.hero-overlay.expanded .hero-surface {
   border-radius: 0;
-  background: light-dark(rgba(255,255,255,0.5),rgba(30,30,30,0.5));
   box-shadow: none;
-  justify-content: flex-start;
-  /* 关键：必须与 #postView 的 padding-top 完全一致 */
-  padding-top: max(30px, calc(env(safe-area-inset-top) + 20px)) !important;
-  padding-left: 20px;
-  padding-right: 20px;
+  border-color: transparent;
+  opacity: 0;
 }
 
-/* 展开时隐藏替身层内的文字（因为文章页原本有标题） */
-.hero-overlay.expanded .text-container {
-  opacity: 0; 
+.hero-overlay.expanded .hero-surface .card-cover {
+  opacity: 0;
+  transform: scale(1.06);
 }
 
-/* 原卡片在动画时隐藏 */
-.contact-card.is-animating {
+/* 独立视口坐标系的文章标题与日期替身，基于纯 GPU transform/opacity 实现连贯位移与缩放 */
+.hero-floating-title,
+.hero-floating-date {
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  transform-origin: left top;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 2;
+  will-change: transform;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-floating-title {
+  color: var(--word-color);
+  text-wrap: wrap;
+}
+
+.hero-floating-date {
+  color: light-dark(#666, #aaa);
+  white-space: nowrap;
+}
+
+.hero-text-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  transform-origin: left top;
+  text-wrap: wrap;
+  will-change: opacity;
+  transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 原卡片在动画时隐藏（确保优先级高于 .disable-animation） */
+.contact-card.is-animating,
+.contact-wrapper.disable-animation .contact-card.is-animating {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 从文章返回列表后，避免页面顶部大标题重复播放首次进场的 1.2s 缩放动画 */
+body#blog-page.list-restored-view main.page > header {
+  animation: none;
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
+
+/* 列表退场与进场辅助过渡（与 Hero 全程使用同一 0.5s 曲线，无分段衔接停顿） */
+@keyframes heroListFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body.hero-list-entering main.page > header,
+body.hero-list-entering main.page .search-container,
+body.hero-list-entering main.page #momentsCard,
+body.hero-list-entering main.page #blogList {
+  animation: heroListFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Hero 展开进入文章页时：标题与日期由替身无缝交接，正文与返回按钮同步平滑淡入 */
+.md-article.hero-opening #postTitle,
+.md-article.hero-opening #postDate {
   opacity: 0 !important;
 }
 
-.md-article.hero-enter {
-  animation: none;
+.md-article.hero-opening .post-meta::before,
+.md-article.hero-opening .post-meta::after {
   opacity: 0;
-  transition: opacity 0.4s ease 0.3s; /* 延迟等待 Hero 动画完成 */
 }
-.md-article.hero-enter.show {
+
+.md-article.hero-enter > .post-meta > #postTitle,
+.md-article.hero-enter > .post-meta > #postDate {
+  animation: none !important;
   opacity: 1;
+  transform: none;
+}
+
+.md-article.hero-enter #backToList,
+.md-article.hero-enter > .md-body,
+.md-article.hero-enter > .post-actions-panel {
+  animation: blurFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.md-article .post-date-main,
+.md-article .post-date-stats {
+  display: inline-block;
+  vertical-align: top;
 }
 
 body.hero-open {
-  overflow: hidden; /* 锁住滚动条，防止动画期间用户乱滚 */
+  pointer-events: none;
 }
 
 /* 优化 Modal 基础样式，使其默认居中 */

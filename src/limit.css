@@ -83,7 +83,8 @@
   -webkit-backdrop-filter: none !important;
 }
 
-.settings-modal-header::before {
+.settings-modal-header::before,
+.md-article .post-meta::after {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
 }
 
@@ -95,7 +96,7 @@
 .setting-item, .setting-item-group, .mobile-more-menu,
 #loginBtn, #logoutBtn, .back-button, .post-actions .back-button,
 .satin-notify-card,
-.hero-overlay,
+.hero-surface,
 .live2d-menu {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
 }
