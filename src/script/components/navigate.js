@@ -106,6 +106,7 @@ class NavigateBar extends HTMLElement {
       <style>
         .more-btn-svg {
           fill: light-dark(#111, #f5f5f5);
+          transition: fill 0.2s ease;
         }
         .notify-btn-svg {
           stroke: light-dark(#111, #f5f5f5);

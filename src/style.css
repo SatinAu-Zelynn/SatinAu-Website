@@ -1158,7 +1158,7 @@ body#index-page {
   justify-content: center;
   padding: 0;
   margin: 0 0 -3px 8px;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, filter 0.2s ease;
 
   &:hover {
     transform: scale(1.08);
