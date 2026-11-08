@@ -53,7 +53,17 @@ window.showWeChatQR  = () => { toggleModal("wechatOverlay", true); toggleModal("
 window.closeWeChatQR = () => { toggleModal("wechatOverlay", false); toggleModal("wechatQR", false); };
 
 /* ========== 泽凌卡片背景轮播逻辑 ========== */
-document.addEventListener('DOMContentLoaded', function() {
+let indexBgInterval = null;
+
+window.cleanupIndexPage = function() {
+  if (indexBgInterval) {
+    clearInterval(indexBgInterval);
+    indexBgInterval = null;
+  }
+};
+
+window.initIndexPage = function() {
+  window.cleanupIndexPage();
   const zelynnBg = document.getElementById('zelynn-bg');
   if (!zelynnBg) return;
   
@@ -75,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 切换背景
   function changeBackground() {
-    if (images.length === 0) return;
+    if (images.length === 0 || !zelynnBg.isConnected) return;
     
     const imgInfo = images[currentIndex];
     const imgUrl = `${baseUrl}${imgInfo.filename}${imgExtension}`;
@@ -84,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const tempImg = new Image();
     tempImg.src = imgUrl;
     tempImg.onload = () => {
+      if (!zelynnBg.isConnected) return;
       zelynnBg.style.backgroundImage = `url('${imgUrl}')`;
       
       // 重置动画类以触发重新播放
@@ -105,18 +116,23 @@ document.addEventListener('DOMContentLoaded', function() {
   fetch(listUrl)
     .then(res => res.json())
     .then(data => {
+      if (!zelynnBg.isConnected) return;
       images = data;
       // 随机打乱顺序
       images.sort(() => Math.random() - 0.5);
 
       if (images.length > 0) {
         changeBackground(); // 立即显示
-        setInterval(changeBackground, 5000); // 5秒轮播
+        indexBgInterval = setInterval(changeBackground, 5000); // 5秒轮播
       }
     })
     .catch(err => {
       console.error('首页背景加载失败:', err);
       // 加载失败时的保底渐变色
-      zelynnBg.style.background = 'linear-gradient(135deg, #a18cd1, #fbc2eb)'; 
+      if (zelynnBg.isConnected) {
+        zelynnBg.style.background = 'linear-gradient(135deg, #a18cd1, #fbc2eb)'; 
+      }
     });
-});
+};
+
+document.addEventListener('DOMContentLoaded', window.initIndexPage);

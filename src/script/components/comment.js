@@ -18,9 +18,17 @@ const API_BASE = 'https://db.satinau.cn';
 
 let pollingInterval = null;
 
+window.cleanupPageComments = function() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+};
+
 // 为了让全局函数能获取 pageId
 const originalInit = window.initPageComments;
 window.initPageComments = async function(containerId, pageId) {
+    window.cleanupPageComments();
     window.currentPageId = pageId; // 保存全局变量
     
     const container = document.getElementById(containerId);
@@ -97,6 +105,7 @@ function checkLoginState() {
 async function loadComments(pageId) {
     const listEl = document.getElementById('commentList');
     const countEl = document.getElementById('commentCount');
+    if (!listEl || !countEl) return;
     
     try {
         // 构建请求头 (带 Token)
@@ -228,7 +237,11 @@ function bindEvents(pageId) {
     const loginBtn = document.getElementById('goToLoginBtn');
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
-            window.location.href = '/pages/account/login.html';
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('/pages/account/login.html');
+            } else {
+                window.location.href = '/pages/account/login.html';
+            }
         });
     }
 
@@ -239,6 +252,9 @@ function bindEvents(pageId) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user_info');
             checkLoginState();
+            if (typeof window.checkGlobalAuthStatus === 'function') {
+                window.checkGlobalAuthStatus();
+            }
         });
     }
 

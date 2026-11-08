@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ========== 登录页逻辑 ========== */
+window.initLoginPage = initLoginPage;
 function initLoginPage() {
     // 检查是否已登录，未过期才跳转
     const token = localStorage.getItem('auth_token');
@@ -37,7 +38,11 @@ function initLoginPage() {
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user_info');
             } else {
-                window.location.href = '/pages/account/index.html';
+                if (typeof window.navigateTo === 'function') {
+                    window.navigateTo('/pages/account/index.html', { replace: true });
+                } else {
+                    window.location.href = '/pages/account/index.html';
+                }
                 return;
             }
         } catch (e) {
@@ -49,9 +54,20 @@ function initLoginPage() {
     const tabs = document.querySelectorAll('#authTabControl button');
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
+    if (!loginForm || !registerForm) return;
+
+    // 若 Turnstile 脚本已在缓存中，为新注入的容器手动渲染人机验证组件
+    if (window.turnstile && typeof window.turnstile.render === 'function') {
+        document.querySelectorAll('.cf-turnstile').forEach(el => {
+            if (el.children.length === 0) {
+                try { window.turnstile.render(el); } catch (e) {}
+            }
+        });
+    }
 
     // 切换 Tab
     tabs.forEach(tab => {
+        if (tab.dataset.bound) return;
         tab.addEventListener('click', () => {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
@@ -64,9 +80,11 @@ function initLoginPage() {
                 registerForm.style.display = 'block';
             }
         });
+        tab.dataset.bound = "true";
     });
 
     // 处理登录
+    if (!loginForm.dataset.bound) {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = loginForm.querySelector('input[type="email"]').value;
@@ -99,10 +117,15 @@ function initLoginPage() {
             localStorage.setItem('auth_token', data.token);
             // 保存用户信息 (简单缓存)
             localStorage.setItem('user_info', JSON.stringify(data.user));
+            window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: data.user }));
 
             showToast('登录成功，正在跳转...');
             setTimeout(() => {
-                window.location.href = '/pages/account/index.html';
+                if (typeof window.navigateTo === 'function') {
+                    window.navigateTo('/pages/account/index.html');
+                } else {
+                    window.location.href = '/pages/account/index.html';
+                }
             }, 1000);
 
         } catch (err) {
@@ -111,8 +134,11 @@ function initLoginPage() {
             if (window.turnstile) window.turnstile.reset();
         }
     });
+    loginForm.dataset.bound = "true";
+    }
 
     // 处理注册
+    if (!registerForm.dataset.bound) {
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nickname = document.getElementById('reg-nickname').value;
@@ -158,9 +184,12 @@ function initLoginPage() {
             setLoading(btn, false);
         }
     });
+    registerForm.dataset.bound = "true";
+    }
 }
 
 /* ========== 个人中心逻辑 ========== */
+window.initProfilePage = initProfilePage;
 async function initProfilePage() {
     const token = localStorage.getItem('auth_token');
     let isTokenValid = false;
@@ -181,7 +210,11 @@ async function initProfilePage() {
     }
     
     if (!isTokenValid) {
-        window.location.href = '/pages/account/login.html';
+        if (typeof window.navigateTo === 'function') {
+            window.navigateTo('/pages/account/login.html', { replace: true });
+        } else {
+            window.location.href = '/pages/account/login.html';
+        }
         return;
     }
 
@@ -206,37 +239,59 @@ async function initProfilePage() {
 
         const data = await res.json();
         localStorage.setItem('user_info', JSON.stringify(data)); // 更新缓存
+        if (!document.getElementById('account-page')) return;
         renderProfile(data);
 
         // 显示内容，隐藏 Loading
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('profileCard').style.display = 'flex';
+        const loadingState = document.getElementById('loadingState');
+        const profileCard = document.getElementById('profileCard');
+        if (loadingState) loadingState.style.display = 'none';
+        if (profileCard) profileCard.style.display = 'flex';
 
     } catch (err) {
         showToast(err.message);
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_info');
+        window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
         setTimeout(() => {
-             window.location.href = '/pages/account/login.html';
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('/pages/account/login.html', { replace: true });
+            } else {
+                window.location.href = '/pages/account/login.html';
+            }
         }, 1500);
     }
 
     // 退出登录
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        const modal = document.getElementById('globalModal');
-        
-        // 使用 GlobalModal 替代原生 confirm
-        // 参数：提示语, 回调函数, 按钮文字
-        modal.confirmAction(
-            '确定要退出登录吗？', 
-            () => {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn && !logoutBtn.dataset.bound) {
+        logoutBtn.addEventListener('click', () => {
+            const modal = document.getElementById('globalModal') || document.querySelector('global-modal');
+            const doLogout = () => {
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user_info');
-                window.location.href = '/';
-            }, 
-            '退出登录' // 自定义按钮文字
-        );
-    });
+                window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
+                if (typeof window.navigateTo === 'function') {
+                    window.navigateTo('/');
+                } else {
+                    window.location.href = '/';
+                }
+            };
+            
+            if (modal && modal.confirmAction) {
+                // 使用 GlobalModal 替代原生 confirm
+                // 参数：提示语, 回调函数, 按钮文字
+                modal.confirmAction(
+                    '确定要退出登录吗？', 
+                    doLogout, 
+                    '退出登录' // 自定义按钮文字
+                );
+            } else if (confirm('确定要退出登录吗？')) {
+                doLogout();
+            }
+        });
+        logoutBtn.dataset.bound = "true";
+    }
 }
 
 // 头像上传逻辑

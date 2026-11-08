@@ -16,17 +16,31 @@
 
 /* ========== blog.html 独有逻辑 ========== */
 // DOM元素引用
-const listEl = document.getElementById("blogList");
-const postView = document.getElementById("postView");
-const postTitle = document.getElementById("postTitle");
-const postDate = document.getElementById("postDate");
-const postContent = document.getElementById("postContent");
-const backToList = document.getElementById("backToList");
-const loader = document.getElementById("loadingOverlay");
-const emptyState = document.getElementById("emptyState");
-const errorState = document.getElementById("errorState");
-const retryBtn = document.getElementById("retryBtn");
-const postError = document.getElementById("postError");
+let listEl = document.getElementById("blogList");
+let postView = document.getElementById("postView");
+let postTitle = document.getElementById("postTitle");
+let postDate = document.getElementById("postDate");
+let postContent = document.getElementById("postContent");
+let backToList = document.getElementById("backToList");
+let loader = document.getElementById("loadingOverlay");
+let emptyState = document.getElementById("emptyState");
+let errorState = document.getElementById("errorState");
+let retryBtn = document.getElementById("retryBtn");
+let postError = document.getElementById("postError");
+
+function refreshBlogDomRefs() {
+    listEl = document.getElementById("blogList");
+    postView = document.getElementById("postView");
+    postTitle = document.getElementById("postTitle");
+    postDate = document.getElementById("postDate");
+    postContent = document.getElementById("postContent");
+    backToList = document.getElementById("backToList");
+    loader = document.getElementById("loadingOverlay");
+    emptyState = document.getElementById("emptyState");
+    errorState = document.getElementById("errorState");
+    retryBtn = document.getElementById("retryBtn");
+    postError = document.getElementById("postError");
+}
 
 // 缓存机制
 const postCache = new Map();
@@ -38,18 +52,73 @@ let activeCardElement = null; // 当前点击的卡片 DOM 元素
 let activeCardRect = null;    // 卡片点击时的位置尺寸信息
 let listScrollY = 0;
 
+window.cleanupBlogPage = function() {
+    if (window.imageViewer) {
+        window.imageViewer.destroy();
+        window.imageViewer = null;
+    }
+    activeCardElement = null;
+    activeCardRect = null;
+    document.body.classList.remove('hero-open');
+    document.querySelectorAll('.hero-overlay').forEach(el => el.remove());
+};
+
+window.closeBlogPostToList = function() {
+    if (!postView || postView.style.display === 'none') return;
+    if (activeCardElement) {
+        animateHeroClose(() => {
+            resetBlogView();
+        });
+    } else {
+        resetBlogView();
+    }
+};
+
+window.handleBlogPopState = function(event) {
+    if (document.body.id !== 'blog-page') return;
+    refreshBlogDomRefs();
+    if (!listEl || !postView) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const stateTitle = (event && event.state && event.state.title) || (urlParams.get('title') ? decodeURIComponent(urlParams.get('title')) : null);
+
+    if (stateTitle) {
+        // 后退或前进到某篇文章
+        const post = postCache.get(stateTitle) || 
+                    postsData.find(p => p.title === stateTitle);
+        if (post) {
+            loadPost(post);
+        }
+    } else {
+        // 恢复默认页面 title
+        document.title = "博客Blog - 缎金SatinAu";
+        
+        // 如果当前有激活的卡片（说明是从文章页退回来的），执行收缩动画
+        if (activeCardElement) {
+            animateHeroClose(() => {
+                resetBlogView();
+            });
+        } else {
+            // 否则直接重置视图（防止卡片消失）
+            resetBlogView();
+        }
+    }
+};
+
 // 初始化
 function initBlog() {
-    // 先隐藏错误状态，显示加载状态
-    const loader = document.getElementById("loadingOverlay");
-    const emptyState = document.getElementById("emptyState");
-    const errorState = document.getElementById("errorState");
+    refreshBlogDomRefs();
+    if (!listEl || !postView) return;
 
+    activeCardElement = null;
+    activeCardRect = null;
+
+    // 先隐藏错误状态，显示加载状态
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
     if (loader) loader.classList.add("show");
 
-    loadPostsList().finally(() => {
+    const listPromise = loadPostsList().finally(() => {
         // 无论成功失败都隐藏加载动画
         if (loader) loader.classList.remove("show");
     });
@@ -65,69 +134,55 @@ function initBlog() {
         const decodedTitle = decodeURIComponent(targetTitle);
         const cachedPost = postCache.get(decodedTitle);
         
-        if (cachedPost) {
-        loadPost(cachedPost);
+        if (cachedPost && typeof cachedPost === 'object') {
+            loadPost(cachedPost);
         } else {
-        // 缓存中没有则先加载列表再查找
-        loadPostsList().then(() => {
-            const post = postsData.find(p => p.title === decodedTitle);
-            if (post) {
-            loadPost(post);
-            } else {
-            // 处理文章不存在的情况
-            console.error('文章不存在');
-            postView.style.display = "block";
-            postError.style.display = "block";
-            listEl.style.display = "none";
-            }
-        });
+            // 缓存中没有则等待列表加载完再查找
+            listPromise.then(() => {
+                if (!listEl || !listEl.isConnected) return;
+                const post = postsData.find(p => p.title === decodedTitle);
+                if (post) {
+                    loadPost(post);
+                } else {
+                    // 处理文章不存在的情况
+                    console.error('文章不存在');
+                    postView.style.display = "block";
+                    postError.style.display = "block";
+                    listEl.style.display = "none";
+                }
+            }).catch(() => {});
         }
     }
 
-    window.addEventListener('popstate', (event) => {
-    if (event.state && event.state.title) {
-        // 后退到某篇文章
-        const post = postCache.get(event.state.title) || 
-                    postsData.find(p => p.title === event.state.title);
-        if (post) {
-        loadPost(post);
-        }
-    } else {
-        // 恢复默认页面 title
-            document.title = "博客Blog - 缎金SatinAu";
-            
-            // 如果当前有激活的卡片（说明是从文章页退回来的），执行收缩动画
+    // 返回列表按钮事件 (保持之前的逻辑，它会调用 animateHeroClose)
+    if (backToList && !backToList.dataset.bound) {
+        backToList.addEventListener("click", () => {
             if (activeCardElement) {
                 animateHeroClose(() => {
                     resetBlogView();
                 });
             } else {
-                // 否则直接重置视图（防止卡片消失）
                 resetBlogView();
             }
-        }
-    });
-
-    // 返回列表按钮事件 (保持之前的逻辑，它会调用 animateHeroClose)
-    backToList.addEventListener("click", () => {
-        if (activeCardElement) {
-            animateHeroClose(() => {
-                resetBlogView();
-            });
-        } else {
-            resetBlogView();
-        }
-    });
+        });
+        backToList.dataset.bound = "true";
+    }
 
     // 重试按钮事件
-    retryBtn.addEventListener("click", loadPostsList);
+    if (retryBtn && !retryBtn.dataset.bound) {
+        retryBtn.addEventListener("click", loadPostsList);
+        retryBtn.dataset.bound = "true";
+    }
 
     // 文章内重试按钮事件委托
-    postView.addEventListener("click", (e) => {
-        if (e.target.closest(".retryPost") && currentPost) {
-        loadPost(currentPost, true);
-        }
-    });
+    if (postView && !postView.dataset.bound) {
+        postView.addEventListener("click", (e) => {
+            if (e.target.closest(".retryPost") && currentPost) {
+                loadPost(currentPost, true);
+            }
+        });
+        postView.dataset.bound = "true";
+    }
 }
 
 function resetBlogView() {
@@ -203,6 +258,7 @@ return Promise.all([
         .catch(() => ({})) 
 ])
 .then(([posts, covers]) => {
+    if (!listEl || !listEl.isConnected) return;
     // 将封面数据合并到 post 对象中
     postsData = posts.map(post => ({
         ...post,
@@ -224,7 +280,7 @@ return Promise.all([
     })
     .catch(err => {
     console.error("加载文章列表失败:", err);
-    errorState.style.display = "block";
+    if (errorState && errorState.isConnected) errorState.style.display = "block";
     throw err; // 继续抛出错误，让调用者可以捕获
     })
     .finally(() => {
@@ -642,7 +698,7 @@ return function(...args) {
 function initBlogButtons() {
 // 返回文章列表按钮
 const backToListBtn = document.getElementById('backToListBtn');
-if (backToListBtn) {
+if (backToListBtn && !backToListBtn.dataset.bound) {
     backToListBtn.addEventListener('click', () => {
             // 复用动画关闭逻辑
         if (activeCardRect && activeCardElement) {
@@ -653,23 +709,49 @@ if (backToListBtn) {
             resetBlogView();
         }
     });
+    backToListBtn.dataset.bound = "true";
 }
 
 // 返回顶部按钮
 const backToTopBtn = document.getElementById('backToTopBtn');
-if (backToTopBtn) {
+if (backToTopBtn && !backToTopBtn.dataset.bound) {
     backToTopBtn.addEventListener('click', () => {
     window.scrollTo({
         top: 0,
         behavior: 'smooth'
     });
     });
-}
+    backToTopBtn.dataset.bound = "true";
 }
 
 const shareBtn = document.getElementById('shareArticleBtn');
-if (shareBtn) {
-  shareBtn.addEventListener('click', handleShare);
+if (shareBtn && !shareBtn.dataset.bound) {
+    shareBtn.addEventListener('click', handleShare);
+    shareBtn.dataset.bound = "true";
+}
+
+const searchInput = document.getElementById('blogSearchInput');
+if (searchInput && !searchInput.dataset.bound) {
+    searchInput.addEventListener('input', (e) => {
+        const keyword = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.contact-card'); // 假设文章卡片用的是这个类
+        
+        cards.forEach(card => {
+            // 获取标题或内容文本
+            const text = card.textContent.toLowerCase();
+            if(text.includes(keyword)) {
+                card.style.display = ''; // 显示
+            } else {
+                card.style.display = 'none'; // 隐藏
+            }
+        });
+
+        if (typeof window.refreshScrollAnimations === 'function') {
+            window.refreshScrollAnimations(false);
+        }
+    });
+    searchInput.dataset.bound = "true";
+}
 }
 
 function handleShare(e) {
@@ -913,23 +995,3 @@ function renderGenerateButton(container, rawMarkdown, cacheKey) {
         }
     });
 }
-
-const searchInput = document.getElementById('blogSearchInput');
-searchInput.addEventListener('input', (e) => {
-    const keyword = e.target.value.toLowerCase();
-    const cards = document.querySelectorAll('.contact-card'); // 假设文章卡片用的是这个类
-    
-    cards.forEach(card => {
-        // 获取标题或内容文本
-        const text = card.textContent.toLowerCase();
-        if(text.includes(keyword)) {
-            card.style.display = ''; // 显示
-        } else {
-            card.style.display = 'none'; // 隐藏
-        }
-    });
-
-    if (typeof window.refreshScrollAnimations === 'function') {
-        window.refreshScrollAnimations(false);
-    }
-});

@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFriendLinks();
 });
 
+window.initFriendLinks = initFriendLinks;
 function initFriendLinks() {
   const container = document.getElementById("friendlink-container");
   if (!container) return;
@@ -28,6 +29,7 @@ function initFriendLinks() {
       return res.text();
     })
     .then(text => {
+      if (!container.isConnected) return;
       const data = jsyaml.load(text);
       const list = data || [];
       

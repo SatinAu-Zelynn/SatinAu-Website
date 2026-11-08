@@ -282,6 +282,13 @@ class GlobalModal extends HTMLElement {
     }
   }
 
+  // 关闭所有已打开的弹窗图层
+  closeAll() {
+    [...this.layers].reverse().forEach(l => {
+      if (!l.isClosing) l.close();
+    });
+  }
+
   // ==========================================
   // iOS 风格跳转提示
   // ==========================================

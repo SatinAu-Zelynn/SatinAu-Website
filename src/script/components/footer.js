@@ -104,6 +104,11 @@ class SiteFooter extends HTMLElement {
 
     const buildInfo = window.BUILD_INFO || "构建信息未注入";
     this.querySelector("#build-info").innerHTML = buildInfo;
+    const yearEl = this.querySelector("#current-year");
+    if (yearEl) {
+      const offset = typeof serverTimeOffset === 'number' ? serverTimeOffset : 0;
+      yearEl.textContent = new Date(Date.now() + offset).getFullYear();
+    }
   }
 }
 

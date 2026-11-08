@@ -15,12 +15,22 @@
 */
 
 /* ============= zelynn.html 独有逻辑 ============= */
-// 等待DOM加载完成
-document.addEventListener('DOMContentLoaded', function() {
+let zelynnGalleryViewer = null;
+
+window.cleanupZelynnPage = function() {
+  if (zelynnGalleryViewer) {
+    zelynnGalleryViewer.destroy();
+    zelynnGalleryViewer = null;
+  }
+};
+
+window.initZelynnPage = function() {
+  window.cleanupZelynnPage();
   // 图片画廊容器
   const galleryContainer = document.getElementById('zelynnGallery');
   const filterContainer = document.getElementById('gallery-filter');
   const noResultMsg = document.getElementById('no-result-msg');
+  if (!galleryContainer) return;
   
   // 获取全局 HDR 设置状态
   const useGlobalHDR = localStorage.getItem('enableHDR') === 'true';
@@ -39,8 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 存储当前选中的标签
   let activeTags = new Set();
-  // 存储Viewer实例
-  let galleryViewer = null;
 
   // 加载图片列表
   fetch(`${getCdnBaseUrl()}/zelynn/list.json`)
@@ -51,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.json();
     })
     .then(images => {
+      if (!galleryContainer.isConnected) return;
       // 提取所有唯一标签
       const allTags = new Set();
       images.forEach(img => {
@@ -61,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // 生成筛选按钮
       if (filterContainer && allTags.size > 0) {
+        filterContainer.innerHTML = '';
         // 转换并在数组中排序
         const sortedTags = Array.from(allTags).sort();
         
@@ -169,14 +179,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 更新 Viewer.js 实例，使其只包含当前可见的图片
-        if (galleryViewer) {
-          galleryViewer.update();
+        if (zelynnGalleryViewer) {
+          zelynnGalleryViewer.update();
         }
       }
       
       // 初始化Viewer.js
-      if (images.length > 0) {
-        galleryViewer = new Viewer(galleryContainer, {
+      if (images.length > 0 && typeof Viewer !== 'undefined') {
+        zelynnGalleryViewer = new Viewer(galleryContainer, {
           url: 'src', // 使用img的src属性作为大图地址
           title: function(image) {
             return image.alt; // 显示alt作为标题
@@ -202,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const linkUrl = currentImg.dataset.link;
             // 获取 Viewer 生成的标题元素
             // viewer.viewer 是 Viewer 生成的模态框 DOM 根节点
-            const titleElement = galleryViewer.viewer.querySelector('.viewer-title');
+            const titleElement = zelynnGalleryViewer.viewer.querySelector('.viewer-title');
 
             if (titleElement) {
               // 重置样式和事件（防止上一个图片的事件残留）
@@ -231,6 +241,11 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .catch(error => {
       console.error('加载图片失败:', error);
-      galleryContainer.innerHTML = '<div class="image-error">图片加载失败，请稍后重试</div>';
+      if (galleryContainer.isConnected) {
+        galleryContainer.innerHTML = '<div class="image-error">图片加载失败，请稍后重试</div>';
+      }
     });
-});
+};
+
+// 等待DOM加载完成
+document.addEventListener('DOMContentLoaded', window.initZelynnPage);

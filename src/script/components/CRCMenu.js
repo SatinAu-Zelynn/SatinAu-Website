@@ -877,7 +877,11 @@ const refreshAction = () => {
     location.reload();
 };
 const backToHomeAction = () => {
-    window.location.href = '/';
+    if (typeof window.navigateTo === 'function') {
+        window.navigateTo('/');
+    } else {
+        window.location.href = '/';
+    }
 };
 const openImageInNewTabAction = (ctx) => {
     const imageUrl = ctx.currentImageUrl;

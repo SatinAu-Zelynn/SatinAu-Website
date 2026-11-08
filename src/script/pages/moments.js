@@ -152,12 +152,32 @@ window.playMotionPhoto = async function(btn, src) {
     }
 };
 
-document.addEventListener('DOMContentLoaded', function() {
+let momentsResizeHandler = null;
+let momentsViewers = [];
+
+window.cleanupMomentsPage = function() {
+    if (momentsResizeHandler) {
+        window.removeEventListener('resize', momentsResizeHandler);
+        momentsResizeHandler = null;
+    }
+    if (momentsViewers.length > 0) {
+        momentsViewers.forEach(v => {
+            try { v.destroy(); } catch (e) {}
+        });
+        momentsViewers = [];
+    }
+};
+
+window.initMomentsPage = function() {
+    window.cleanupMomentsPage();
     // 修改为 moments.json
     const MOMENTS_API = `${getCdnBaseUrl()}/data/moments.json`;
     const momentsList = document.getElementById('momentsList');
     const statusMsg = document.getElementById('statusMsg');
     const loadingOverlay = document.getElementById('loadingOverlay');
+    if (!momentsList) return;
+
+    if (loadingOverlay) loadingOverlay.classList.add('show');
 
     // 获取数据
     fetch(MOMENTS_API)
@@ -167,24 +187,28 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(data => {
         // 隐藏全屏加载动画
-        loadingOverlay.classList.remove('show');
+        if (loadingOverlay) loadingOverlay.classList.remove('show');
+        if (!momentsList.isConnected) return;
         
         if (!data || data.length === 0) {
-        statusMsg.textContent = "暂时没有动态哦~";
-        return;
+            if (statusMsg) statusMsg.textContent = "暂时没有动态哦~";
+            return;
         }
 
-        statusMsg.style.display = 'none';
+        if (statusMsg) statusMsg.style.display = 'none';
         renderMoments(data);
     })
     .catch(err => {
         console.error('加载动态失败:', err);
-        loadingOverlay.classList.remove('show');
-        statusMsg.innerHTML = `加载失败，请<a href="javascript:location.reload()" style="color:var(--primary-color)">刷新</a>重试`;
+        if (loadingOverlay) loadingOverlay.classList.remove('show');
+        if (statusMsg && statusMsg.isConnected) {
+            statusMsg.innerHTML = `加载失败，请<a href="javascript:location.reload()" style="color:var(--primary-color)">刷新</a>重试`;
+        }
     });
 
     // 渲染函数
     function renderMoments(moments) {
+        momentsList.innerHTML = '';
         // 按日期倒序排列
         moments.sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -240,7 +264,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 初始计算所有卡片高度
         resizeAllGridItems();
-        window.addEventListener('resize', resizeAllGridItems);
+        momentsResizeHandler = resizeAllGridItems;
+        window.addEventListener('resize', momentsResizeHandler);
 
         if (typeof window.refreshScrollAnimations === 'function') {
             window.refreshScrollAnimations(false);
@@ -283,9 +308,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始化 Viewer.js
     function initViewer() {
+    if (typeof Viewer === 'undefined') return;
     const galleries = document.querySelectorAll('.moment-gallery');
     galleries.forEach(gallery => {
-        new Viewer(gallery, {
+        const v = new Viewer(gallery, {
         toolbar: {
             zoomIn: 1,
             zoomOut: 1,
@@ -303,6 +329,9 @@ document.addEventListener('DOMContentLoaded', function() {
         title: false,
         transition: true
         });
+        momentsViewers.push(v);
     });
     }
-});
+};
+
+document.addEventListener('DOMContentLoaded', window.initMomentsPage);

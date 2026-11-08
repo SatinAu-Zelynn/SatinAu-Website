@@ -15,8 +15,31 @@
 */
 
 /* 核心滚动逻辑脚本 */
-document.addEventListener("DOMContentLoaded", () => {
+let aboutMeRafId = null;
+let aboutMeHintTimer = null;
+let aboutMeViewer = null;
+
+window.cleanupAboutMePage = function() {
+    if (aboutMeRafId) {
+        cancelAnimationFrame(aboutMeRafId);
+        aboutMeRafId = null;
+    }
+    if (aboutMeHintTimer) {
+        clearTimeout(aboutMeHintTimer);
+        aboutMeHintTimer = null;
+    }
+    if (aboutMeViewer) {
+        aboutMeViewer.destroy();
+        aboutMeViewer = null;
+    }
+    const navBar = document.querySelector('navigate-bar');
+    if (navBar) navBar.classList.remove('show');
+};
+
+window.initAboutMePage = function() {
+    window.cleanupAboutMePage();
     const scrollContainer = document.getElementById('scroll-sequence');
+    if (!scrollContainer) return;
     const scenes = document.querySelectorAll('.intro-scene');
     const totalScenes = scenes.length;
     const scrollHint = document.getElementById('scroll-hint');
@@ -27,21 +50,34 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch(`${getCdnBaseUrl()}/data/aboutme.md`)
     .then(res => res.ok ? res.text() : "加载失败")
     .then(md => {
-        document.getElementById("aboutmeContent").innerHTML = marked.parse(md);
-        new Viewer(document.getElementById('aboutmeContent'), { toolbar: false, transition: true });
+        const contentEl = document.getElementById("aboutmeContent");
+        if (!contentEl || !contentEl.isConnected) return;
+        contentEl.innerHTML = marked.parse(md);
+        if (typeof Viewer !== 'undefined') {
+            aboutMeViewer = new Viewer(contentEl, { toolbar: false, transition: true });
+        }
     })
-    .catch(() => document.getElementById("aboutmeContent").innerHTML = "<p>加载失败。</p>");
+    .catch(() => {
+        const contentEl = document.getElementById("aboutmeContent");
+        if (contentEl && contentEl.isConnected) contentEl.innerHTML = "<p>加载失败。</p>";
+    });
     
     // 初始化评论
     if (typeof initPageComments === 'function') initPageComments('aboutme-comments', 'aboutme');
 
     // 滚动提示在 3秒后显示
-    setTimeout(() => {
-    if(window.scrollY < 100) scrollHint.style.opacity = 1;
+    aboutMeHintTimer = setTimeout(() => {
+        if (scrollHint && scrollHint.isConnected && window.scrollY < 100) {
+            scrollHint.style.opacity = 1;
+        }
     }, 2000);
 
     // === 核心动画循环 ===
     function updateAnimation() {
+    if (!scrollContainer.isConnected) {
+        aboutMeRafId = null;
+        return;
+    }
     const scrollY = window.scrollY;
     const viewportHeight = window.innerHeight;
     const containerTop = scrollContainer.offsetTop;
@@ -55,14 +91,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rawProgress < 0) rawProgress = 0;
     
     // 隐藏/显示滚动提示
-    if (rawProgress > 0.1) scrollHint.style.opacity = 0;
+    if (rawProgress > 0.1 && scrollHint) scrollHint.style.opacity = 0;
 
     // 导航栏显示逻辑：当滚动超过 Sequence 区域后显示
     // 5.5 代表滚动到第 6 幕快结束时
-    if (rawProgress > totalScenes - 0.5) {
-        navBar.classList.add('show');
-    } else {
-        navBar.classList.remove('show');
+    if (navBar) {
+        if (rawProgress > totalScenes - 0.5) {
+            navBar.classList.add('show');
+        } else {
+            navBar.classList.remove('show');
+        }
     }
 
     // 遍历所有场景进行动画处理
@@ -139,9 +177,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
-    requestAnimationFrame(updateAnimation);
+    aboutMeRafId = requestAnimationFrame(updateAnimation);
     }
 
     // 启动动画循环
-    requestAnimationFrame(updateAnimation);
-});
+    aboutMeRafId = requestAnimationFrame(updateAnimation);
+};
+
+document.addEventListener("DOMContentLoaded", window.initAboutMePage);

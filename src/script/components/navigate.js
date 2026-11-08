@@ -19,7 +19,7 @@ class NavigateBar extends HTMLElement {
     super();
   }
 
-  connectedCallback() {
+  getCurrentPath() {
     // --- 定义 pathname 变量 ---
     const pathname = window.location.pathname;
     
@@ -48,6 +48,41 @@ class NavigateBar extends HTMLElement {
             }
         }
     }
+
+    return currentPath;
+  }
+
+  updateActiveState() {
+    const currentPath = this.getCurrentPath();
+    const moreItemNames = ['moments', 'aboutme', 'friendlink', 'playlist'];
+    const isMoreActive = moreItemNames.includes(currentPath);
+
+    const bottomNav = this.querySelector('.bottom-nav');
+    if (bottomNav) {
+      bottomNav.classList.toggle('more-active', isMoreActive);
+      bottomNav.classList.remove('nav-hidden');
+      bottomNav.querySelectorAll(':scope > a').forEach(a => {
+        const href = a.getAttribute('href') || '';
+        const itemBase = href.split('/').pop().replace('.html', '');
+        a.classList.toggle('active', currentPath === itemBase);
+      });
+    }
+
+    const moreBtn = this.querySelector('.more-btn');
+    if (moreBtn) {
+      moreBtn.classList.toggle('active', isMoreActive);
+    }
+
+    this.querySelectorAll('.dropdown-item').forEach(item => {
+      const href = item.getAttribute('href') || '';
+      if (!href || href.startsWith('javascript:')) return;
+      const itemBase = href.split('/').pop().replace('.html', '');
+      item.classList.toggle('active', currentPath === itemBase);
+    });
+  }
+
+  connectedCallback() {
+    const currentPath = this.getCurrentPath();
     
     // 主导航项数据
     const navItems = [

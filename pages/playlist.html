@@ -233,9 +233,12 @@
   <navigate-bar></navigate-bar>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      initPageComments('playlist-comments', 'playlist');
+    window.initPlaylistPage = function() {
+      if (typeof initPageComments === 'function') {
+        initPageComments('playlist-comments', 'playlist');
+      }
       const container = document.getElementById('bilibili-list');
+      if (!container) return;
       const jsonUrl = `${getCdnBaseUrl()}/data/playlist.json`; 
 
       fetch(jsonUrl)
@@ -244,6 +247,7 @@
           return response.json();
         })
         .then(data => {
+          if (!container.isConnected) return;
           container.innerHTML = ''; // 清空加载提示
 
           if (!data || data.length === 0) {
@@ -295,9 +299,12 @@
         })
         .catch(error => {
           console.error('Fetch playlist error:', error);
-          container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: var(--word-color);">加载歌单失败</p>';
+          if (container.isConnected) {
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: var(--word-color);">加载歌单失败</p>';
+          }
         });
-    });
+    };
+    document.addEventListener('DOMContentLoaded', window.initPlaylistPage);
   </script>
   
   <!-- 弹窗组件 -->
