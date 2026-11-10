@@ -46,8 +46,17 @@ window.initAboutMePage = function() {
     const navBar = document.querySelector('navigate-bar');
     const earthBg = document.getElementById('earth-bg'); // 特殊处理地球
 
+    // 同步 Scene 3 静态背景 CDN 线路
+    const scene3Img = document.querySelector('#scene-3 img.scene-bg');
+    if (scene3Img && typeof getCdnUrl === 'function') {
+        const cdnSrc = scene3Img.getAttribute('data-cdn-src') || scene3Img.getAttribute('src') || '/zelynn/9.webp';
+        scene3Img.src = getCdnUrl(cdnSrc);
+    }
+
     // 加载 Markdown 内容
-    fetch(`${getCdnBaseUrl()}/data/aboutme.md`)
+    const fetchFn = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+    const aboutMeUrl = typeof fetchCdn === 'function' ? '/data/aboutme.md' : `${getCdnBaseUrl()}/data/aboutme.md`;
+    fetchFn(aboutMeUrl)
     .then(res => res.ok ? res.text() : "加载失败")
     .then(md => {
         const contentEl = document.getElementById("aboutmeContent");

@@ -239,9 +239,11 @@
       }
       const container = document.getElementById('bilibili-list');
       if (!container) return;
-      const jsonUrl = `${getCdnBaseUrl()}/data/playlist.json`; 
+      
+      const playlistFetch = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+      const jsonUrl = typeof fetchCdn === 'function' ? '/data/playlist.json' : `${getCdnBaseUrl()}/data/playlist.json`; 
 
-      fetch(jsonUrl)
+      playlistFetch(jsonUrl)
         .then(response => {
           if (!response.ok) throw new Error('Network response was not ok');
           return response.json();

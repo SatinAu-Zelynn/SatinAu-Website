@@ -40,6 +40,97 @@ window.getCdnBaseUrl = function() {
   return picked === 'eo' ? 'https://cdn-eo.satinau.cn' : 'https://cdn-cf.satinau.cn';
 };
 
+// 获取备用 CDN 域名
+window.getCdnFallbackUrl = function() {
+  const current = window.getCdnBaseUrl();
+  return current === 'https://cdn-eo.satinau.cn'
+    ? 'https://cdn-cf.satinau.cn'
+    : 'https://cdn-eo.satinau.cn';
+};
+
+// 将任意 CDN 资源路径或硬编码 CDN 链接转换为基于当前有效线路的完整 URL
+window.getCdnUrl = function(pathOrUrl) {
+  if (!pathOrUrl) return '';
+  const baseUrl = window.getCdnBaseUrl();
+  const cdnRegex = /^https?:\/\/(cdn-cf|cdn-eo|cdn|blog)\.satinau\.cn/i;
+  if (cdnRegex.test(pathOrUrl)) {
+    return pathOrUrl.replace(cdnRegex, baseUrl);
+  }
+  if (/^https?:\/\//i.test(pathOrUrl) || pathOrUrl.startsWith('data:') || pathOrUrl.startsWith('blob:')) {
+    return pathOrUrl;
+  }
+  const cleanPath = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+  return `${baseUrl}${cleanPath}`;
+};
+
+// 核心 CDN 接口请求方法：优先使用当前线路，若网络异常、超时或响应错误自动回退到备用线路
+window.fetchCdn = async function(pathOrUrl, options = {}) {
+  const currentBase = window.getCdnBaseUrl();
+  const fallbackBase = window.getCdnFallbackUrl();
+
+  let relativePath = pathOrUrl || '';
+  const cdnRegex = /^https?:\/\/(cdn-cf|cdn-eo|cdn|blog)\.satinau\.cn/i;
+  if (cdnRegex.test(relativePath)) {
+    relativePath = relativePath.replace(cdnRegex, '');
+  }
+
+  // 若传入的是完全外部的其他 URL，直接调用标准 fetch
+  if (/^https?:\/\//i.test(relativePath)) {
+    return fetch(relativePath, options);
+  }
+
+  if (!relativePath.startsWith('/')) {
+    relativePath = `/${relativePath}`;
+  }
+
+  const primaryUrl = `${currentBase}${relativePath}`;
+  const fallbackUrl = `${fallbackBase}${relativePath}`;
+
+  try {
+    const res = await fetch(primaryUrl, options);
+    if (!res.ok && res.status !== 304) {
+      console.warn(`[CDN] 主线路响应异常 (${res.status}): ${primaryUrl}，正在尝试备用线路: ${fallbackUrl}`);
+      const fallbackRes = await fetch(fallbackUrl, options);
+      if (fallbackRes.ok || fallbackRes.status === 304) {
+        if (localStorage.getItem(CDN_KEY) === 'auto' || !localStorage.getItem(CDN_KEY)) {
+          const fallbackSource = fallbackBase.includes('cdn-eo') ? 'eo' : 'cf';
+          localStorage.setItem(CDN_AUTO_PICKED_KEY, fallbackSource);
+        }
+        return fallbackRes;
+      }
+      return res;
+    }
+    return res;
+  } catch (err) {
+    console.warn(`[CDN] 主线路请求失败: ${primaryUrl} (${err.message})，正在尝试备用线路: ${fallbackUrl}`);
+    try {
+      const fallbackRes = await fetch(fallbackUrl, options);
+      if (localStorage.getItem(CDN_KEY) === 'auto' || !localStorage.getItem(CDN_KEY)) {
+        const fallbackSource = fallbackBase.includes('cdn-eo') ? 'eo' : 'cf';
+        localStorage.setItem(CDN_AUTO_PICKED_KEY, fallbackSource);
+      }
+      return fallbackRes;
+    } catch (fallbackErr) {
+      console.error(`[CDN] 主备两条线路均请求失败: ${relativePath}`, fallbackErr);
+      throw err;
+    }
+  }
+};
+
+// 全局捕获 CDN 图片加载错误并自动回退备用线路
+window.addEventListener('error', function(e) {
+  const target = e.target;
+  if (target && target.tagName === 'IMG') {
+    const src = target.src || '';
+    const cdnRegex = /^https?:\/\/(cdn-cf|cdn-eo|cdn|blog)\.satinau\.cn/i;
+    if (cdnRegex.test(src) && !target.__cdn_retried) {
+      target.__cdn_retried = true;
+      const fallbackBase = window.getCdnFallbackUrl();
+      target.src = src.replace(cdnRegex, fallbackBase);
+    }
+  }
+}, true);
+
 // 单源延迟探测
 async function testCdnPing(baseUrl) {
   const testUrl = `${baseUrl}/data/notice.json?_t=${Date.now()}`;
@@ -2610,9 +2701,7 @@ window.renderNoticeCenter = function() {
 };
 
 function fetchRemoteNotice(shouldPushPopup = true) {
-  const NOTICE_URL = `${getCdnBaseUrl()}/data/notice.json`;
-
-  fetch(NOTICE_URL, { cache: 'no-cache' })
+  fetchCdn('/data/notice.json', { cache: 'no-cache' })
     .then(response => {
       if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.json();
@@ -2882,9 +2971,18 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         autoDensity: true,
       });
 
-      const model = await PIXI.live2d.Live2DModel.from(MODEL_PATH, {
-        autoInteract: true
-      });
+      let model;
+      try {
+        model = await PIXI.live2d.Live2DModel.from(MODEL_PATH, {
+          autoInteract: true
+        });
+      } catch (err) {
+        console.warn('[Live2D] 主线路加载模型失败，尝试备用线路...', err);
+        const fallbackModelPath = `${getCdnFallbackUrl()}/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json`;
+        model = await PIXI.live2d.Live2DModel.from(fallbackModelPath, {
+          autoInteract: true
+        });
+      }
 
       app.stage.addChild(model);
 

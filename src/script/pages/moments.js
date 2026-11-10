@@ -105,7 +105,9 @@ window.playMotionPhoto = async function(btn, src) {
     `;
 
     try {
-        const response = await fetch(src);
+        const fetchFn = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+        const targetSrc = typeof getCdnUrl === 'function' ? getCdnUrl(src) : src;
+        const response = await fetchFn(targetSrc);
         if (!response.ok) throw new Error('下载失败');
         const blob = await response.blob();
 
@@ -170,17 +172,11 @@ window.cleanupMomentsPage = function() {
 
 window.initMomentsPage = function() {
     window.cleanupMomentsPage();
-    // 修改为 moments.json
-    const MOMENTS_API = `${getCdnBaseUrl()}/data/moments.json`;
-    const momentsList = document.getElementById('momentsList');
-    const statusMsg = document.getElementById('statusMsg');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (!momentsList) return;
+    // 获取动态数据，统一接入 CDN 切换机制
+    const momentsFetch = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+    const momentsUrl = typeof fetchCdn === 'function' ? '/data/moments.json' : `${getCdnBaseUrl()}/data/moments.json`;
 
-    if (loadingOverlay) loadingOverlay.classList.add('show');
-
-    // 获取数据
-    fetch(MOMENTS_API)
+    momentsFetch(momentsUrl)
     .then(response => {
         if (!response.ok) throw new Error('网络响应异常');
         return response.json();
@@ -223,7 +219,8 @@ window.initMomentsPage = function() {
                 const gridClass = count <= 4 ? count : 'default';
                 
                 imagesHtml = `<div class="moment-gallery" data-count="${gridClass}">`;
-                item.images.forEach(src => {
+                item.images.forEach(rawSrc => {
+                    const src = typeof getCdnUrl === 'function' ? getCdnUrl(rawSrc) : rawSrc;
                     const isPotentialMotion = /\.(jpg|jpeg|heic)$/i.test(src);
                     const badgeHtml = isPotentialMotion 
                     ? `<div class="live-badge" onclick="playMotionPhoto(this, '${src}')" title="播放动态照片">

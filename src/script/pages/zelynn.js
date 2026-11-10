@@ -50,8 +50,11 @@ window.initZelynnPage = function() {
   // 存储当前选中的标签
   let activeTags = new Set();
 
-  // 加载图片列表
-  fetch(`${getCdnBaseUrl()}/zelynn/list.json`)
+  // 加载图片列表，统一接入 CDN 切换机制
+  const zelynnFetch = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+  const listUrl = typeof fetchCdn === 'function' ? '/zelynn/list.json' : `${getCdnBaseUrl()}/zelynn/list.json`;
+
+  zelynnFetch(listUrl)
     .then(response => {
       if (!response.ok) {
         throw new Error('图片列表加载失败');
@@ -117,8 +120,9 @@ window.initZelynnPage = function() {
             currentExt = '.avif';
         }
 
-        // 拼接地址
-        img.src = `${getCdnBaseUrl()}/zelynn/${imgInfo.filename}${currentExt}`;
+        // 拼接地址，通过 getCdnUrl 接入统一线路机制
+        const imgPath = `/zelynn/${imgInfo.filename}${currentExt}`;
+        img.src = typeof getCdnUrl === 'function' ? getCdnUrl(imgPath) : `${getCdnBaseUrl()}${imgPath}`;
         
         img.alt = imgInfo.alt || '泽凌图片';
         // 将跳转链接存储在 dataset 中，供 Viewer 读取

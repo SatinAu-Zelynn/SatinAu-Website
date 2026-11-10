@@ -71,8 +71,7 @@ window.initIndexPage = function() {
   const imgExtension = '.webp';
   
   // 图片基础路径
-  const baseUrl = `${getCdnBaseUrl()}/zelynn/`;
-  const listUrl = `${getCdnBaseUrl()}/zelynn/list.json`;
+  const listUrl = typeof fetchCdn === 'function' ? '/zelynn/list.json' : `${getCdnBaseUrl()}/zelynn/list.json`;
   
   let images = [];
   let currentIndex = 0;
@@ -88,7 +87,8 @@ window.initIndexPage = function() {
     if (images.length === 0 || !zelynnBg.isConnected) return;
     
     const imgInfo = images[currentIndex];
-    const imgUrl = `${baseUrl}${imgInfo.filename}${imgExtension}`;
+    const rawPath = `/zelynn/${imgInfo.filename}${imgExtension}`;
+    const imgUrl = typeof getCdnUrl === 'function' ? getCdnUrl(rawPath) : `${getCdnBaseUrl()}${rawPath}`;
     
     // 创建临时图片对象检测加载，确保平滑切换
     const tempImg = new Image();
@@ -108,12 +108,14 @@ window.initIndexPage = function() {
     
     // 预加载下一张
     const nextIndex = (currentIndex + 1) % images.length;
-    const nextImgUrl = `${baseUrl}${images[nextIndex].filename}${imgExtension}`;
+    const nextRawPath = `/zelynn/${images[nextIndex].filename}${imgExtension}`;
+    const nextImgUrl = typeof getCdnUrl === 'function' ? getCdnUrl(nextRawPath) : `${getCdnBaseUrl()}${nextRawPath}`;
     preloadImage(nextImgUrl);
   }
 
   // 获取图片列表
-  fetch(listUrl)
+  const indexFetch = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+  indexFetch(listUrl)
     .then(res => res.json())
     .then(data => {
       if (!zelynnBg.isConnected) return;

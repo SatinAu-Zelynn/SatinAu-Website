@@ -25,7 +25,10 @@ const path = require('path');
 
 // 配置
 const CONFIG = {
-    blogApiUrl: 'https://cdn-cf.satinau.cn/blog/index.json',
+    blogApiUrls: [
+        'https://cdn-cf.satinau.cn/blog/index.json',
+        'https://cdn-eo.satinau.cn/blog/index.json'
+    ],
     sitemapPath: path.join(__dirname, '../../sitemap.xml'),
     baseUrl: 'https://satinau.cn',
     timeout: 10000,
@@ -144,15 +147,28 @@ ${entries.join('\n')}
  */
 async function main() {
     console.log('[Sitemap] 开始生成Sitemap...');
-    console.log(`[Sitemap] 博客API: ${CONFIG.blogApiUrl}`);
+
+    let blogs = null;
+    let lastError = null;
+
+    // 优先主线路，失败尝试备用 CDN 线路
+    for (const apiUrl of CONFIG.blogApiUrls) {
+        try {
+            console.log(`[Sitemap] 正在通过 API 获取文章列表: ${apiUrl}`);
+            const data = await fetchJSON(apiUrl);
+            if (Array.isArray(data)) {
+                blogs = data;
+                break;
+            }
+        } catch (e) {
+            console.warn(`[Sitemap] 线路 ${apiUrl} 请求失败: ${e.message}`);
+            lastError = e;
+        }
+    }
 
     try {
-        // 获取博客列表
-        console.log('[Sitemap] 正在获取博客文章列表...');
-        const blogs = await fetchJSON(CONFIG.blogApiUrl);
-
-        if (!Array.isArray(blogs)) {
-            throw new Error('API返回数据格式错误：期望数组');
+        if (!blogs || !Array.isArray(blogs)) {
+            throw (lastError || new Error('所有 CDN 线路均获取博客列表失败'));
         }
 
         console.log(`[Sitemap] 成功获取 ${blogs.length} 篇博客文章`);

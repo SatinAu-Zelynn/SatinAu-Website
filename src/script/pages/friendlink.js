@@ -23,7 +23,10 @@ function initFriendLinks() {
   const container = document.getElementById("friendlink-container");
   if (!container) return;
 
-  fetch(`${getCdnBaseUrl()}/data/friendlink.yaml`)
+  const friendFetch = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+  const yamlUrl = typeof fetchCdn === 'function' ? '/data/friendlink.yaml' : `${getCdnBaseUrl()}/data/friendlink.yaml`;
+
+  friendFetch(yamlUrl)
     .then(res => {
       if (!res.ok) throw new Error("Network response was not ok");
       return res.text();
@@ -44,9 +47,11 @@ function initFriendLinks() {
           `document.getElementById('globalModal').with(this).alert('是否跳转到 ${item.name}？','${item.link}')`
         );
 
+        const avatarSrc = typeof getCdnUrl === 'function' ? getCdnUrl(item.avatar) : item.avatar;
+
         a.innerHTML = `
           <div class="icon">
-            <img src="${item.avatar}" alt="${item.name}">
+            <img src="${avatarSrc}" alt="${item.name}">
           </div>
           <div class="text">
             <div class="label">${item.name}</div>

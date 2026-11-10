@@ -3,8 +3,8 @@
   功能：拦截爬虫 -> 获取列表 -> 获取Markdown正文 -> 转换HTML -> 注入页面
 */
 
-const CDN_BASE = 'https://cdn-cf.satinau.cn';
-const BLOG_LIST_URL = `${CDN_BASE}/blog/index.json`;
+const CDN_BASES = ['https://cdn-cf.satinau.cn', 'https://cdn-eo.satinau.cn'];
+const CDN_BASE = CDN_BASES[0];
 
 // 爬虫 User-Agent 列表
 const BOT_AGENTS = [
@@ -20,13 +20,27 @@ function isBot(userAgent) {
   return BOT_AGENTS.some(bot => userAgent.toLowerCase().includes(bot));
 }
 
+// 统一带故障切换的 CDN 请求方法
+async function fetchCdnMiddleware(path, options = {}) {
+  for (const base of CDN_BASES) {
+    try {
+      const url = `${base}${path}`;
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+    } catch (e) {
+      console.log(`Middleware CDN fetch error from ${base}${path}:`, e);
+    }
+  }
+  return null;
+}
+
 // 1. 获取文章列表
 async function getBlogList() {
   try {
-    const res = await fetch(BLOG_LIST_URL, {
+    const res = await fetchCdnMiddleware('/blog/index.json', {
       headers: { 'User-Agent': 'Cloudflare-Pages-Worker-SEO' }
     });
-    if (res.ok) return await res.json();
+    if (res && res.ok) return await res.json();
   } catch (e) {
     console.log('Error fetching blog list:', e);
   }
@@ -36,12 +50,10 @@ async function getBlogList() {
 // 2. 获取 Markdown 正文内容
 async function getMarkdownContent(filename) {
   try {
-    // 确保文件名经过编码（处理中文）
-    const url = `${CDN_BASE}/blog/${encodeURIComponent(filename)}`;
-    const res = await fetch(url, {
+    const res = await fetchCdnMiddleware(`/blog/${encodeURIComponent(filename)}`, {
       headers: { 'User-Agent': 'Cloudflare-Pages-Worker-SEO' }
     });
-    if (res.ok) return await res.text();
+    if (res && res.ok) return await res.text();
   } catch (e) {
     console.log(`Error fetching markdown for ${filename}:`, e);
   }

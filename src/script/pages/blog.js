@@ -322,23 +322,36 @@ emptyState.style.display = "none";
 errorState.style.display = "none";
 
 // 使用 Promise.all 并行请求文章列表和封面索引
+const blogFetch = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+const blogIndexUrl = typeof fetchCdn === 'function' ? '/blog/index.json' : `${getCdnBaseUrl()}/blog/index.json`;
+const blogCoversUrl = typeof fetchCdn === 'function' ? '/blog/covers.json' : `${getCdnBaseUrl()}/blog/covers.json`;
+
 return Promise.all([
-    fetch(`${getCdnBaseUrl()}/blog/index.json`).then(res => {
+    blogFetch(blogIndexUrl).then(res => {
         if (!res.ok) throw new Error("文章列表加载失败");
         return res.json();
     }),
     // 封面加载失败不应该阻断文章列表显示，所以 catch 住错误返回空对象
-    fetch(`${getCdnBaseUrl()}/blog/covers.json`)
+    blogFetch(blogCoversUrl)
         .then(res => res.ok ? res.json() : {})
         .catch(() => ({})) 
 ])
 .then(([posts, covers]) => {
     if (!listEl || !listEl.isConnected) return;
-    // 将封面数据合并到 post 对象中
-    postsData = posts.map(post => ({
-        ...post,
-        cover: covers[post.file] || null // 如果有封面则添加，否则为 null
-    }));
+    // 将封面数据合并到 post 对象中，统一接入 CDN 线路转换
+    postsData = posts.map(post => {
+        const rawCover = covers[post.file] || null;
+        let formattedCover = null;
+        if (rawCover) {
+            formattedCover = typeof getCdnUrl === 'function'
+                ? getCdnUrl(rawCover.startsWith('http') ? rawCover : `/blog/${rawCover}`)
+                : rawCover;
+        }
+        return {
+            ...post,
+            cover: formattedCover
+        };
+    });
 
     renderPostsList(postsData);
     
@@ -537,7 +550,9 @@ function fetchPostMarkdown(post, forceRefresh = false) {
     if (!forceRefresh && postCache.has(post.file)) {
         return Promise.resolve(postCache.get(post.file));
     }
-    return fetch(`${getCdnBaseUrl()}/blog/${post.file}`).then(res => {
+    const blogFetch = typeof fetchCdn === 'function' ? fetchCdn : fetch;
+    const postUrl = typeof fetchCdn === 'function' ? `/blog/${post.file}` : `${getCdnBaseUrl()}/blog/${post.file}`;
+    return blogFetch(postUrl).then(res => {
         if (!res.ok) throw new Error("文章加载失败");
         return res.text();
     }).then(md => {
@@ -897,12 +912,12 @@ function renderPostBodyContent(post, mdContent) {
     setPostHeaderMeta(post.title, post.date, stats);
 
     try {
-        // 处理图片路径
+        // 处理图片路径，统一接入当前 CDN 线路机制
         const processedMd = mdContent.replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, src) => {
-            if (!src.startsWith('http://') && !src.startsWith('https://')) {
-                return `![${alt}](blog/${src})`;
-            }
-            return match;
+            const resolvedSrc = typeof getCdnUrl === 'function'
+                ? getCdnUrl(src.startsWith('http://') || src.startsWith('https://') ? src : `/blog/${src}`)
+                : (src.startsWith('http://') || src.startsWith('https://') ? src : `blog/${src}`);
+            return `![${alt}](${resolvedSrc})`;
         });
         
         postContent.innerHTML = marked.parse(processedMd);

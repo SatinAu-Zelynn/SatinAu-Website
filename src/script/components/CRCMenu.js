@@ -940,7 +940,8 @@ const downloadImageAction = async (ctx) => {
     }
 
     try {
-        const response = await fetch(imageUrl, { mode: 'cors' });
+        const imageFetch = typeof window.fetchCdn === 'function' ? window.fetchCdn : fetch;
+        const response = await imageFetch(imageUrl, { mode: 'cors' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
