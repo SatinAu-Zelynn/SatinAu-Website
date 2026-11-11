@@ -190,6 +190,9 @@ window.initZelynnPage = function() {
       
       // 初始化Viewer.js
       if (images.length > 0 && typeof Viewer !== 'undefined') {
+        if (typeof window.syncViewerOpenToHtml === 'function') {
+          window.syncViewerOpenToHtml();
+        }
         zelynnGalleryViewer = new Viewer(galleryContainer, {
           url: 'src', // 使用img的src属性作为大图地址
           title: function(image) {

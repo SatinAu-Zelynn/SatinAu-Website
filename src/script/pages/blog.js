@@ -1680,6 +1680,10 @@ function initImageViewer() {
     // 如果文章本身没有图片，直接返回，不初始化 Viewer
     if (validImages.length === 0) return;
     
+    if (typeof window.syncViewerOpenToHtml === 'function') {
+        window.syncViewerOpenToHtml();
+    }
+
     // 为图片容器初始化查看器
     window.imageViewer = new Viewer(postContent, {
         filter: function(image) {

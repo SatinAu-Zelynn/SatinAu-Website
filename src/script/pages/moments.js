@@ -306,6 +306,9 @@ window.initMomentsPage = function() {
     // 初始化 Viewer.js
     function initViewer() {
     if (typeof Viewer === 'undefined') return;
+    if (typeof window.syncViewerOpenToHtml === 'function') {
+        window.syncViewerOpenToHtml();
+    }
     const galleries = document.querySelectorAll('.moment-gallery');
     galleries.forEach(gallery => {
         const v = new Viewer(gallery, {

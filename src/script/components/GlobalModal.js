@@ -78,12 +78,15 @@ class GlobalModal extends HTMLElement {
   _unlockScroll() {
     if (!this.isScrollLocked) return;
 
-    // 恢复样式：清空设置，让其回退到 CSS 文件中的默认值
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-    document.body.style.overscrollBehavior = '';
-    document.documentElement.style.removeProperty('--scrollbar-compensate');
+    // 如果当前有 Viewer 仍然处于打开状态，保留锁定与滚动条补偿
+    const isViewerOpen = document.body && document.body.classList.contains('viewer-open');
+    if (!isViewerOpen) {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      document.body.style.overscrollBehavior = '';
+      document.documentElement.style.removeProperty('--scrollbar-compensate');
+    }
     
     this.isScrollLocked = false;
   }

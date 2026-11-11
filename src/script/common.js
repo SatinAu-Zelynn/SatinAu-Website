@@ -921,6 +921,10 @@ function ensureLoadingOverlay() {
     document.querySelectorAll('.hero-overlay').forEach(el => el.remove());
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
+    document.documentElement.classList.remove('viewer-open');
+    if (!window.globalModal || !window.globalModal.isScrollLocked) {
+      document.documentElement.style.removeProperty('--scrollbar-compensate');
+    }
   }
 
   function runCurrentPageInit() {
@@ -1181,6 +1185,10 @@ function ensureLoadingOverlay() {
         await loadExternalScript(src, targetUrl.href);
       }
       if (myNavId !== navSequenceId) return;
+
+      if (typeof window.syncViewerOpenToHtml === 'function') {
+        window.syncViewerOpenToHtml();
+      }
 
       // 10. 执行新页面中的内联脚本（排除统计与 Cookie 横幅脚本）
       newDoc.querySelectorAll('script:not([src])').forEach(inlineScript => {
@@ -3130,36 +3138,146 @@ document.addEventListener('DOMContentLoaded', checkGlobalAuthStatus);
 
 // 同步 Viewer.js 打开状态至 html 根节点以完全隐藏视口滚动条，同时保留并同步滚动条宽度补偿防止页面与固定导航栏抖动
 function syncViewerOpenToHtml() {
-  if (typeof Viewer === 'undefined' || !Viewer.prototype) return;
-  if (Viewer._htmlSyncPatched) return;
-  Viewer._htmlSyncPatched = true;
+  const V = window.Viewer;
+  if (!V || !V.prototype || V._htmlSyncPatched) return;
+  V._htmlSyncPatched = true;
 
-  const origOpen = Viewer.prototype.open;
-  Viewer.prototype.open = function() {
-    // 重新测算滚动条真实宽度（应对初始化后动态加载内容导致页面高度变化的情况）
-    if (typeof this.initBody === 'function') {
-      this.initBody();
-    }
-    const scrollbarWidth = (typeof this.scrollbarWidth === 'number' && this.scrollbarWidth > 0)
-      ? this.scrollbarWidth
-      : Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  const origShow = V.prototype.show;
+  if (typeof origShow === 'function') {
+    V.prototype.show = function(...args) {
+      if (!this.isShown && !this.showing) {
+        // 在 Viewer.js 锁定页面及隐藏滚动条前，精准获取当前滚动条实际宽度
+        const measured = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+        const scrollbarWidth = measured > 0
+          ? measured
+          : (typeof this.scrollbarWidth === 'number' && this.scrollbarWidth > 0 ? this.scrollbarWidth : 0);
 
-    if (origOpen) origOpen.call(this);
-    document.documentElement.classList.add('viewer-open');
-    if (scrollbarWidth > 0) {
-      document.documentElement.style.setProperty('--scrollbar-compensate', `${scrollbarWidth}px`);
-    }
-  };
+        if (scrollbarWidth > 0) {
+          document.documentElement.style.setProperty('--scrollbar-compensate', `${scrollbarWidth}px`);
+        }
+        document.documentElement.classList.add('viewer-open');
+      }
 
-  const origClose = Viewer.prototype.close;
-  Viewer.prototype.close = function() {
-    if (origClose) origClose.call(this);
-    document.documentElement.classList.remove('viewer-open');
-    if (!window.globalModal || !window.globalModal.isScrollLocked) {
-      document.documentElement.style.removeProperty('--scrollbar-compensate');
-    }
-  };
+      let result;
+      try {
+        result = origShow.apply(this, args);
+      } catch (err) {
+        if (!this.showing && !this.isShown && (!document.body || !document.body.classList.contains('viewer-open'))) {
+          document.documentElement.classList.remove('viewer-open');
+          if (!window.globalModal || !window.globalModal.isScrollLocked) {
+            document.documentElement.style.removeProperty('--scrollbar-compensate');
+          }
+        }
+        throw err;
+      }
+
+      // 若触发 show 但被事件阻止（如 preventDefault）且未成功打开，回退清理
+      if (!this.showing && !this.isShown && (!document.body || !document.body.classList.contains('viewer-open'))) {
+        document.documentElement.classList.remove('viewer-open');
+        if (!window.globalModal || !window.globalModal.isScrollLocked) {
+          document.documentElement.style.removeProperty('--scrollbar-compensate');
+        }
+      }
+
+      return result;
+    };
+  }
+
+  const origHide = V.prototype.hide;
+  if (typeof origHide === 'function') {
+    V.prototype.hide = function(...args) {
+      const result = origHide.apply(this, args);
+      // 若处于非动画直接关闭（例如 hide(true)）且 body 已无 viewer-open，立即恢复
+      if (!this.hiding && !this.isShown && (!document.body || !document.body.classList.contains('viewer-open'))) {
+        document.documentElement.classList.remove('viewer-open');
+        if (!window.globalModal || !window.globalModal.isScrollLocked) {
+          document.documentElement.style.removeProperty('--scrollbar-compensate');
+        }
+      }
+      return result;
+    };
+  }
+
+  const origDestroy = V.prototype.destroy;
+  if (typeof origDestroy === 'function') {
+    V.prototype.destroy = function(...args) {
+      const result = origDestroy.apply(this, args);
+      if (!document.body || !document.body.classList.contains('viewer-open')) {
+        document.documentElement.classList.remove('viewer-open');
+        if (!window.globalModal || !window.globalModal.isScrollLocked) {
+          document.documentElement.style.removeProperty('--scrollbar-compensate');
+        }
+      }
+      return result;
+    };
+  }
+
+  // 兼容性补充：若有代码调用了 open / close
+  if (!V.prototype.open && typeof V.prototype.show === 'function') {
+    V.prototype.open = V.prototype.show;
+  }
+  if (!V.prototype.close && typeof V.prototype.hide === 'function') {
+    V.prototype.close = V.prototype.hide;
+  }
 }
 
-syncViewerOpenToHtml();
-document.addEventListener('DOMContentLoaded', syncViewerOpenToHtml);
+window.syncViewerOpenToHtml = syncViewerOpenToHtml;
+
+// 全局监听与初始化 Viewer.js 滚动补偿联动
+(function initViewerCompensationLifecycle() {
+  function cleanupCompensation() {
+    const isViewerOpen = document.body && document.body.classList.contains('viewer-open');
+    if (!isViewerOpen) {
+      document.documentElement.classList.remove('viewer-open');
+      if (!window.globalModal || !window.globalModal.isScrollLocked) {
+        document.documentElement.style.removeProperty('--scrollbar-compensate');
+      }
+    }
+  }
+
+  // 1. 立即执行一次检查与挂载
+  syncViewerOpenToHtml();
+  document.addEventListener('DOMContentLoaded', syncViewerOpenToHtml);
+
+  // 2. 劫持 window.Viewer 属性：应对异步或延迟加载 viewer.min.js 的情况
+  let _Viewer = window.Viewer;
+  try {
+    Object.defineProperty(window, 'Viewer', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return _Viewer;
+      },
+      set(val) {
+        _Viewer = val;
+        syncViewerOpenToHtml();
+      }
+    });
+  } catch (e) {
+    // 忽略在严格或不可配置环境下的拦截失败
+  }
+
+  // 3. 监听 body 的 class 变化：Viewer.js 在关闭动画完成后会移除 body 上的 viewer-open 类
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(() => {
+      cleanupCompensation();
+    });
+
+    const startObserver = () => {
+      if (document.body) {
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      }
+    };
+
+    if (document.body) {
+      startObserver();
+    } else {
+      document.addEventListener('DOMContentLoaded', startObserver);
+    }
+  }
+
+  // 4. 全局监听 hidden 事件（Viewer.js 关闭完成后会触发冒泡的 hidden 事件）
+  document.addEventListener('hidden', () => {
+    cleanupCompensation();
+  }, true);
+})();

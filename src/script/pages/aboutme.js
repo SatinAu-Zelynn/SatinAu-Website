@@ -63,6 +63,9 @@ window.initAboutMePage = function() {
         if (!contentEl || !contentEl.isConnected) return;
         contentEl.innerHTML = marked.parse(md);
         if (typeof Viewer !== 'undefined') {
+            if (typeof window.syncViewerOpenToHtml === 'function') {
+                window.syncViewerOpenToHtml();
+            }
             aboutMeViewer = new Viewer(contentEl, { toolbar: false, transition: true });
         }
     })
