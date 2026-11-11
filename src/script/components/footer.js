@@ -99,6 +99,7 @@ class SiteFooter extends HTMLElement {
         </p>
         <p style="font-family: Kari;">To promote social progress and better standards of life in larger freedom</p>
       </footer>
+      <noscript>Free cookie consent management tool by <a href="https://www.termsfeed.com/">TermsFeed</a></noscript>
       <script src="https://uptime.betterstack.com/widgets/announcement.js" data-id="229580" async="async" type="text/javascript"></script>
     `;
 

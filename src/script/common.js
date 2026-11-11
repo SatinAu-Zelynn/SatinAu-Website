@@ -180,6 +180,23 @@ document.addEventListener('DOMContentLoaded', () => {
   window.detectCdnLatencies();
 });
 
+/* ========== 全局 Cookie 权限与 TermsFeed 管理 ========== */
+window.initGlobalCookieConsent = function() {
+  if (typeof window === 'undefined') return;
+  if (window.cookieconsent && window.cookieconsent.cookieConsentObject) return;
+  if (document.querySelector('script[src*="CookieConsent.js"]')) return;
+  const script = document.createElement('script');
+  script.src = '/src/script/components/CookieConsent.js';
+  script.defer = true;
+  (document.head || document.documentElement).appendChild(script);
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initGlobalCookieConsent);
+} else {
+  window.initGlobalCookieConsent();
+}
+
 /* ========== Live2D 设置逻辑 ========== */
 const LIVE2D_KEY = 'setting_live2d_enabled';
 const LIVE2D_POS_KEY = 'setting_live2d_position';
@@ -788,6 +805,7 @@ function ensureLoadingOverlay() {
     if (pathname.endsWith('/GlobalModal.js') && customElements.get('global-modal')) return true;
     if (pathname.endsWith('/SettingsModal.js') && typeof window.mountSettingsToModal === 'function') return true;
     if (pathname.endsWith('/CRCMenu.js') && customElements.get('custom-right-click-menu')) return true;
+    if (pathname.endsWith('/CookieConsent.js') && window.cookieconsent) return true;
     return false;
   }
 
@@ -796,6 +814,7 @@ function ensureLoadingOverlay() {
     return (
       src.includes('termsfeed.com') ||
       src.includes('cookie-consent') ||
+      src.includes('CookieConsent') ||
       src.includes('clarity.ms') ||
       src.includes('betterstack.com')
     );
