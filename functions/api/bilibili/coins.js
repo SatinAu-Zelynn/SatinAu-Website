@@ -247,7 +247,11 @@ export async function onRequest(context) {
   try {
     // 动态计算 WBI 签名以绕过 B 站风控拦截
     let queryString = `vmid=${encodeURIComponent(vmid)}`;
-    const wbiKeys = await getWbiKeys();
+    let wbiKeys = await getWbiKeys();
+    // 如果环境变量中提供了预先获取的 WBI KEY，直接使用
+    if (!wbiKeys && env && env.BILIBILI_WBI_IMG_KEY && env.BILIBILI_WBI_SUB_KEY) {
+      wbiKeys = { imgKey: env.BILIBILI_WBI_IMG_KEY, subKey: env.BILIBILI_WBI_SUB_KEY };
+    }
     if (wbiKeys) {
       queryString = signWbiParams({ vmid }, wbiKeys.imgKey, wbiKeys.subKey);
     }
