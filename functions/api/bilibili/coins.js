@@ -3,7 +3,6 @@
   接口路由: /api/bilibili/coins
 */
 
-// ==================== MD5 实现 ====================
 function md5(str) {
   function rot(n, s) { return (n << s) | (n >>> (32 - s)); }
   function add(x, y) {
@@ -132,76 +131,80 @@ export async function onRequest(context) {
   let imgKey = (env && env.BILIBILI_WBI_IMG_KEY) || '';
   let subKey = (env && env.BILIBILI_WBI_SUB_KEY) || '';
 
-  if (!imgKey || !subKey) {
-    try {
-      const navRes = await fetch('https://api.bilibili.com/x/web-interface/nav', {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-          'Referer': 'https://www.bilibili.com/',
-          'Cookie': cookieHeader
-        }
-      });
-      if (navRes.ok) {
-        const navJson = await navRes.json();
-        imgKey = (navJson.data?.wbi_img?.img_url || '').split('/').pop().split('.')[0] || '';
-        subKey = (navJson.data?.wbi_img?.sub_url || '').split('/').pop().split('.')[0] || '';
-      }
-    } catch (e) {
-      console.warn('获取WBI keys失败:', e);
-    }
-  }
+  const debug = {
+    steps: []
+  };
 
-  const baseHeaders = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
     'Referer': `https://space.bilibili.com/${vmid}/`,
     'Origin': 'https://space.bilibili.com',
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Cookie': cookieHeader
   };
-  if (cookieHeader) {
-    baseHeaders['Cookie'] = cookieHeader;
+
+  // 1. 尝试最近投币
+  try {
+    const coinRes = await fetch(`https://api.bilibili.com/x/space/coin/video?vmid=${vmid}`, { headers });
+    const coinText = await coinRes.text();
+    debug.steps.push({ name: 'coin_plain', status: coinRes.status, body: coinText.substring(0, 150) });
+    const coinJson = JSON.parse(coinText);
+    if (coinJson && coinJson.code === 0 && Array.isArray(coinJson.data)) {
+      return new Response(JSON.stringify(coinJson), { status: 200, headers: corsHeaders });
+    }
+  } catch (e) {
+    debug.steps.push({ name: 'coin_plain', error: e.message });
   }
 
-  // 1. 尝试直接请求投币接口（不带签名，因为原投币接口老版本只认 Cookie，不认多余的 w_rid 参数）
-  try {
-    const rawRes = await fetch(`https://api.bilibili.com/x/space/coin/video?vmid=${vmid}`, {
-      headers: baseHeaders
-    });
-    const rawJson = await rawRes.json();
-    if (rawJson && rawJson.code === 0) {
-      return new Response(JSON.stringify(rawJson), { status: 200, headers: corsHeaders });
-    }
-  } catch (e) {}
-
-  // 2. 尝试带 WBI 签名请求
+  // 2. 尝试 WBI 投币
   if (imgKey && subKey) {
     try {
-      const signedQuery = signWbiParams({ vmid }, imgKey, subKey);
-      const wbiRes = await fetch(`https://api.bilibili.com/x/space/coin/video?${signedQuery}`, {
-        headers: baseHeaders
-      });
-      const wbiJson = await wbiRes.json();
-      if (wbiJson && wbiJson.code === 0) {
+      const signed = signWbiParams({ vmid }, imgKey, subKey);
+      const wbiRes = await fetch(`https://api.bilibili.com/x/space/coin/video?${signed}`, { headers });
+      const wbiText = await wbiRes.text();
+      debug.steps.push({ name: 'coin_wbi', status: wbiRes.status, body: wbiText.substring(0, 150) });
+      const wbiJson = JSON.parse(wbiText);
+      if (wbiJson && wbiJson.code === 0 && Array.isArray(wbiJson.data)) {
         return new Response(JSON.stringify(wbiJson), { status: 200, headers: corsHeaders });
       }
-    } catch (e) {}
+    } catch (e) {
+      debug.steps.push({ name: 'coin_wbi', error: e.message });
+    }
   }
 
-  // 3. 降级方案：如果投币接口被 B 站海外 IP 风控 (-412)，自动拉取该用户最新的空间投稿视频
-  // 空间投稿视频使用的是公开开放的 API，绝不会被 412 拦截，可以完美保障前台展示！
+  // 3. 尝试客户端移动端公开接口 (移动端 API 风控相对 Web 端更轻)
   try {
-    const archiveUrl = `https://api.bilibili.com/x/space/arc/search?mid=${vmid}&ps=10&tid=0&pn=1&order=pubdate`;
-    const arcRes = await fetch(archiveUrl, {
+    const appRes = await fetch(`https://api.bilibili.com/x/v2/space/coin?vmid=${vmid}&ps=10`, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Referer': `https://space.bilibili.com/${vmid}/video`
+        'User-Agent': 'bili-universal/84000300 (iPhone; iOS 17.5.1; Scale/3.00)',
+        'Referer': 'https://www.bilibili.com/',
+        'Cookie': cookieHeader
       }
     });
-    const arcJson = await arcRes.json();
+    const appText = await appRes.text();
+    debug.steps.push({ name: 'coin_app', status: appRes.status, body: appText.substring(0, 150) });
+    const appJson = JSON.parse(appText);
+    if (appJson && appJson.code === 0 && Array.isArray(appJson.data)) {
+      return new Response(JSON.stringify(appJson), { status: 200, headers: corsHeaders });
+    }
+  } catch (e) {
+    debug.steps.push({ name: 'coin_app', error: e.message });
+  }
+
+  // 4. 尝试空间公开投稿列表（WBI 与公开参数）
+  try {
+    const arcUrl = imgKey && subKey
+      ? `https://api.bilibili.com/x/space/wbi/arc/search?${signWbiParams({ mid: vmid, ps: 10, pn: 1, order: 'pubdate' }, imgKey, subKey)}`
+      : `https://api.bilibili.com/x/space/arc/search?mid=${vmid}&ps=10&pn=1&order=pubdate`;
+
+    const arcRes = await fetch(arcUrl, { headers });
+    const arcText = await arcRes.text();
+    debug.steps.push({ name: 'space_arc', status: arcRes.status, body: arcText.substring(0, 150) });
+    const arcJson = JSON.parse(arcText);
 
     if (arcJson && arcJson.code === 0 && arcJson.data?.list?.vlist) {
-      // 转换格式适配投币视频的结构 { bvid, title, pic, desc, duration, ... }
-      const formattedList = arcJson.data.list.vlist.map(item => ({
+      const list = arcJson.data.list.vlist.map(item => ({
         bvid: item.bvid,
         aid: item.aid,
         title: item.title,
@@ -215,19 +218,20 @@ export async function onRequest(context) {
           mid: item.mid
         }
       }));
-
       return new Response(JSON.stringify({
         code: 0,
-        message: 'fallback_to_archives',
-        data: formattedList
+        message: 'success_fallback_arc',
+        data: list
       }), { status: 200, headers: corsHeaders });
     }
-  } catch (arcErr) {}
+  } catch (e) {
+    debug.steps.push({ name: 'space_arc', error: e.message });
+  }
 
-  // 4. 如果所有降级方案都失败，返回友好的调试信息
   return new Response(JSON.stringify({
     code: 412,
-    message: 'B站海外节点风控拦截，请稍后再试',
+    message: '全部请求均被拦截或失败',
+    debug,
     data: []
   }), { status: 200, headers: corsHeaders });
 }
