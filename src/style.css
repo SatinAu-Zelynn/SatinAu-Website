@@ -4438,14 +4438,14 @@ body.hero-open {
   }
 }
 
-/* ========== 首页近期动态 (Bilibili 投币 & Steam 在玩) ========== */
+/* ========== 首页近期动态 (Steam 在玩) ========== */
 .recent-activities-section {
   margin-top: 50px;
 }
 
 .activity-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
   margin-top: 25px;
   align-items: start;
@@ -4468,6 +4468,7 @@ body.hero-open {
   display: flex;
   align-items: center;
   gap: 12px;
+  text-align: left;
 }
 
 .activity-platform-icon {
@@ -4478,13 +4479,19 @@ body.hero-open {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.3s ease;
+  text-decoration: none;
+  transition: transform 0.3s ease, filter 0.2s ease;
 }
 
-.activity-platform-icon.bili-icon {
-  color: #00aeec;
-  background: light-dark(rgba(0, 174, 236, 0.12), rgba(0, 174, 236, 0.2));
-  box-shadow: inset 0 0 0 1px light-dark(rgba(0, 174, 236, 0.2), rgba(0, 174, 236, 0.3));
+@media (hover: hover) {
+  a.activity-platform-icon:hover {
+    transform: scale(1.08);
+    filter: brightness(1.08);
+  }
+}
+
+a.activity-platform-icon:active {
+  transform: scale(0.94);
 }
 
 .activity-platform-icon.steam-icon {
@@ -4496,6 +4503,7 @@ body.hero-open {
 .activity-platform-icon svg {
   width: 22px;
   height: 22px;
+  fill: currentColor;
 }
 
 .activity-column-title {
@@ -4513,31 +4521,9 @@ body.hero-open {
   display: block;
 }
 
-.activity-more-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--primary-color, #3b82f6);
-  text-decoration: none;
-  font-weight: 500;
-  opacity: 0.85;
-  transition: opacity 0.2s, transform 0.2s;
-  padding: 4px 8px;
-  border-radius: var(--border-radius-sm);
-}
-
-@media (hover: hover) {
-  .activity-more-link:hover {
-    opacity: 1;
-    transform: translateX(2px);
-    background: light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06));
-  }
-}
-
 .activity-cards-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 
@@ -4555,6 +4541,13 @@ body.hero-open {
   cursor: pointer;
 }
 
+.activity-card.steam-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px !important;
+}
+
 .activity-media-thumb {
   position: relative;
   width: 132px;
@@ -4563,6 +4556,21 @@ body.hero-open {
   border-radius: var(--border-radius-sm);
   overflow: hidden;
   background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.06));
+}
+
+.activity-card.steam-card .activity-media-thumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 460 / 215;
+}
+
+.activity-card.steam-card .activity-content {
+  justify-content: flex-start;
+}
+
+.activity-card.steam-card .activity-stats-row {
+  margin-top: auto;
+  padding-top: 2px;
 }
 
 .activity-media-thumb img {
@@ -4577,37 +4585,6 @@ body.hero-open {
   .activity-card:hover .activity-media-thumb img {
     transform: scale(1.08);
   }
-}
-
-.activity-duration-badge {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.72);
-  color: #fff;
-  font-size: 10px;
-  padding: 2px 5px;
-  border-radius: 4px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  font-family: 'Google Sans Code', monospace;
-  letter-spacing: 0.5px;
-}
-
-.activity-coin-badge {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.95));
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
 }
 
 .activity-playtime-badge {
@@ -4632,6 +4609,7 @@ body.hero-open {
   min-width: 0;
   flex: 1;
   gap: 6px;
+  text-align: left;
 }
 
 .activity-item-title {
@@ -4647,51 +4625,6 @@ body.hero-open {
   overflow: hidden;
   text-overflow: ellipsis;
   word-break: break-word;
-}
-
-.activity-author-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  opacity: 0.85;
-}
-
-.activity-author-avatar {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.activity-author-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-  font-weight: 500;
-}
-
-.activity-time-tag {
-  font-size: 11px;
-  opacity: 0.6;
-  margin-left: auto;
-  white-space: nowrap;
-}
-
-.activity-meta-stats {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 11px;
-  opacity: 0.7;
-}
-
-.activity-stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
 }
 
 .activity-stats-row {
@@ -4711,20 +4644,10 @@ body.hero-open {
   font-weight: 500;
 }
 
-.activity-link-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--primary-color, #3b82f6);
-  opacity: 0.85;
-  font-weight: 500;
-  margin-top: 2px;
-}
-
 /* 空状态与提示卡片 */
 .activity-empty-card,
 .activity-prompt-card {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -4740,6 +4663,7 @@ body.hero-open {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  text-align: left;
 }
 
 .activity-prompt-card .value {
@@ -4777,17 +4701,11 @@ body.hero-open {
   margin-top: 4px;
 }
 
-.activity-skeleton-card .skeleton-meta {
-  width: 65%;
-  margin-top: 4px;
-}
-
 @keyframes activity-shimmer {
   0% { opacity: 0.45; }
   50% { opacity: 0.85; }
   100% { opacity: 0.45; }
 }
-
 /* 移动端适配 */
 @media (max-width: 768px) {
   .activity-grid {
@@ -4795,14 +4713,32 @@ body.hero-open {
     gap: 20px;
   }
 
-  .activity-card {
+  .activity-cards-list {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-card,
+  .activity-card.steam-card {
+    flex-direction: row;
+    align-items: center;
     padding: 10px 12px !important;
     gap: 12px;
   }
 
-  .activity-media-thumb {
+  .activity-media-thumb,
+  .activity-card.steam-card .activity-media-thumb {
     width: 110px;
     height: 70px;
+    aspect-ratio: auto;
+  }
+
+  .activity-card.steam-card .activity-content {
+    justify-content: center;
+  }
+
+  .activity-card.steam-card .activity-stats-row {
+    margin-top: 2px;
+    padding-top: 0;
   }
 
   .activity-item-title {

@@ -129,41 +129,8 @@ function initZelynnCardBg() {
     });
 }
 
-/* ========== 最近动态板块 (Bilibili 投币 & Steam 在玩) ========== */
+/* ========== 最近动态板块 (Steam 在玩) ========== */
 let activitiesAbortController = null;
-
-function formatActivityNumber(num) {
-  if (typeof num !== 'number') return '0';
-  if (num >= 10000) return (num / 10000).toFixed(1) + '万';
-  return num.toString();
-}
-
-function formatActivityDuration(seconds) {
-  if (!seconds || isNaN(seconds)) return '00:00';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  const sStr = s < 10 ? '0' + s : s;
-  if (m >= 60) {
-    const h = Math.floor(m / 60);
-    const mRem = m % 60;
-    const mStr = mRem < 10 ? '0' + mRem : mRem;
-    return `${h}:${mStr}:${sStr}`;
-  }
-  const mStr = m < 10 ? '0' + m : m;
-  return `${mStr}:${sStr}`;
-}
-
-function formatActivityRelativeTime(timestamp) {
-  if (!timestamp) return '';
-  const timeMs = timestamp < 1e11 ? timestamp * 1000 : timestamp;
-  const diffSec = Math.floor((Date.now() - timeMs) / 1000);
-  if (diffSec < 60) return '刚刚';
-  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}分钟前`;
-  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}小时前`;
-  if (diffSec < 86400 * 30) return `${Math.floor(diffSec / 86400)}天前`;
-  const date = new Date(timeMs);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
 
 function formatActivityHours(minutes) {
   if (!minutes || minutes <= 0) return '0 小时';
@@ -171,122 +138,42 @@ function formatActivityHours(minutes) {
   return `${(minutes / 60).toFixed(1)} 小时`;
 }
 
-function renderBilibiliSkeleton() {
-  return `
-    <div class="activity-card contact-card activity-skeleton-card">
-      <div class="activity-media-thumb skeleton-box"></div>
-      <div class="activity-content">
-        <div class="skeleton-line skeleton-title"></div>
-        <div class="skeleton-line skeleton-sub"></div>
-        <div class="skeleton-line skeleton-meta"></div>
-      </div>
-    </div>
-  `;
+function escapeActivityHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[s]));
 }
 
 function renderSteamSkeleton() {
   return `
-    <div class="activity-card contact-card activity-skeleton-card">
+    <div class="activity-card steam-card contact-card activity-skeleton-card">
       <div class="activity-media-thumb skeleton-box"></div>
       <div class="activity-content">
         <div class="skeleton-line skeleton-title"></div>
         <div class="skeleton-line skeleton-sub"></div>
-        <div class="skeleton-line skeleton-meta"></div>
       </div>
     </div>
-  `;
+  `.repeat(3);
 }
 
-async function loadBilibiliCoins(signal) {
-  const container = document.getElementById('bilibili-coins-list');
-  if (!container) return;
+function updateSteamProfileLink(steamId) {
+  const profileLink = document.getElementById('steam-profile-link');
+  if (!profileLink || !steamId) return;
 
-  const vmid = window.SITE_CONFIG?.BILIBILI_UID || '1502522588';
-  try {
-    const res = await fetch(`/api/bilibili/coins?vmid=${encodeURIComponent(vmid)}`, { signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    if (!container.isConnected) return;
-
-    if (data.code === 412 || data.need_cookie) {
-      container.innerHTML = `
-        <div class="activity-prompt-card contact-card">
-          <div class="activity-empty-icon">🪙</div>
-          <div class="activity-empty-text">
-            <div class="label">哔哩哔哩 · 接口需配置凭证</div>
-            <div class="value">B 站投币接口存在风控保护（412），需在 Cloudflare 环境变量中添加 BILIBILI_COOKIE（填入 SESSDATA 与 buvid3）即可同步数据。</div>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    if (data.code === 0 && Array.isArray(data.data) && data.data.length > 0) {
-      // 提取前 2 部最近投币的视频
-      const videos = data.data.slice(0, 2);
-      container.innerHTML = videos.map(video => {
-        const jumpUrl = `https://www.bilibili.com/video/${video.bvid}`;
-        const appUrl = video.aid ? `bilibili://video/${video.aid}` : '';
-        const titleEscaped = (video.title || '').replace(/"/g, '&quot;');
-        const safeJump = `document.getElementById('globalModal') ? document.getElementById('globalModal').with(this).alert('是否前往哔哩哔哩观看视频？', '${jumpUrl}', '${appUrl}') : window.open('${jumpUrl}', '_blank')`;
-
-        return `
-          <a class="activity-card bili-card contact-card" href="javascript:void(0);" onclick="${safeJump}" title="${titleEscaped}">
-            <div class="activity-media-thumb">
-              <img src="${video.pic}" alt="${titleEscaped}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.opacity='0'" />
-              <span class="activity-duration-badge">${formatActivityDuration(video.duration)}</span>
-              <span class="activity-coin-badge" title="已投币">🪙 投币</span>
-            </div>
-            <div class="activity-content">
-              <h4 class="activity-item-title">${titleEscaped}</h4>
-              <div class="activity-author-row">
-                ${video.owner?.face ? `<img class="activity-author-avatar" src="${video.owner.face}" alt="${video.owner.name || ''}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'" />` : ''}
-                <span class="activity-author-name">${video.owner?.name || 'UP主'}</span>
-                <span class="activity-time-tag">${formatActivityRelativeTime(video.time || video.pubdate)}</span>
-              </div>
-              <div class="activity-meta-stats">
-                <span class="activity-stat" title="播放量">
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                  ${formatActivityNumber(video.stat?.view || 0)}
-                </span>
-                <span class="activity-stat" title="点赞数">
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
-                  ${formatActivityNumber(video.stat?.like || 0)}
-                </span>
-                <span class="activity-stat" title="投币数">
-                  🪙 ${formatActivityNumber(video.stat?.coin || 0)}
-                </span>
-              </div>
-            </div>
-          </a>
-        `;
-      }).join('');
+  const profileUrl = `https://steamcommunity.com/profiles/${steamId}`;
+  const profileScheme = `steam://url/SteamIDPage/${steamId}`;
+  profileLink.onclick = function() {
+    const modal = document.getElementById('globalModal');
+    if (modal) {
+      modal.with(this).alert('是否跳转到 Steam 个人主页？', profileUrl, profileScheme);
     } else {
-      container.innerHTML = `
-        <div class="activity-empty-card contact-card">
-          <div class="activity-empty-icon">🪙</div>
-          <div class="activity-empty-text">
-            <div class="label">哔哩哔哩</div>
-            <div class="value">${data.message && data.message !== '0' ? data.message : '近期未获取到公开投币记录'}</div>
-          </div>
-        </div>
-      `;
+      window.open(profileUrl, '_blank');
     }
-  } catch (err) {
-    if (signal?.aborted) return;
-    console.warn('获取B站投币数据失败:', err);
-    if (!container.isConnected) return;
-    container.innerHTML = `
-      <div class="activity-empty-card contact-card">
-        <div class="activity-empty-icon">📺</div>
-        <div class="activity-empty-text">
-          <div class="label">哔哩哔哩</div>
-          <div class="value">网络连接异常或暂未同步公开记录</div>
-        </div>
-      </div>
-    `;
-  }
+  };
 }
 
 async function loadSteamGames(signal) {
@@ -294,6 +181,7 @@ async function loadSteamGames(signal) {
   if (!container) return;
 
   const steamId = window.SITE_CONFIG?.STEAM_ID || '';
+  updateSteamProfileLink(steamId);
   const queryParam = steamId ? `?steamid=${encodeURIComponent(steamId)}` : '';
 
   try {
@@ -304,10 +192,7 @@ async function loadSteamGames(signal) {
     if (!container.isConnected) return;
 
     // 若配置了 Steam ID，更新个人主页跳转链接
-    const profileLink = document.getElementById('steam-profile-link');
-    if (profileLink && steamId) {
-      profileLink.setAttribute('onclick', `document.getElementById('globalModal') ? document.getElementById('globalModal').with(this).alert('是否跳转到 Steam 个人主页？', 'https://steamcommunity.com/profiles/${steamId}', 'steam://url/SteamIDPage/${steamId}') : window.open('https://steamcommunity.com/profiles/${steamId}', '_blank')`);
-    }
+    updateSteamProfileLink(steamId || data.steamid || '');
 
     if (data.configured === false) {
       container.innerHTML = `
@@ -323,18 +208,15 @@ async function loadSteamGames(signal) {
     }
 
     if (data.success && Array.isArray(data.games) && data.games.length > 0) {
-      // 提取前 2 款游戏展示
-      const games = data.games.slice(0, 2);
-      container.innerHTML = games.map(game => {
-        const storeUrl = game.store_url || `https://store.steampowered.com/app/${game.appid}/`;
-        const appScheme = `steam://store/${game.appid}`;
-        const nameEscaped = (game.name || '').replace(/"/g, '&quot;');
-        const safeJump = `document.getElementById('globalModal') ? document.getElementById('globalModal').with(this).alert('是否前往 Steam 商店查看《${nameEscaped}》？', '${storeUrl}', '${appScheme}') : window.open('${storeUrl}', '_blank')`;
+      // 提取前 3 款游戏展示
+      const games = data.games.slice(0, 3);
+      container.innerHTML = games.map((game, index) => {
+        const nameEscaped = escapeActivityHtml(game.name || '');
 
         return `
-          <a class="activity-card steam-card contact-card" href="javascript:void(0);" onclick="${safeJump}" title="${nameEscaped}">
+          <a class="activity-card steam-card contact-card" href="javascript:void(0);" data-game-index="${index}" title="${nameEscaped}">
             <div class="activity-media-thumb steam-thumb">
-              <img src="${game.header_image}" alt="${nameEscaped}" loading="lazy" onerror="this.src='${game.capsule_image || ''}'; this.onerror=null;" />
+              <img src="${escapeActivityHtml(game.header_image || '')}" alt="${nameEscaped}" loading="lazy" />
               <span class="activity-playtime-badge">近两周 ${formatActivityHours(game.playtime_2weeks)}</span>
             </div>
             <div class="activity-content">
@@ -342,14 +224,39 @@ async function loadSteamGames(signal) {
               <div class="activity-stats-row">
                 <span class="activity-time-pill" title="总游戏时间">总时长: ${formatActivityHours(game.playtime_forever)}</span>
               </div>
-              <div class="activity-link-hint">
-                <span>Steam 商店页面</span>
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </div>
             </div>
           </a>
         `;
       }).join('');
+
+      container.querySelectorAll('.steam-card').forEach(card => {
+        const game = games[Number(card.dataset.gameIndex)];
+        if (!game) return;
+
+        const img = card.querySelector('.activity-media-thumb img');
+        if (img) {
+          img.addEventListener('error', () => {
+            if (!img.dataset.retried && game.capsule_image) {
+              img.dataset.retried = '1';
+              img.src = game.capsule_image;
+            } else {
+              img.style.opacity = '0';
+            }
+          });
+        }
+
+        card.addEventListener('click', (e) => {
+          e.preventDefault();
+          const storeUrl = game.store_url || `https://store.steampowered.com/app/${game.appid}/`;
+          const appScheme = `steam://store/${game.appid}`;
+          const modal = document.getElementById('globalModal');
+          if (modal) {
+            modal.with(card).alert(`是否前往 Steam 商店查看《${game.name || ''}》？`, storeUrl, appScheme);
+          } else {
+            window.open(storeUrl, '_blank');
+          }
+        });
+      });
     } else {
       container.innerHTML = `
         <div class="activity-empty-card contact-card">
@@ -378,9 +285,8 @@ async function loadSteamGames(signal) {
 }
 
 function initRecentActivities() {
-  const biliContainer = document.getElementById('bilibili-coins-list');
   const steamContainer = document.getElementById('steam-games-list');
-  if (!biliContainer && !steamContainer) return;
+  if (!steamContainer) return;
 
   if (activitiesAbortController) {
     activitiesAbortController.abort();
@@ -388,10 +294,8 @@ function initRecentActivities() {
   activitiesAbortController = new AbortController();
   const signal = activitiesAbortController.signal;
 
-  if (biliContainer) biliContainer.innerHTML = renderBilibiliSkeleton();
-  if (steamContainer) steamContainer.innerHTML = renderSteamSkeleton();
+  steamContainer.innerHTML = renderSteamSkeleton();
 
-  loadBilibiliCoins(signal);
   loadSteamGames(signal);
 }
 

@@ -453,6 +453,7 @@ function showToast(msg) {
     'main.page section > p',
     'main.page section .grid-column > p',
     'main.page section > pre',
+    'main.page .activity-column-header',
     'main.page .contact-card',
     'main.page .moment-card',
     'main.page .video-wrapper',
