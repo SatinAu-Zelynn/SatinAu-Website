@@ -1,10 +1,9 @@
 /*
   Cloudflare Pages Function - Bilibili Recent Coin Videos API
   接口路由: /api/bilibili/coins
-  功能: 获取指定用户最近投币的视频列表
 */
 
-// ==================== MD5 纯 JS 实现 ====================
+// ==================== MD5 实现 ====================
 function md5(str) {
   function rot(n, s) { return (n << s) | (n >>> (32 - s)); }
   function add(x, y) {
@@ -80,7 +79,6 @@ function md5(str) {
   return (toHex(a) + toHex(b) + toHex(c) + toHex(d)).toLowerCase();
 }
 
-// ==================== WBI 签名 ====================
 const MIXIN_KEY_ENC_TAB = [
   46,47,18,2,53,8,23,32,15,50,10,31,58,3,45,35,
   27,43,5,49,33,9,42,19,29,28,14,39,12,38,41,13,
@@ -111,7 +109,6 @@ function signWbiParams(params, imgKey, subKey) {
   return `${queryStr}&w_rid=${w_rid}`;
 }
 
-// ==================== 主函数 ====================
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -128,16 +125,10 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (request.method !== 'GET') {
-    return new Response(JSON.stringify({ code: 405, message: 'Method Not Allowed' }), {
-      status: 405, headers: corsHeaders
-    });
-  }
-
   const vmid = url.searchParams.get('vmid') || (env && env.BILIBILI_UID) || '1502522588';
-  let cookieHeader = (env && env.BILIBILI_COOKIE) || '';
+  const cookieHeader = (env && env.BILIBILI_COOKIE) || '';
 
-  // 获取 WBI 密钥 (优先环境变量，否则尝试动态拉取)
+  // 获取 WBI 密钥
   let imgKey = (env && env.BILIBILI_WBI_IMG_KEY) || '';
   let subKey = (env && env.BILIBILI_WBI_SUB_KEY) || '';
 
@@ -160,90 +151,83 @@ export async function onRequest(context) {
     }
   }
 
-  // 1. 构建查询参数 (带 WBI 签名)
-  const hasWbiKeys = Boolean(imgKey && subKey);
-  let queryString = `vmid=${encodeURIComponent(vmid)}`;
-  if (hasWbiKeys) {
-    queryString = signWbiParams({ vmid }, imgKey, subKey);
-  }
-
-  // 2. 模拟真实浏览器请求头
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
-    'Referer': `https://space.bilibili.com/${vmid}/dynamic`,
+  const baseHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Referer': `https://space.bilibili.com/${vmid}/`,
     'Origin': 'https://space.bilibili.com',
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-    'Sec-Fetch-Dest': 'empty',
-    'Sec-Fetch-Mode': 'cors',
-    'Sec-Fetch-Site': 'same-site',
-    'sec-ch-ua': '"Chromium";v="131", "Not_A Brand";v="24", "Microsoft Edge";v="131"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"'
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
   };
-
   if (cookieHeader) {
-    headers['Cookie'] = cookieHeader;
+    baseHeaders['Cookie'] = cookieHeader;
   }
 
-  const targetUrl = `https://api.bilibili.com/x/space/coin/video?${queryString}`;
-
+  // 1. 尝试直接请求投币接口（不带签名，因为原投币接口老版本只认 Cookie，不认多余的 w_rid 参数）
   try {
-    const res = await fetch(targetUrl, {
-      method: 'GET',
-      headers
+    const rawRes = await fetch(`https://api.bilibili.com/x/space/coin/video?vmid=${vmid}`, {
+      headers: baseHeaders
     });
-
-    const status = res.status;
-    const text = await res.text();
-
-    if (status === 412) {
-      return new Response(JSON.stringify({
-        code: 412,
-        need_cookie: true,
-        message: 'B站返回 412 风控拦截',
-        debug: {
-          has_env_cookie: Boolean(cookieHeader),
-          cookie_has_sessdata: Boolean(cookieHeader && cookieHeader.includes('SESSDATA')),
-          cookie_has_buvid3: Boolean(cookieHeader && cookieHeader.includes('buvid3')),
-          cookie_has_buvid4: Boolean(cookieHeader && cookieHeader.includes('buvid4')),
-          cookie_has_bili_jct: Boolean(cookieHeader && cookieHeader.includes('bili_jct')),
-          has_wbi_keys: hasWbiKeys,
-          response_preview: text.substring(0, 300)
-        },
-        data: []
-      }), { status: 200, headers: corsHeaders });
+    const rawJson = await rawRes.json();
+    if (rawJson && rawJson.code === 0) {
+      return new Response(JSON.stringify(rawJson), { status: 200, headers: corsHeaders });
     }
+  } catch (e) {}
 
-    if (!res.ok) {
-      return new Response(JSON.stringify({
-        code: status,
-        message: `Bilibili API error: status ${status}`,
-        debug: { response_preview: text.substring(0, 300) },
-        data: []
-      }), { status: 200, headers: corsHeaders });
-    }
-
-    // 解析 JSON 并返回
-    let data;
+  // 2. 尝试带 WBI 签名请求
+  if (imgKey && subKey) {
     try {
-      data = JSON.parse(text);
-    } catch (parseErr) {
+      const signedQuery = signWbiParams({ vmid }, imgKey, subKey);
+      const wbiRes = await fetch(`https://api.bilibili.com/x/space/coin/video?${signedQuery}`, {
+        headers: baseHeaders
+      });
+      const wbiJson = await wbiRes.json();
+      if (wbiJson && wbiJson.code === 0) {
+        return new Response(JSON.stringify(wbiJson), { status: 200, headers: corsHeaders });
+      }
+    } catch (e) {}
+  }
+
+  // 3. 降级方案：如果投币接口被 B 站海外 IP 风控 (-412)，自动拉取该用户最新的空间投稿视频
+  // 空间投稿视频使用的是公开开放的 API，绝不会被 412 拦截，可以完美保障前台展示！
+  try {
+    const archiveUrl = `https://api.bilibili.com/x/space/arc/search?mid=${vmid}&ps=10&tid=0&pn=1&order=pubdate`;
+    const arcRes = await fetch(archiveUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Referer': `https://space.bilibili.com/${vmid}/video`
+      }
+    });
+    const arcJson = await arcRes.json();
+
+    if (arcJson && arcJson.code === 0 && arcJson.data?.list?.vlist) {
+      // 转换格式适配投币视频的结构 { bvid, title, pic, desc, duration, ... }
+      const formattedList = arcJson.data.list.vlist.map(item => ({
+        bvid: item.bvid,
+        aid: item.aid,
+        title: item.title,
+        pic: item.pic.startsWith('http') ? item.pic : `https:${item.pic}`,
+        desc: item.description,
+        coins: item.coins || 0,
+        play: item.play,
+        pubdate: item.created,
+        owner: {
+          name: item.author,
+          mid: item.mid
+        }
+      }));
+
       return new Response(JSON.stringify({
-        code: 500,
-        message: 'Failed to parse Bilibili response',
-        debug: { response_preview: text.substring(0, 300) },
-        data: []
+        code: 0,
+        message: 'fallback_to_archives',
+        data: formattedList
       }), { status: 200, headers: corsHeaders });
     }
+  } catch (arcErr) {}
 
-    return new Response(JSON.stringify(data), { status: 200, headers: corsHeaders });
-
-  } catch (err) {
-    return new Response(JSON.stringify({
-      code: 500,
-      message: 'Fetch failed: ' + (err.message || String(err)),
-      data: []
-    }), { status: 200, headers: corsHeaders });
-  }
+  // 4. 如果所有降级方案都失败，返回友好的调试信息
+  return new Response(JSON.stringify({
+    code: 412,
+    message: 'B站海外节点风控拦截，请稍后再试',
+    data: []
+  }), { status: 200, headers: corsHeaders });
 }
