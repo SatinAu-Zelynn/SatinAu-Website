@@ -209,6 +209,19 @@ async function loadBilibiliCoins(signal) {
 
     if (!container.isConnected) return;
 
+    if (data.code === 412 || data.need_cookie) {
+      container.innerHTML = `
+        <div class="activity-prompt-card contact-card">
+          <div class="activity-empty-icon">🪙</div>
+          <div class="activity-empty-text">
+            <div class="label">哔哩哔哩 · 接口需配置凭证</div>
+            <div class="value">B 站投币接口存在风控保护（412），需在 Cloudflare 环境变量中添加 BILIBILI_COOKIE（填入 SESSDATA 与 buvid3）即可同步数据。</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
     if (data.code === 0 && Array.isArray(data.data) && data.data.length > 0) {
       // 提取前 2 部最近投币的视频
       const videos = data.data.slice(0, 2);
