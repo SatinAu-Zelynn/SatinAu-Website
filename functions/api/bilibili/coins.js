@@ -118,55 +118,98 @@ function signWbiParams(params, imgKey, subKey) {
 
 // ==================== 原始 TCP Socket 请求 ====================
 /**
- * 通过 Cloudflare Sockets API 发送原始 HTTPS 请求，
- * 彻底避免 fetch() 自动注入 cf-connecting-ip 等特征头。
+ * 通过 Cloudflare Sockets API 发送原始 HTTPS 请求。
+ * 关键点：必须 await socket.opened 等 TLS 握手完成后再写入。
+ * 请求头使用 Accept-Encoding: identity 避免收到 gzip 压缩内容。
  */
-async function rawHttpsRequest(hostname, path, headers) {
+async function rawHttpsRequest(hostname, path, reqHeaders) {
   const socket = connect({ hostname, port: 443 }, { secureTransport: 'on' });
 
-  const headerLines = Object.entries(headers)
+  // ★ 关键：等待 TLS 握手完成，否则写入数据会丢失，导致 status 0
+  await socket.opened;
+
+  const headerLines = Object.entries(reqHeaders)
     .map(([k, v]) => `${k}: ${v}`)
     .join('\r\n');
 
-  const rawRequest = `GET ${path} HTTP/1.1\r\nHost: ${hostname}\r\n${headerLines}\r\nConnection: close\r\n\r\n`;
+  // 使用 HTTP/1.0 + Connection: close 确保服务端关闭连接（方便读取完毕）
+  const rawRequest = [
+    `GET ${path} HTTP/1.1`,
+    `Host: ${hostname}`,
+    headerLines,
+    'Connection: close',
+    '',
+    ''
+  ].join('\r\n');
 
-  const encoder = new TextEncoder();
   const writer = socket.writable.getWriter();
-  await writer.write(encoder.encode(rawRequest));
+  await writer.write(new TextEncoder().encode(rawRequest));
   await writer.close();
 
+  // 读取全部响应字节
   const reader = socket.readable.getReader();
   const chunks = [];
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
-    chunks.push(value);
+    if (value) chunks.push(value);
   }
 
-  // 合并所有 chunk
+  // 合并字节
   let totalLen = 0;
   for (const c of chunks) totalLen += c.length;
   const merged = new Uint8Array(totalLen);
-  let offset = 0;
-  for (const c of chunks) { merged.set(c, offset); offset += c.length; }
+  let off = 0;
+  for (const c of chunks) { merged.set(c, off); off += c.length; }
 
-  const decoder = new TextDecoder();
-  const raw = decoder.decode(merged);
-
-  // 解析 HTTP 响应：分离 headers 与 body
-  const headerEnd = raw.indexOf('\r\n\r\n');
-  if (headerEnd === -1) {
-    return { status: 0, headers: '', body: raw };
+  // 在原始字节中查找 \r\n\r\n (header / body 分隔)
+  let sepIdx = -1;
+  for (let i = 0; i < merged.length - 3; i++) {
+    if (merged[i]===13 && merged[i+1]===10 && merged[i+2]===13 && merged[i+3]===10) {
+      sepIdx = i; break;
+    }
+  }
+  if (sepIdx === -1) {
+    return { status: 0, headers: '', body: new TextDecoder().decode(merged) };
   }
 
-  const respHeaders = raw.substring(0, headerEnd);
-  let body = raw.substring(headerEnd + 4);
+  const headerBytes = merged.slice(0, sepIdx);
+  const bodyBytes   = merged.slice(sepIdx + 4);
+  const respHeaders = new TextDecoder().decode(headerBytes);
 
-  // 提取 HTTP 状态码
+  // 提取状态码
   const statusMatch = respHeaders.match(/HTTP\/[\d.]+ (\d+)/);
   const status = statusMatch ? parseInt(statusMatch[1], 10) : 0;
 
-  // 处理 chunked transfer encoding
+  // 解压 gzip（如有）
+  let body;
+  if (respHeaders.toLowerCase().includes('content-encoding: gzip')) {
+    try {
+      const ds = new DecompressionStream('gzip');
+      const dw = ds.writable.getWriter();
+      dw.write(bodyBytes);
+      dw.close();
+      const dr = ds.readable.getReader();
+      const dChunks = [];
+      while (true) {
+        const { value, done } = await dr.read();
+        if (done) break;
+        if (value) dChunks.push(value);
+      }
+      let dLen = 0;
+      for (const c of dChunks) dLen += c.length;
+      const dMerged = new Uint8Array(dLen);
+      let dOff = 0;
+      for (const c of dChunks) { dMerged.set(c, dOff); dOff += c.length; }
+      body = new TextDecoder().decode(dMerged);
+    } catch (e) {
+      body = new TextDecoder().decode(bodyBytes);
+    }
+  } else {
+    body = new TextDecoder().decode(bodyBytes);
+  }
+
+  // 解码 chunked transfer encoding
   if (respHeaders.toLowerCase().includes('transfer-encoding: chunked')) {
     body = decodeChunked(body);
   }
@@ -186,7 +229,7 @@ function decodeChunked(raw) {
     if (isNaN(size) || size === 0) break;
     pos = lineEnd + 2;
     result += raw.substring(pos, pos + size);
-    pos += size + 2; // skip trailing \r\n
+    pos += size + 2;
   }
   return result;
 }
@@ -215,9 +258,9 @@ export async function onRequest(context) {
   }
 
   const vmid = url.searchParams.get('vmid') || (env && env.BILIBILI_UID) || '1502522588';
-  let cookieHeader = (env && env.BILIBILI_COOKIE) || '';
+  const cookieHeader = (env && env.BILIBILI_COOKIE) || '';
 
-  // 获取 WBI 密钥 (优先环境变量，否则尝试动态获取)
+  // 获取 WBI 密钥
   let imgKey = (env && env.BILIBILI_WBI_IMG_KEY) || '';
   let subKey = (env && env.BILIBILI_WBI_SUB_KEY) || '';
 
@@ -226,36 +269,37 @@ export async function onRequest(context) {
       const navRes = await rawHttpsRequest('api.bilibili.com', '/x/web-interface/nav', {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         'Referer': 'https://www.bilibili.com/',
-        'Accept': 'application/json, text/plain, */*'
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9',
+        'Accept-Encoding': 'identity',
+        'Cookie': cookieHeader
       });
       if (navRes.status === 200 && navRes.body) {
         const navJson = JSON.parse(navRes.body);
-        const navImgUrl = navJson.data?.wbi_img?.img_url || '';
-        const navSubUrl = navJson.data?.wbi_img?.sub_url || '';
-        imgKey = navImgUrl.split('/').pop().split('.')[0] || '';
-        subKey = navSubUrl.split('/').pop().split('.')[0] || '';
+        imgKey = (navJson.data?.wbi_img?.img_url || '').split('/').pop().split('.')[0] || '';
+        subKey = (navJson.data?.wbi_img?.sub_url  || '').split('/').pop().split('.')[0] || '';
       }
     } catch (e) {
       console.warn('Socket获取WBI keys失败:', e);
     }
   }
 
-  // 构建查询参数 (带 WBI 签名)
-  let queryString = `vmid=${encodeURIComponent(vmid)}`;
+  // 构建查询参数（带 WBI 签名）
   const hasWbiKeys = Boolean(imgKey && subKey);
-  if (hasWbiKeys) {
-    queryString = signWbiParams({ vmid }, imgKey, subKey);
-  }
+  const queryString = hasWbiKeys
+    ? signWbiParams({ vmid }, imgKey, subKey)
+    : `vmid=${encodeURIComponent(vmid)}`;
 
   const apiPath = `/x/space/coin/video?${queryString}`;
 
-  // 构建干净的请求头 (无任何 cf-* 特征)
+  // 请求头：模拟真实浏览器，Accept-Encoding: identity 避免 gzip（简化解析）
   const reqHeaders = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     'Referer': `https://space.bilibili.com/${vmid}/`,
     'Origin': 'https://space.bilibili.com',
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'identity'
   };
 
   if (cookieHeader) {
@@ -263,26 +307,27 @@ export async function onRequest(context) {
   }
 
   try {
-    // 方案 A: 使用原始 TCP Socket 请求 (绕过 cf-* 特征头)
     const result = await rawHttpsRequest('api.bilibili.com', apiPath, reqHeaders);
 
+    const availableKeys = env ? Object.keys(env) : [];
+    const debugBase = {
+      method: 'socket',
+      has_env_cookie: Boolean(env && env.BILIBILI_COOKIE),
+      cookie_has_sessdata: Boolean(cookieHeader && cookieHeader.includes('SESSDATA')),
+      cookie_has_buvid3: Boolean(cookieHeader && cookieHeader.includes('buvid3')),
+      has_wbi_keys: hasWbiKeys,
+      response_status: result.status,
+      response_headers_preview: result.headers.substring(0, 500),
+      body_preview: (result.body || '').substring(0, 300),
+      detected_env_keys: availableKeys
+    };
+
     if (result.status === 412) {
-      // Socket 方式也被拦截，返回详细诊断信息
-      const availableKeys = env ? Object.keys(env) : [];
       return new Response(JSON.stringify({
         code: 412,
         need_cookie: true,
         message: 'B站返回 412 风控拦截 (已使用 Socket 直连)',
-        debug: {
-          method: 'socket',
-          has_env_cookie: Boolean(env && env.BILIBILI_COOKIE),
-          cookie_has_sessdata: Boolean(cookieHeader && cookieHeader.includes('SESSDATA')),
-          cookie_has_buvid3: Boolean(cookieHeader && cookieHeader.includes('buvid3')),
-          has_wbi_keys: hasWbiKeys,
-          response_status: result.status,
-          response_headers_preview: result.headers.substring(0, 500),
-          detected_env_keys: availableKeys
-        },
+        debug: debugBase,
         data: []
       }), { status: 200, headers: corsHeaders });
     }
@@ -291,29 +336,19 @@ export async function onRequest(context) {
       return new Response(JSON.stringify({
         code: result.status || 500,
         message: `Bilibili API responded with status ${result.status}`,
-        debug: {
-          method: 'socket',
-          response_headers_preview: result.headers.substring(0, 500),
-          body_preview: (result.body || '').substring(0, 200)
-        },
+        debug: debugBase,
         data: []
       }), { status: 200, headers: corsHeaders });
     }
 
-    // 尝试解析 JSON
     let data;
     try {
       data = JSON.parse(result.body);
     } catch (parseErr) {
-      // body 可能被 gzip 压缩或格式异常
       return new Response(JSON.stringify({
         code: 500,
         message: 'Failed to parse Bilibili response as JSON',
-        debug: {
-          method: 'socket',
-          body_preview: result.body.substring(0, 500),
-          response_headers_preview: result.headers.substring(0, 500)
-        },
+        debug: debugBase,
         data: []
       }), { status: 200, headers: corsHeaders });
     }
@@ -321,51 +356,29 @@ export async function onRequest(context) {
     return new Response(JSON.stringify(data), { status: 200, headers: corsHeaders });
 
   } catch (socketErr) {
-    // Socket 方式失败，回退到标准 fetch 方式
+    // Socket 失败，回退到 fetch（附带 Cookie 仍可能 412，但保留作最后手段）
     console.warn('Socket方式失败，回退fetch:', socketErr);
-
     try {
-      const fallbackUrl = `https://api.bilibili.com/x/space/coin/video?${queryString}`;
-      const fallbackHeaders = { ...reqHeaders };
-      const fallbackRes = await fetch(fallbackUrl, { headers: fallbackHeaders });
-
-      if (fallbackRes.status === 412) {
-        const availableKeys = env ? Object.keys(env) : [];
-        return new Response(JSON.stringify({
-          code: 412,
-          need_cookie: true,
-          message: 'B站返回 412 风控拦截 (Socket失败后回退fetch，仍被拦截)',
-          debug: {
-            method: 'fetch_fallback',
-            socket_error: socketErr.message || String(socketErr),
-            has_env_cookie: Boolean(env && env.BILIBILI_COOKIE),
-            cookie_has_sessdata: Boolean(cookieHeader && cookieHeader.includes('SESSDATA')),
-            cookie_has_buvid3: Boolean(cookieHeader && cookieHeader.includes('buvid3')),
-            has_wbi_keys: hasWbiKeys,
-            detected_env_keys: availableKeys
-          },
-          data: []
-        }), { status: 200, headers: corsHeaders });
-      }
-
+      const fallbackRes = await fetch(`https://api.bilibili.com${apiPath}`, {
+        headers: { ...reqHeaders }
+      });
       if (!fallbackRes.ok) {
         return new Response(JSON.stringify({
           code: fallbackRes.status,
-          message: `Bilibili API responded with status ${fallbackRes.status}`,
+          message: `Bilibili API fallback status ${fallbackRes.status}`,
+          debug: { socket_error: String(socketErr) },
           data: []
         }), { status: 200, headers: corsHeaders });
       }
-
       const data = await fallbackRes.json();
       return new Response(JSON.stringify(data), { status: 200, headers: corsHeaders });
-
     } catch (fetchErr) {
       return new Response(JSON.stringify({
         code: 500,
         message: 'All methods failed',
         debug: {
-          socket_error: socketErr.message || String(socketErr),
-          fetch_error: fetchErr.message || String(fetchErr)
+          socket_error: String(socketErr),
+          fetch_error: String(fetchErr)
         },
         data: []
       }), { status: 200, headers: corsHeaders });
