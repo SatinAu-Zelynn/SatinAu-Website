@@ -631,7 +631,7 @@ body#zelynn-page .lang-wrapper .contact-card {
 }
 
 @media (max-width: 768px) {
-  body#index-page section:nth-of-type(2) {
+  body#index-page section.contact-section {
     .contact-wrapper {
       grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
       gap: 12px;
@@ -4044,6 +4044,7 @@ body.search-active .search-cancel-btn {
   margin: 6px 0 2px;
   word-break: break-word;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -4434,6 +4435,378 @@ body.hero-open {
     .featured-left {
       grid-template-columns: 1fr;
     }
+  }
+}
+
+/* ========== 首页近期动态 (Bilibili 投币 & Steam 在玩) ========== */
+.recent-activities-section {
+  margin-top: 50px;
+}
+
+.activity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 25px;
+  align-items: start;
+}
+
+.activity-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.activity-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.activity-platform-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.activity-platform-icon.bili-icon {
+  color: #00aeec;
+  background: light-dark(rgba(0, 174, 236, 0.12), rgba(0, 174, 236, 0.2));
+  box-shadow: inset 0 0 0 1px light-dark(rgba(0, 174, 236, 0.2), rgba(0, 174, 236, 0.3));
+}
+
+.activity-platform-icon.steam-icon {
+  color: light-dark(#1b2838, #66c0f4);
+  background: light-dark(rgba(27, 40, 56, 0.1), rgba(102, 192, 244, 0.18));
+  box-shadow: inset 0 0 0 1px light-dark(rgba(27, 40, 56, 0.15), rgba(102, 192, 244, 0.3));
+}
+
+.activity-platform-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.activity-column-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.25;
+  color: var(--word-color);
+}
+
+.activity-column-subtitle {
+  font-size: 11px;
+  opacity: 0.6;
+  line-height: 1.2;
+  display: block;
+}
+
+.activity-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--primary-color, #3b82f6);
+  text-decoration: none;
+  font-weight: 500;
+  opacity: 0.85;
+  transition: opacity 0.2s, transform 0.2s;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+}
+
+@media (hover: hover) {
+  .activity-more-link:hover {
+    opacity: 1;
+    transform: translateX(2px);
+    background: light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06));
+  }
+}
+
+.activity-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 动态卡片 */
+.activity-card {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px !important;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.activity-media-thumb {
+  position: relative;
+  width: 132px;
+  height: 82px;
+  flex-shrink: 0;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.06));
+}
+
+.activity-media-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) {
+  .activity-card:hover .activity-media-thumb img {
+    transform: scale(1.08);
+  }
+}
+
+.activity-duration-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-family: 'Google Sans Code', monospace;
+  letter-spacing: 0.5px;
+}
+
+.activity-coin-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.95));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.activity-playtime-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.92), rgba(5, 150, 105, 0.92));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+
+.activity-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0;
+  color: var(--word-color);
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.activity-author-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.activity-author-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.activity-author-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+  font-weight: 500;
+}
+
+.activity-time-tag {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.activity-meta-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.activity-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.activity-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.activity-time-pill {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.08));
+  color: var(--word-color);
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.activity-link-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--primary-color, #3b82f6);
+  opacity: 0.85;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* 空状态与提示卡片 */
+.activity-empty-card,
+.activity-prompt-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.activity-empty-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.activity-empty-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activity-prompt-card .value {
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+/* 骨架屏 */
+.activity-skeleton-card {
+  pointer-events: none;
+}
+
+.activity-skeleton-card .skeleton-box {
+  background: light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.08));
+  border-radius: var(--border-radius-sm);
+  animation: activity-shimmer 1.6s infinite ease-in-out;
+}
+
+.activity-skeleton-card .skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.08));
+  animation: activity-shimmer 1.6s infinite ease-in-out;
+}
+
+.activity-skeleton-card .skeleton-title {
+  width: 80%;
+  height: 14px;
+}
+
+.activity-skeleton-card .skeleton-sub {
+  width: 50%;
+  margin-top: 4px;
+}
+
+.activity-skeleton-card .skeleton-meta {
+  width: 65%;
+  margin-top: 4px;
+}
+
+@keyframes activity-shimmer {
+  0% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+  100% { opacity: 0.45; }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .activity-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .activity-card {
+    padding: 10px 12px !important;
+    gap: 12px;
+  }
+
+  .activity-media-thumb {
+    width: 110px;
+    height: 70px;
+  }
+
+  .activity-item-title {
+    font-size: 13.5px;
   }
 }
 
