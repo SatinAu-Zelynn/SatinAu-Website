@@ -282,8 +282,17 @@ window.toggleLive2D = function() {
     }
   }
 
-  showToast(enabled ? "Live2D：已启用，正在刷新..." : "Live2D：已禁用，正在刷新...");
-  setTimeout(() => location.reload(), 800); // 刷新页面以应用
+  if (enabled) {
+    if (typeof window.startLive2D === 'function') {
+      window.startLive2D();
+    }
+    showToast("Live2D：已启用");
+  } else {
+    if (typeof window.destroyLive2D === 'function') {
+      window.destroyLive2D();
+    }
+    showToast("Live2D：已禁用");
+  }
 };
 
 /* ========== 整点报时逻辑 ========== */
@@ -2309,13 +2318,15 @@ document.addEventListener('DOMContentLoaded', () => {
 // 切换 HDR 模式函数
 function toggleHDRMode() {
   const hdrToggle = document.getElementById('hdrModeToggle');
+  if (!hdrToggle) return;
   const isChecked = hdrToggle.checked;
   localStorage.setItem('enableHDR', isChecked);
-  
+
   // 如果有 toast 函数，提示用户
   if (typeof showToast === 'function') {
-    showToast(isChecked ? '已开启 HDR 模式 (AVIF)' : '已关闭 HDR 模式 (WEBP)');
+    showToast(isChecked ? 'HDR 模式 (AVIF)：已开启，正在刷新...' : 'HDR 模式 (WEBP)：已关闭，正在刷新...');
   }
+  setTimeout(() => location.reload(), 800);
 }
 
 /* ========== 颜色模式切换逻辑 (Light/System/Dark) ========== */
@@ -2909,22 +2920,8 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
 
 /* ========== Live2D 模型集成逻辑 ========== */
 (function initLive2D() {
-  // 检查开关，若关闭则中止加载
-  if (!isLive2DEnabled()) return; 
-
-  const MODEL_PATH = `${getCdnBaseUrl()}/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json`;
   const CORE_PATH = '/src/script/components/live2dcubismcore.min.js';
-
-  function loadScript(url) {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = url;
-      script.crossOrigin = "anonymous";
-      script.onload = () => resolve();
-      script.onerror = (e) => reject(new Error(`Failed to load script: ${url}`));
-      document.head.appendChild(script);
-    });
-  }
+  const MODEL_REL_PATH = '/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json';
 
   const KEY_MAPPING = {
     'Digit1': { name: 'love' },
@@ -2933,11 +2930,107 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
     'Digit4': { name: 'mad' }
   };
 
+  let live2dSessionId = 0;
+  let activeState = null;
+
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${url}"]`);
+      if (existing) {
+        if (existing.dataset.loaded === 'true') {
+          resolve();
+          return;
+        }
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error(`Failed to load script: ${url}`)), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = url;
+      script.crossOrigin = "anonymous";
+      script.onload = () => {
+        script.dataset.loaded = 'true';
+        resolve();
+      };
+      script.onerror = () => {
+        script.remove();
+        reject(new Error(`Failed to load script: ${url}`));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  function cleanupLive2DInstance(state, immediate = false) {
+    if (!state) return;
+    const { wrapper, canvas, app, keydownHandler } = state;
+
+    if (keydownHandler) {
+      window.removeEventListener('keydown', keydownHandler);
+    }
+    if (window.__live2dResizeLayout) {
+      window.__live2dResizeLayout = null;
+    }
+
+    const destroyResources = () => {
+      try {
+        if (app) {
+          app.destroy(false, { children: true });
+        }
+      } catch (e) {}
+      if (wrapper && wrapper.isConnected) {
+        wrapper.remove();
+      }
+    };
+
+    if (immediate || !wrapper) {
+      destroyResources();
+      return;
+    }
+
+    // 移除 id 防止快速重新开启时冲突，等待淡出过渡结束后再销毁 WebGL 与 DOM
+    wrapper.removeAttribute('id');
+    if (canvas) canvas.removeAttribute('id');
+    wrapper.style.pointerEvents = 'none';
+    wrapper.classList.remove('loaded');
+    setTimeout(destroyResources, 450);
+  }
+
+  window.destroyLive2D = function(immediate = false) {
+    live2dSessionId++;
+    if (activeState) {
+      const stateToDestroy = activeState;
+      activeState = null;
+      cleanupLive2DInstance(stateToDestroy, immediate);
+    }
+    const strayWrapper = document.getElementById('live2d-wrapper');
+    if (strayWrapper) strayWrapper.remove();
+  };
+
   async function startLive2D() {
+    if (!isLive2DEnabled()) return;
+
+    const mySessionId = ++live2dSessionId;
+    if (activeState) {
+      const oldState = activeState;
+      activeState = null;
+      cleanupLive2DInstance(oldState, true);
+    }
+
+    let wrapper = null;
+    let canvas = null;
+    let app = null;
+    let keydownHandler = null;
+
     try {
       if (typeof Live2DCubismCore === 'undefined') await loadScript(CORE_PATH);
+      if (mySessionId !== live2dSessionId || !isLive2DEnabled()) return;
+
       if (typeof PIXI === 'undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.5.10/browser/pixi.min.js');
+      if (mySessionId !== live2dSessionId || !isLive2DEnabled()) return;
+
       if (typeof PIXI.live2d === 'undefined') await loadScript('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js');
+      if (mySessionId !== live2dSessionId || !isLive2DEnabled()) return;
 
       // 清理可能存在的旧元素
       const oldWrapper = document.getElementById('live2d-wrapper');
@@ -2946,7 +3039,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       if (oldCanvas && !oldCanvas.closest('#live2d-wrapper')) oldCanvas.remove();
 
       // 构建容器和菜单
-      const wrapper = document.createElement('div');
+      wrapper = document.createElement('div');
       wrapper.id = 'live2d-wrapper';
       const pos = getLive2DPosition();
       wrapper.classList.add(pos === 'right' ? 'pos-right' : 'pos-left');
@@ -2955,7 +3048,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       const currentSize = getLive2DSizeInPixels(sizeKey);
       wrapper.style.width = `${currentSize}px`;
       wrapper.style.height = `${currentSize}px`;
-      
+
       const menu = document.createElement('div');
       menu.className = 'live2d-menu';
       menu.innerHTML = `
@@ -2967,7 +3060,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         <div class="live2d-menu-btn" onclick="window.openSettingsModal('live2d-setting-anchor')">⚙️ 设置</div>
       `;
 
-      const canvas = document.createElement('canvas');
+      canvas = document.createElement('canvas');
       canvas.id = 'live2d-canvas';
 
       wrapper.appendChild(canvas);
@@ -2983,13 +3076,13 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       const hideMenu = () => {
         hoverTimer = setTimeout(() => menu.classList.remove('show'), 400); // 400ms后消失
       };
-      
+
       canvas.addEventListener('mouseenter', showMenu);
       canvas.addEventListener('mouseleave', hideMenu);
       menu.addEventListener('mouseenter', showMenu);
       menu.addEventListener('mouseleave', hideMenu);
 
-      const app = new PIXI.Application({
+      app = new PIXI.Application({
         view: canvas,
         autoStart: true,
         backgroundAlpha: 0,
@@ -2999,17 +3092,26 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         autoDensity: true,
       });
 
+      const modelPath = `${getCdnBaseUrl()}${MODEL_REL_PATH}`;
       let model;
       try {
-        model = await PIXI.live2d.Live2DModel.from(MODEL_PATH, {
+        model = await PIXI.live2d.Live2DModel.from(modelPath, {
           autoInteract: true
         });
       } catch (err) {
         console.warn('[Live2D] 主线路加载模型失败，尝试备用线路...', err);
-        const fallbackModelPath = `${getCdnFallbackUrl()}/%E7%BC%8E%E9%87%91SatinAu_vts/%E7%BC%8E%E9%87%91SatinAu.model3.json`;
+        const fallbackModelPath = `${getCdnFallbackUrl()}${MODEL_REL_PATH}`;
         model = await PIXI.live2d.Live2DModel.from(fallbackModelPath, {
           autoInteract: true
         });
+      }
+
+      if (mySessionId !== live2dSessionId || !isLive2DEnabled()) {
+        try {
+          if (model) model.destroy();
+        } catch (e) {}
+        cleanupLive2DInstance({ wrapper, canvas, app }, true);
+        return;
       }
 
       app.stage.addChild(model);
@@ -3021,7 +3123,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       const updateLayout = (size) => {
         const scaleX = size / origWidth;
         const scaleY = size / origHeight;
-        const scale = Math.min(scaleX, scaleY) * 0.95; 
+        const scale = Math.min(scaleX, scaleY) * 0.95;
         model.scale.set(scale);
         model.x = (size - origWidth * scale) / 2;
         model.y = size - origHeight * scale;
@@ -3039,12 +3141,13 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       };
 
       // 监听快捷键
-      window.addEventListener('keydown', (e) => {
+      keydownHandler = (e) => {
         const config = KEY_MAPPING[e.code];
         if (config) {
           try { model.expression(config.name); } catch (err) {}
         }
-      });
+      };
+      window.addEventListener('keydown', keydownHandler);
 
       // 监听菜单按钮点击事件 (委托)
       menu.addEventListener('click', (e) => {
@@ -3061,18 +3164,29 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         }
       });
 
+      activeState = { wrapper, canvas, app, keydownHandler };
+
       // 动画淡入
-      wrapper.classList.add('loaded');
+      requestAnimationFrame(() => {
+        if (mySessionId === live2dSessionId && wrapper.isConnected) {
+          wrapper.classList.add('loaded');
+        }
+      });
 
     } catch (error) {
+      cleanupLive2DInstance({ wrapper, canvas, app, keydownHandler }, true);
       console.error('Live2D Load Error:', error);
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startLive2D);
-  } else {
-    startLive2D();
+  window.startLive2D = startLive2D;
+
+  if (isLive2DEnabled()) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startLive2D);
+    } else {
+      startLive2D();
+    }
   }
 })();
 

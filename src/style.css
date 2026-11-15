@@ -4591,7 +4591,7 @@ a.activity-platform-icon:active {
   position: absolute;
   bottom: 4px;
   right: 4px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.92), rgba(5, 150, 105, 0.92));
+  background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color), black 30%));
   color: #fff;
   font-size: 10px;
   font-weight: 600;
