@@ -129,7 +129,7 @@ function initZelynnCardBg() {
     });
 }
 
-/* ========== 最近动态板块 (Steam 在玩) ========== */
+/* ========== 最近动态板块 (Steam 与 QQ 空间) ========== */
 let activitiesAbortController = null;
 
 function formatActivityHours(minutes) {
@@ -284,9 +284,96 @@ async function loadSteamGames(signal) {
   }
 }
 
+function formatQzoneDate(timestamp) {
+  if (!timestamp) return '时间未知';
+  const date = new Date(timestamp * 1000);
+  if (Number.isNaN(date.getTime())) return '时间未知';
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+async function loadQzonePosts(signal) {
+  const container = document.getElementById('qzone-status-list');
+  if (!container) return;
+
+  try {
+    const response = await fetch('/api/qzone/recent', { signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (!container.isConnected) return;
+
+    if (data.configured === false) {
+      container.innerHTML = `
+        <div class="activity-prompt-card contact-card">
+          <div class="activity-empty-icon">💬</div>
+          <div class="activity-empty-text">
+            <div class="label">QQ 空间接口尚未配置</div>
+            <div class="value">请联系站点维护者配置服务端接口</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const posts = Array.isArray(data.posts) ? data.posts.slice(0, 3) : [];
+    if (!data.success || posts.length === 0) {
+      container.innerHTML = `
+        <div class="activity-empty-card contact-card">
+          <div class="activity-empty-icon">💬</div>
+          <div class="activity-empty-text">
+            <div class="label">QQ 空间</div>
+            <div class="value">${data.success ? '暂时没有可展示的说说' : '暂时无法获取最近说说'}</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const profileLink = document.getElementById('qzone-profile-link');
+    if (profileLink && /^\d{5,12}$/.test(String(data.uin || ''))) {
+      profileLink.href = `https://user.qzone.qq.com/${data.uin}`;
+    }
+
+    container.innerHTML = posts.map(post => {
+      const text = escapeActivityHtml(post.text || '').replace(/\r\n?/g, '\n').replace(/\n/g, '<br>');
+      const date = formatQzoneDate(Number(post.timestamp));
+      const isoDate = Number(post.timestamp) > 0
+        ? new Date(Number(post.timestamp) * 1000).toISOString()
+        : '';
+      return `
+        <article class="activity-card qzone-card contact-card">
+          <div class="activity-content">
+            <p class="qzone-post-text">${text}</p>
+            <time class="activity-time-pill" ${isoDate ? `datetime="${isoDate}"` : ''}>${date}</time>
+          </div>
+        </article>
+      `;
+    }).join('');
+  } catch (error) {
+    if (signal?.aborted) return;
+    console.warn('获取 QQ 空间说说失败:', error);
+    if (!container.isConnected) return;
+    container.innerHTML = `
+      <div class="activity-empty-card contact-card">
+        <div class="activity-empty-icon">💬</div>
+        <div class="activity-empty-text">
+          <div class="label">QQ 空间</div>
+          <div class="value">网络连接异常或接口服务暂不可用</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
 function initRecentActivities() {
   const steamContainer = document.getElementById('steam-games-list');
-  if (!steamContainer) return;
+  const qzoneContainer = document.getElementById('qzone-status-list');
+  if (!steamContainer && !qzoneContainer) return;
 
   if (activitiesAbortController) {
     activitiesAbortController.abort();
@@ -294,9 +381,20 @@ function initRecentActivities() {
   activitiesAbortController = new AbortController();
   const signal = activitiesAbortController.signal;
 
-  steamContainer.innerHTML = renderSteamSkeleton();
+  if (steamContainer) steamContainer.innerHTML = renderSteamSkeleton();
+  if (qzoneContainer) {
+    qzoneContainer.innerHTML = `
+      <div class="activity-card qzone-card contact-card activity-skeleton-card">
+        <div class="activity-content">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-sub"></div>
+        </div>
+      </div>
+    `.repeat(3);
+  }
 
-  loadSteamGames(signal);
+  if (steamContainer) loadSteamGames(signal);
+  if (qzoneContainer) loadQzonePosts(signal);
 }
 
 window.cleanupIndexPage = function() {

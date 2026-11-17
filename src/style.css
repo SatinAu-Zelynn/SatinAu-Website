@@ -4463,7 +4463,7 @@ body.hero-open {
 
 .activity-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-top: 25px;
   align-items: start;
@@ -4564,6 +4564,37 @@ a.activity-platform-icon:active {
   align-items: stretch;
   gap: 12px;
   padding: 12px !important;
+}
+
+.qzone-icon {
+  color: light-dark(#ed6c00, #ffab4a);
+  background: light-dark(rgba(237, 108, 0, 0.1), rgba(255, 171, 74, 0.18));
+  box-shadow: inset 0 0 0 1px light-dark(rgba(237, 108, 0, 0.15), rgba(255, 171, 74, 0.3));
+}
+
+.qzone-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.activity-card.qzone-card {
+  align-items: stretch;
+  min-height: 84px;
+  cursor: default;
+}
+
+.qzone-post-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: var(--word-color);
+}
+
+.qzone-card .activity-time-pill {
+  align-self: flex-start;
 }
 
 .activity-media-thumb {
