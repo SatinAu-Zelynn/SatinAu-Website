@@ -131,9 +131,8 @@ function initZelynnCardBg() {
 
 /* ========== 最近动态板块 (Steam 与 QQ 空间) ========== */
 let activitiesAbortController = null;
-let activityCarouselInterval = null;
 const ACTIVITY_CAROUSEL_DURATION = 8000;
-const ACTIVITY_CAROUSEL_TICK = 100;
+const ACTIVITY_PROGRESS_CLEAR_DURATION = 400;
 
 function formatActivityHours(minutes) {
   if (!minutes || minutes <= 0) return '0 小时';
@@ -410,14 +409,133 @@ function initActivityCarousel(signal) {
   const progress = document.getElementById('activity-carousel-progress');
   const title = document.getElementById('activity-current-title');
   const subtitle = document.getElementById('activity-current-subtitle');
-  if (slides.length < 2 || switcherButtons.length !== slides.length || !progress || !title || !subtitle) return;
+  const titleEntrance = carousel.querySelector('.activity-carousel-title-entrance');
+  const subtitleEntrance = carousel.querySelector('.activity-carousel-subtitle-entrance');
+  if (
+    slides.length < 2 ||
+    switcherButtons.length !== slides.length ||
+    !progress ||
+    !title ||
+    !subtitle ||
+    !titleEntrance ||
+    !subtitleEntrance
+  ) return;
 
   let activeIndex = 0;
-  let elapsed = 0;
   let heightUpdateFrame = null;
+  let transitionToken = 0;
+  let transitionTargetIndex = null;
+  let progressFrame = null;
+  let progressPhase = 'filling';
+  let progressPhaseStart = 0;
+  let progressClearStartScale = 0;
+  let progressScale = 0;
+  let progressPaused = false;
+  let progressPausedAt = 0;
+  const modalHost = document.getElementById('globalModal');
 
-  function showSlide(index) {
-    activeIndex = (index + slides.length) % slides.length;
+  const animationClasses = [
+    'activity-carousel-enter-from-left',
+    'activity-carousel-enter-from-right',
+    'activity-carousel-exit-to-left',
+    'activity-carousel-exit-to-right'
+  ];
+  const animationElements = [titleEntrance, subtitleEntrance, ...slides];
+
+  function clearCarouselAnimations() {
+    animationElements.forEach(element => {
+      element.classList.remove(...animationClasses);
+      element.style.removeProperty('--activity-carousel-delay');
+    });
+  }
+
+  function startCarouselAnimation(element, animationClass, delay) {
+    element.style.setProperty('--activity-carousel-delay', `${delay}ms`);
+    void element.offsetWidth;
+    element.classList.add(animationClass);
+    const animation = element.getAnimations().find(item => item.animationName === animationClass);
+    return animation ? animation.finished.catch(() => {}) : Promise.resolve();
+  }
+
+  function getProgressScale(timestamp) {
+    const elapsed = Math.max(0, timestamp - progressPhaseStart);
+    if (progressPhase === 'clearing') {
+      const progress = Math.min(elapsed / ACTIVITY_PROGRESS_CLEAR_DURATION, 1);
+      return progressClearStartScale * Math.pow(1 - progress, 3);
+    }
+    return Math.min(elapsed / ACTIVITY_CAROUSEL_DURATION, 1);
+  }
+
+  function scheduleProgressFrame() {
+    if (progressFrame === null) {
+      progressFrame = requestAnimationFrame(updateProgress);
+    }
+  }
+
+  function startProgress(timestamp = performance.now()) {
+    progressPhase = 'filling';
+    progressPhaseStart = timestamp;
+    progressClearStartScale = 0;
+    progressScale = 0;
+    progress.style.transform = 'scaleX(0)';
+    scheduleProgressFrame();
+  }
+
+  function clearProgress(timestamp = performance.now()) {
+    const currentScale = getProgressScale(timestamp);
+    if (currentScale <= 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      startProgress(timestamp);
+      return;
+    }
+
+    progressPhase = 'clearing';
+    progressPhaseStart = timestamp;
+    progressClearStartScale = currentScale;
+    progressScale = currentScale;
+    scheduleProgressFrame();
+  }
+
+  function pauseProgress() {
+    if (progressPaused) return;
+    progressPaused = true;
+    progressPausedAt = performance.now();
+  }
+
+  function resumeProgress() {
+    if (!progressPaused) return;
+    progressPhaseStart += performance.now() - progressPausedAt;
+    progressPaused = false;
+    scheduleProgressFrame();
+  }
+
+  function updateProgress(timestamp) {
+    progressFrame = null;
+    if (progressPaused) return;
+    const phaseElapsed = timestamp - progressPhaseStart;
+
+    if (progressPhase === 'clearing') {
+      progressScale = getProgressScale(timestamp);
+      if (phaseElapsed >= ACTIVITY_PROGRESS_CLEAR_DURATION) {
+        progressPhase = 'filling';
+        progressPhaseStart = timestamp;
+        progressClearStartScale = 0;
+        progressScale = 0;
+      }
+    } else {
+      progressScale = getProgressScale(timestamp);
+      if (phaseElapsed >= ACTIVITY_CAROUSEL_DURATION) {
+        progressScale = 1;
+        showSlide(activeIndex + 1);
+        progressScale = progressPhase === 'clearing' ? progressClearStartScale : 0;
+      }
+    }
+
+    progress.style.transform = `scaleX(${progressScale})`;
+    scheduleProgressFrame();
+  }
+
+  function activateSlide(index, enterClass = null) {
+    activeIndex = index;
     slides.forEach((slide, slideIndex) => {
       slide.hidden = slideIndex !== activeIndex;
     });
@@ -429,13 +547,62 @@ function initActivityCarousel(signal) {
     title.textContent = slides[activeIndex].dataset.activityTitle;
     subtitle.textContent = slides[activeIndex].dataset.activitySubtitle;
 
-    elapsed = 0;
-    progress.classList.remove('is-running');
-    progress.style.animationDuration = `${ACTIVITY_CAROUSEL_DURATION}ms`;
-    progress.style.transform = 'scaleX(0)';
-    void progress.offsetWidth;
-    progress.style.removeProperty('transform');
-    progress.classList.add('is-running');
+    if (enterClass) {
+      startCarouselAnimation(titleEntrance, enterClass, 0);
+      startCarouselAnimation(subtitleEntrance, enterClass, 100);
+      startCarouselAnimation(slides[activeIndex], enterClass, 200);
+    }
+  }
+
+  function showSlide(index, animate = true) {
+    const nextIndex = (index + slides.length) % slides.length;
+
+    if (transitionTargetIndex === nextIndex) return;
+
+    if (transitionTargetIndex !== null) {
+      transitionToken += 1;
+      transitionTargetIndex = null;
+      clearCarouselAnimations();
+    }
+
+    if (!animate) {
+      transitionToken += 1;
+      transitionTargetIndex = null;
+      clearCarouselAnimations();
+      activateSlide(nextIndex);
+      startProgress();
+      return;
+    }
+
+    if (nextIndex === activeIndex) {
+      clearProgress();
+      return;
+    }
+
+    const previousIndex = activeIndex;
+    const token = ++transitionToken;
+    transitionTargetIndex = nextIndex;
+    clearCarouselAnimations();
+    clearProgress();
+
+    const movingRight = nextIndex > previousIndex;
+    const exitClass = movingRight
+      ? 'activity-carousel-exit-to-left'
+      : 'activity-carousel-exit-to-right';
+    Promise.all([
+      startCarouselAnimation(titleEntrance, exitClass, 0),
+      startCarouselAnimation(subtitleEntrance, exitClass, 80),
+      startCarouselAnimation(slides[previousIndex], exitClass, 160)
+    ]).then(() => {
+      if (token !== transitionToken) return;
+
+      transitionTargetIndex = null;
+      clearCarouselAnimations();
+      const enterClass = movingRight
+        ? 'activity-carousel-enter-from-right'
+        : 'activity-carousel-enter-from-left';
+      activateSlide(nextIndex, enterClass);
+    });
   }
 
   function updateCarouselHeight() {
@@ -444,19 +611,15 @@ function initActivityCarousel(signal) {
     const slideContainer = carousel.querySelector('.activity-carousel-slides');
     if (!slideContainer) return;
 
-    const visibleIndex = Math.max(0, slides.findIndex(slide => !slide.hidden));
     slideContainer.style.height = 'auto';
     let maxHeight = 0;
-    slides.forEach((targetSlide, targetIndex) => {
-      slides.forEach((slide, slideIndex) => {
-        slide.hidden = slideIndex !== targetIndex;
-      });
+    slides.forEach(targetSlide => {
+      const wasHidden = targetSlide.hidden;
+      if (wasHidden) targetSlide.hidden = false;
       maxHeight = Math.max(maxHeight, targetSlide.offsetHeight);
+      if (wasHidden) targetSlide.hidden = true;
     });
 
-    slides.forEach((slide, slideIndex) => {
-      slide.hidden = slideIndex !== visibleIndex;
-    });
     slideContainer.style.height = `${Math.ceil(maxHeight)}px`;
   }
 
@@ -474,8 +637,18 @@ function initActivityCarousel(signal) {
     }, { signal });
   });
 
-  showSlide(activeIndex);
+  showSlide(activeIndex, false);
   const contentObserver = new MutationObserver(scheduleCarouselHeightUpdate);
+  const modalObserver = modalHost
+    ? new MutationObserver(() => {
+        if (modalHost.childElementCount > 0) pauseProgress();
+        else resumeProgress();
+      })
+    : null;
+  if (modalObserver) {
+    modalObserver.observe(modalHost, { childList: true });
+    if (modalHost.childElementCount > 0) pauseProgress();
+  }
   slides.forEach(slide => {
     const content = slide.querySelector('.activity-cards-list, .qzone-cards-list');
     if (content) {
@@ -489,14 +662,12 @@ function initActivityCarousel(signal) {
   window.addEventListener('resize', scheduleCarouselHeightUpdate, { signal, passive: true });
   signal.addEventListener('abort', () => {
     contentObserver.disconnect();
+    modalObserver?.disconnect();
     if (heightUpdateFrame !== null) cancelAnimationFrame(heightUpdateFrame);
+    if (progressFrame !== null) cancelAnimationFrame(progressFrame);
+    progressFrame = null;
   }, { once: true });
   scheduleCarouselHeightUpdate();
-
-  activityCarouselInterval = setInterval(() => {
-    elapsed += ACTIVITY_CAROUSEL_TICK;
-    if (elapsed >= ACTIVITY_CAROUSEL_DURATION) showSlide(activeIndex + 1);
-  }, ACTIVITY_CAROUSEL_TICK);
 }
 
 function initRecentActivities() {
@@ -531,10 +702,6 @@ window.cleanupIndexPage = function() {
   if (indexBgInterval) {
     clearInterval(indexBgInterval);
     indexBgInterval = null;
-  }
-  if (activityCarouselInterval) {
-    clearInterval(activityCarouselInterval);
-    activityCarouselInterval = null;
   }
   if (activitiesAbortController) {
     activitiesAbortController.abort();
