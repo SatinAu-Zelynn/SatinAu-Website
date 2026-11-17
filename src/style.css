@@ -1417,6 +1417,18 @@ body#index-page {
   }
 }
 
+@media (min-width: 768px) and (max-height: 600px) {
+  .more-dropdown,
+  .notify-dropdown {
+    box-sizing: border-box;
+    max-height: calc(100vh - 120px);
+    max-height: max(0px, calc(100dvh - 120px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 .notify-section-label {
   font-size: 11px;
   font-weight: 600;
@@ -1555,6 +1567,12 @@ body#index-page {
     box-sizing: border-box;
     border-top: 0 solid transparent;
     border-left: 0 solid transparent;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bottom-nav::before {
+      cursor: var(--custom-cursor, pointer);
+    }
   }
 
   /* ========== 升级的一体式跟手菜单（双页左右平移） ========== */
@@ -5170,13 +5188,6 @@ iframe#webFrame {
   opacity: 1;
 }
 
-/* 移动端隐藏模型 (通常移动端屏幕太小，遮挡内容) */
-@media (max-width: 768px) {
-  #live2d-canvas {
-    display: none;
-  }
-}
-
 /* ========== Live2D 模型及悬浮菜单样式 ========== */
 #live2d-wrapper {
   position: fixed;
@@ -5281,7 +5292,11 @@ iframe#webFrame {
 }
 
 @media (max-width: 768px) {
-  #live2d-wrapper, #live2d-setting-anchor, .live2d-sub-setting {
+  #live2d-wrapper {
+    visibility: hidden;
+  }
+
+  #live2d-setting-anchor, .live2d-sub-setting {
     display: none !important;
   }
 }

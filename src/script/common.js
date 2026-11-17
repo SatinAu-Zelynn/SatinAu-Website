@@ -1676,6 +1676,35 @@ window.initMobileMoreMenu = function() {
 
     window.closeMobileMoreMenu = closeMenu;
 
+    bottomNav.addEventListener('click', function(e) {
+      const noTouchMobilePointer = window.matchMedia(
+        '(max-width: 767px) and (hover: hover) and (pointer: fine)'
+      ).matches && navigator.maxTouchPoints === 0;
+      if (!noTouchMobilePointer || e.target !== bottomNav) return;
+
+      const navRect = bottomNav.getBoundingClientRect();
+      const handleStyle = window.getComputedStyle(bottomNav, '::before');
+      const handleWidth = parseFloat(handleStyle.width);
+      const handleHeight = parseFloat(handleStyle.height);
+      const handleTop = parseFloat(handleStyle.top);
+      const handleCenterX = navRect.left + navRect.width / 2;
+      const handleTopY = navRect.top + handleTop;
+
+      if (
+        e.clientX < handleCenterX - handleWidth / 2 ||
+        e.clientX > handleCenterX + handleWidth / 2 ||
+        e.clientY < handleTopY ||
+        e.clientY > handleTopY + handleHeight
+      ) return;
+
+      e.preventDefault();
+      if (isMenuOpen) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
     // 释放判断 (回弹动画)
     bottomNav.addEventListener('touchend', function() {
       if (!isDragging) return;
