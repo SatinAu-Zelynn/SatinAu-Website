@@ -83,7 +83,16 @@
 - `QZONE_UIN`：QQ 号码。
 - `QZONE_COOKIE`：你自己的 QQ 空间会话 Cookie，作为 **Secret** 保存，不要放入仓库、前端配置或聊天内容。
 
-会话 Cookie 过期后需要由站点维护者在 Cloudflare 中更新。不要配置他人账号的 Cookie。
+在 Cloudflare 中创建一个 Workers KV namespace（例如 `qzone-recent-cache`），再到 Pages 项目的 **Settings → Functions → KV namespace bindings** 添加绑定：
+
+- **Variable name**：`QZONE_CACHE`
+- **KV namespace**：选择刚创建的 namespace
+
+保存后重新部署。KV 数据在 30 分钟内视为新鲜；缓存过期后有访问时，接口会尝试刷新上游数据。成功结果会写入 KV 并保留 90 天。上游鉴权或网络请求失败后，接口会在 5 分钟内暂缓再次请求；如果 KV 中有旧数据，会返回旧数据并标记为过期，页面副标题会显示缓存数据的更新时间。Cookie 过期仍需维护者手动更新，KV 不会延长 Cookie 有效期。
+
+KV 中的数据可能包含通过会话读取到的说说内容，请将 namespace 作为私有数据管理。未配置 `QZONE_CACHE` 时接口仍会尝试实时获取，但不会有持久缓存，并会在 Function 日志中提示。
+
+不要配置他人账号的 Cookie。
 
 
 ## 🚀 本地运行

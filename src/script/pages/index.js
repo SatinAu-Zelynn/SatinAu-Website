@@ -288,6 +288,22 @@ function formatQzoneDate(timestamp) {
   }).format(date);
 }
 
+function updateQzoneActivitySubtitle(isStale, updatedAt) {
+  const slide = document.getElementById('qzone-status-list')?.closest('[data-activity-slide]');
+  if (!slide) return;
+
+  const updatedAtMs = Date.parse(updatedAt || '');
+  const subtitle = isStale
+    ? `缓存数据 · 更新于 ${Number.isFinite(updatedAtMs) ? formatQzoneDate(updatedAtMs / 1000) : '时间未知'}`
+    : 'Recent Qzone Posts';
+  slide.dataset.activitySubtitle = subtitle;
+
+  const currentSubtitle = document.getElementById('activity-current-subtitle');
+  if (!slide.hidden && currentSubtitle) {
+    currentSubtitle.textContent = subtitle;
+  }
+}
+
 function renderQzoneText(value) {
   const tokens = String(value).split(/(\[em\]e\d{1,7}\[\/em\])/gi);
   return tokens.map(token => {
@@ -330,7 +346,10 @@ async function loadQzonePosts(signal) {
     const data = await response.json();
     if (!container.isConnected) return;
 
-    if (data.configured === false) {
+    const posts = Array.isArray(data.posts) ? data.posts.slice(0, 3) : [];
+    updateQzoneActivitySubtitle(data.stale === true, data.updatedAt);
+
+    if (data.configured === false && posts.length === 0) {
       container.innerHTML = `
         <div class="activity-prompt-card contact-card">
           <div class="activity-empty-icon">💬</div>
@@ -344,8 +363,7 @@ async function loadQzonePosts(signal) {
       return;
     }
 
-    const posts = Array.isArray(data.posts) ? data.posts.slice(0, 3) : [];
-    if (!data.success || posts.length === 0) {
+    if (posts.length === 0) {
       container.innerHTML = `
         <div class="activity-empty-card contact-card">
           <div class="activity-empty-icon">💬</div>

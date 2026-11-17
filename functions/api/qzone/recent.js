@@ -3,6 +3,10 @@
   This endpoint uses an undocumented Qzone interface and requires server-side credentials.
 */
 
+const QZONE_CACHE_FRESHNESS_MS = 30 * 60 * 1000;
+const QZONE_CACHE_RETENTION_SECONDS = 90 * 24 * 60 * 60;
+const QZONE_RETRY_COOLDOWN_SECONDS = 5 * 60;
+
 function getCookieValue(cookie, name) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${escapedName}=([^;]*)`));
@@ -114,14 +118,142 @@ function jsonResponse(body, status = 200, cacheControl = 'no-store') {
   });
 }
 
+function getQzoneCacheKey(uin) {
+  return `qzone:recent:v1:${uin}`;
+}
+
+function getQzoneRetryKey(uin) {
+  return `qzone:refresh-cooldown:v1:${uin}`;
+}
+
+async function readQzoneCache(namespace, key, uin) {
+  if (!namespace) return null;
+
+  try {
+    const record = await namespace.get(key, 'json');
+    if (!record) return null;
+    if (
+      record.version !== 1
+      || record.uin !== uin
+      || !Array.isArray(record.posts)
+      || !Number.isFinite(Date.parse(record.updatedAt))
+    ) {
+      console.warn('Qzone KV cache record is invalid; ignoring it.');
+      return null;
+    }
+    return record;
+  } catch (error) {
+    console.error(
+      'Qzone KV cache read failed:',
+      error instanceof Error ? error.name : 'Unknown error'
+    );
+    return null;
+  }
+}
+
+async function isQzoneRefreshCoolingDown(namespace, key) {
+  if (!namespace) return false;
+
+  try {
+    return Boolean(await namespace.get(key));
+  } catch (error) {
+    console.error(
+      'Qzone KV cooldown read failed:',
+      error instanceof Error ? error.name : 'Unknown error'
+    );
+    return false;
+  }
+}
+
+async function setQzoneRefreshCooldown(namespace, key) {
+  if (!namespace) return;
+
+  try {
+    await namespace.put(key, '1', {
+      expirationTtl: QZONE_RETRY_COOLDOWN_SECONDS
+    });
+  } catch (error) {
+    console.error(
+      'Qzone KV cooldown write failed:',
+      error instanceof Error ? error.name : 'Unknown error'
+    );
+  }
+}
+
+async function writeQzoneCache(namespace, key, uin, posts, updatedAt) {
+  if (!namespace) return 'unbound';
+
+  try {
+    await namespace.put(key, JSON.stringify({
+      version: 1,
+      uin,
+      posts,
+      updatedAt
+    }), {
+      expirationTtl: QZONE_CACHE_RETENTION_SECONDS
+    });
+    return 'stored';
+  } catch (error) {
+    console.error(
+      'Qzone KV cache write failed:',
+      error instanceof Error ? error.name : 'Unknown error'
+    );
+    return 'write-failed';
+  }
+}
+
+function staleQzoneResponse(record, configured = true) {
+  return jsonResponse({
+    success: false,
+    configured,
+    stale: true,
+    updatedAt: record.updatedAt,
+    posts: record.posts,
+    message: 'Qzone refresh failed; serving the last successful cache.'
+  }, 200, 'public, max-age=60, s-maxage=300');
+}
+
 export async function onRequest({ request, env }) {
   if (request.method !== 'GET') {
     return jsonResponse({ success: false, message: 'Method Not Allowed', posts: [] }, 405);
   }
 
   const uin = env.QZONE_UIN || '';
+  if (!/^\d{5,12}$/.test(uin)) {
+    return jsonResponse({
+      success: false,
+      configured: false,
+      posts: []
+    });
+  }
+
+  const cacheNamespace = env.QZONE_CACHE;
+  if (!cacheNamespace) {
+    console.warn('QZONE_CACHE binding is missing; durable Qzone caching is disabled.');
+  }
+  const cacheKey = getQzoneCacheKey(uin);
+  const cachedRecord = await readQzoneCache(cacheNamespace, cacheKey, uin);
+  if (
+    cachedRecord
+    && Date.now() - Date.parse(cachedRecord.updatedAt) < QZONE_CACHE_FRESHNESS_MS
+  ) {
+    return jsonResponse({
+      success: true,
+      configured: true,
+      cached: true,
+      stale: false,
+      updatedAt: cachedRecord.updatedAt,
+      cacheStatus: 'hit',
+      posts: cachedRecord.posts
+    }, 200, 'public, max-age=60, s-maxage=300');
+  }
+
   const cookie = env.QZONE_COOKIE || '';
-  if (!/^\d{5,12}$/.test(uin) || !cookie) {
+  if (!cookie) {
+    if (cachedRecord) {
+      console.warn('Qzone credentials are unavailable; serving the last successful cache.');
+      return staleQzoneResponse(cachedRecord, false);
+    }
     return jsonResponse({
       success: false,
       configured: false,
@@ -131,11 +263,26 @@ export async function onRequest({ request, env }) {
 
   const skey = getCookieValue(cookie, 'p_skey') || getCookieValue(cookie, 'skey');
   if (!skey) {
+    if (cachedRecord) {
+      console.warn('Qzone signing cookie is unavailable; serving the last successful cache.');
+      return staleQzoneResponse(cachedRecord, false);
+    }
     return jsonResponse({
       success: false,
       configured: false,
       posts: []
     });
+  }
+
+  const retryKey = getQzoneRetryKey(uin);
+  if (await isQzoneRefreshCoolingDown(cacheNamespace, retryKey)) {
+    if (cachedRecord) return staleQzoneResponse(cachedRecord);
+    return jsonResponse({
+      success: false,
+      configured: true,
+      posts: [],
+      message: 'Qzone refresh is temporarily paused after a previous failure.'
+    }, 503);
   }
 
   try {
@@ -169,13 +316,13 @@ export async function onRequest({ request, env }) {
     );
 
     if (!response.ok) {
-      return jsonResponse({ success: false, configured: true, posts: [] }, 502);
+      throw new Error(`Qzone upstream returned HTTP ${response.status}`);
     }
 
     const payload = parseJsonp(await response.text());
     if ((payload.code !== undefined && Number(payload.code) !== 0)
       || (payload.ret !== undefined && Number(payload.ret) !== 0)) {
-      return jsonResponse({ success: false, configured: true, posts: [] }, 502);
+      throw new Error('Qzone upstream rejected the request');
     }
 
     const posts = (Array.isArray(payload.msglist) ? payload.msglist : [])
@@ -190,18 +337,31 @@ export async function onRequest({ request, env }) {
       })
       .filter(post => post.text.trim() || post.images.length > 0)
       .slice(0, 10);
+    const updatedAt = new Date().toISOString();
+    const cacheStatus = await writeQzoneCache(
+      cacheNamespace,
+      cacheKey,
+      uin,
+      posts,
+      updatedAt
+    );
 
     return jsonResponse({
       success: true,
       configured: true,
       uin,
+      updatedAt,
+      cacheStatus,
       posts
     }, 200, 'public, max-age=60, s-maxage=300');
   } catch (error) {
-    console.error(
-      'Qzone recent posts request failed:',
-      error instanceof Error ? error.name : 'Unknown error'
-    );
+    const errorName = error instanceof Error ? error.name : 'Unknown error';
+    await setQzoneRefreshCooldown(cacheNamespace, retryKey);
+    if (cachedRecord) {
+      console.warn('Qzone refresh failed; serving the last successful cache:', errorName);
+      return staleQzoneResponse(cachedRecord);
+    }
+    console.error('Qzone recent posts request failed:', errorName);
     return jsonResponse({ success: false, configured: true, posts: [] }, 502);
   }
 }
