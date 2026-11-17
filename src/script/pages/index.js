@@ -280,6 +280,36 @@ function formatQzoneDate(timestamp) {
   }).format(date);
 }
 
+function renderQzoneText(value) {
+  const tokens = String(value).split(/(\[em\]e\d{1,7}\[\/em\])/gi);
+  return tokens.map(token => {
+    const emoji = token.match(/^\[em\](e\d{1,7})\[\/em\]$/i);
+    if (emoji) {
+      const code = emoji[1].toLowerCase();
+      return `<img class="qzone-emoji" src="https://qzonestyle.gtimg.cn/qzone/em/${code}.gif" alt="[QQ 表情]" data-code="${code}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+    }
+    return escapeActivityHtml(token)
+      .replace(/\r\n?/g, '\n')
+      .replace(/\n/g, '<br>');
+  }).join('');
+}
+
+function getQzoneImageUrl(value) {
+  if (typeof value !== 'string') return '';
+
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+    const trustedHost = hostname === 'qpic.cn'
+      || hostname.endsWith('.qpic.cn')
+      || hostname === 'gtimg.cn'
+      || hostname.endsWith('.gtimg.cn');
+    return trustedHost && url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
 async function loadQzonePosts(signal) {
   const container = document.getElementById('qzone-status-list');
   if (!container) return;
@@ -318,20 +348,41 @@ async function loadQzonePosts(signal) {
     }
 
     container.innerHTML = posts.map(post => {
-      const text = escapeActivityHtml(post.text || '').replace(/\r\n?/g, '\n').replace(/\n/g, '<br>');
+      const text = renderQzoneText(post.text || '');
+      const images = Array.isArray(post.images)
+        ? post.images.map(getQzoneImageUrl).filter(Boolean).slice(0, 3)
+        : [];
+      const imageMarkup = images.length
+        ? `<div class="qzone-photo-grid qzone-photo-grid-${images.length}" role="group" aria-label="说说图片">${images.map((image, index) => `
+            <img src="${escapeActivityHtml(image)}" alt="说说图片 ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+          `).join('')}</div>`
+        : '';
       const date = formatQzoneDate(Number(post.timestamp));
       const isoDate = Number(post.timestamp) > 0
         ? new Date(Number(post.timestamp) * 1000).toISOString()
         : '';
       return `
-        <article class="activity-card qzone-card contact-card">
+        <article class="activity-card qzone-card contact-card${images.length ? ' has-images' : ''}">
           <div class="activity-content">
             <p class="qzone-post-text">${text}</p>
+            ${imageMarkup}
             <time class="activity-time-pill" ${isoDate ? `datetime="${isoDate}"` : ''}>${date}</time>
           </div>
         </article>
       `;
     }).join('');
+
+    container.querySelectorAll('.qzone-emoji').forEach(image => {
+      image.addEventListener('error', () => {
+        const code = image.dataset.code;
+        if (image.dataset.fallback === 'png') {
+          image.replaceWith(document.createTextNode('[QQ 表情]'));
+          return;
+        }
+        image.dataset.fallback = 'png';
+        image.src = `https://qzonestyle.gtimg.cn/qzone/em/${code}.png`;
+      });
+    });
   } catch (error) {
     if (signal?.aborted) return;
     console.warn('获取 QQ 空间说说失败:', error);

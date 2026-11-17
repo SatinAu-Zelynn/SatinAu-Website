@@ -76,7 +76,7 @@
 
 ### QQ 空间最近说说
 
-首页最近动态中的 QQ 空间数据通过 Cloudflare Pages Function 获取。该功能使用未公开、可能变化的 Qzone 接口，不属于腾讯官方开放 API；接口失效时将停止更新。由于服务端会话可能读取到非公开说说，请确认愿意将返回内容展示给网站访客。
+首页最近动态中的 QQ 空间数据通过 Cloudflare Pages Function 获取，展示说说文字、QQ 表情和附带图片。该功能使用未公开、可能变化的 Qzone 接口，不属于腾讯官方开放 API；接口失效时将停止更新。由于服务端会话可能读取到非公开说说及图片，请确认愿意将返回内容展示给网站访客。
 
 在 Cloudflare Pages 项目的 **Settings → Variables and Secrets** 中添加：
 

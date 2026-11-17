@@ -32,6 +32,75 @@ function toUnixTimestamp(post) {
   return Number.isNaN(parsedDate) ? 0 : Math.floor(parsedDate / 1000);
 }
 
+function decodeHtmlEntities(value) {
+  return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (entity, code) => {
+    const namedEntities = {
+      amp: '&',
+      lt: '<',
+      gt: '>',
+      quot: '"',
+      apos: "'",
+      nbsp: ' '
+    };
+    if (!code.startsWith('#')) return namedEntities[code.toLowerCase()] || entity;
+
+    const codePoint = code[1].toLowerCase() === 'x'
+      ? Number.parseInt(code.slice(2), 16)
+      : Number.parseInt(code.slice(1), 10);
+    if (!Number.isInteger(codePoint) || codePoint < 0 || codePoint > 0x10ffff) return entity;
+    return String.fromCodePoint(codePoint);
+  });
+}
+
+function normalizeQzoneContent(value) {
+  return decodeHtmlEntities(value)
+    .replace(/<img\b[^>]*>/gi, imageTag => {
+      const source = imageTag.match(/\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      const url = source?.[1] || source?.[2] || source?.[3] || '';
+      const emoji = url.match(/(?:^|\/)qzone\/em\/(e\d{1,7})\.(?:gif|png)(?:[?#]|$)/i);
+      return emoji ? `[em]${emoji[1].toLowerCase()}[/em]` : '';
+    })
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(?:div|p|li)>/gi, '\n')
+    .replace(/<\/?[a-z][^>]*>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function normalizeQzoneImageUrl(value) {
+  if (typeof value !== 'string' || value.length > 2048) return '';
+
+  try {
+    const url = new URL(value.startsWith('//') ? `https:${value}` : value);
+    const hostname = url.hostname.toLowerCase();
+    const trustedHost = hostname === 'qpic.cn'
+      || hostname.endsWith('.qpic.cn')
+      || hostname === 'gtimg.cn'
+      || hostname.endsWith('.gtimg.cn');
+    if (!trustedHost || !['http:', 'https:'].includes(url.protocol)) return '';
+
+    url.protocol = 'https:';
+    url.username = '';
+    url.password = '';
+    return url.href;
+  } catch {
+    return '';
+  }
+}
+
+function getQzoneImages(post) {
+  if (!Array.isArray(post.pic)) return [];
+  return post.pic
+    .map(picture => {
+      if (!picture || typeof picture !== 'object') return '';
+      return normalizeQzoneImageUrl(
+        picture.url3 || picture.url2 || picture.url1 || picture.smallurl || ''
+      );
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 function jsonResponse(body, status = 200, cacheControl = 'no-store') {
   return new Response(JSON.stringify(body), {
     status,
@@ -108,12 +177,16 @@ export async function onRequest({ request, env }) {
     }
 
     const posts = (Array.isArray(payload.msglist) ? payload.msglist : [])
-      .map(post => ({
-        id: typeof post.tid === 'string' ? post.tid.slice(0, 100) : '',
-        text: typeof post.content === 'string' ? post.content.slice(0, 2000) : '',
-        timestamp: toUnixTimestamp(post)
-      }))
-      .filter(post => post.text.trim())
+      .map(post => {
+        const content = typeof post.content === 'string' ? post.content.slice(0, 4000) : '';
+        return {
+          id: typeof post.tid === 'string' ? post.tid.slice(0, 100) : '',
+          text: normalizeQzoneContent(content).slice(0, 2000),
+          images: getQzoneImages(post),
+          timestamp: toUnixTimestamp(post)
+        };
+      })
+      .filter(post => post.text.trim() || post.images.length > 0)
       .slice(0, 10);
 
     return jsonResponse({
