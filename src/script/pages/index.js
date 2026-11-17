@@ -603,6 +603,13 @@ function initActivityCarousel(signal) {
     scheduleProgressFrame();
   }
 
+  function syncProgressPause() {
+    const modalOpen = Boolean(modalHost?.childElementCount);
+    const viewerOpen = document.body?.classList.contains('viewer-open');
+    if (modalOpen || viewerOpen) pauseProgress();
+    else resumeProgress();
+  }
+
   function updateProgress(timestamp) {
     progressFrame = null;
     if (progressPaused) return;
@@ -757,15 +764,16 @@ function initActivityCarousel(signal) {
   showSlide(activeIndex, false);
   const contentObserver = new MutationObserver(scheduleCarouselHeightUpdate);
   const modalObserver = modalHost
-    ? new MutationObserver(() => {
-        if (modalHost.childElementCount > 0) pauseProgress();
-        else resumeProgress();
-      })
+    ? new MutationObserver(syncProgressPause)
     : null;
   if (modalObserver) {
     modalObserver.observe(modalHost, { childList: true });
-    if (modalHost.childElementCount > 0) pauseProgress();
   }
+  const viewerObserver = document.body
+    ? new MutationObserver(syncProgressPause)
+    : null;
+  viewerObserver?.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  syncProgressPause();
   slides.forEach(slide => {
     const content = slide.querySelector('.activity-cards-list, .qzone-cards-list');
     if (content) {
@@ -780,6 +788,7 @@ function initActivityCarousel(signal) {
   signal.addEventListener('abort', () => {
     contentObserver.disconnect();
     modalObserver?.disconnect();
+    viewerObserver?.disconnect();
     if (heightUpdateFrame !== null) cancelAnimationFrame(heightUpdateFrame);
     if (progressFrame !== null) cancelAnimationFrame(progressFrame);
     progressFrame = null;

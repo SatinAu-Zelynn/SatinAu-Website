@@ -4771,7 +4771,11 @@ body.hero-open {
 }
 
 .activity-card.qzone-card.has-images {
-  row-gap: 6px;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(56px, 1fr) auto;
+  align-items: stretch;
+  gap: 6px;
 }
 
 .qzone-card.has-images .activity-content {
@@ -4779,24 +4783,23 @@ body.hero-open {
 }
 
 .qzone-card.has-images .qzone-post-text {
-  order: 1;
+  grid-row: 1;
 }
 
 .qzone-card.has-images .qzone-photo-gallery {
-  order: 2;
+  grid-row: 2;
 }
 
 .qzone-card.has-images .activity-time-pill {
-  order: 3;
+  grid-row: 3;
 }
 
 .qzone-photo-gallery {
   display: block;
-  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
-  height: auto;
-  min-height: 56px;
-  aspect-ratio: auto;
+  height: 100%;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: var(--border-radius-sm);
@@ -5041,6 +5044,12 @@ body.hero-open {
 
   .activity-card.qzone-card {
     height: auto;
+  }
+
+  .activity-card.qzone-card.has-images {
+    display: flex !important;
+    flex-direction: row;
+    gap: 12px;
   }
 
   .qzone-card.has-images .activity-content {
