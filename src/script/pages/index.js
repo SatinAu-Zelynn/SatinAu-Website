@@ -150,6 +150,12 @@ function escapeActivityHtml(str) {
   }[s]));
 }
 
+function refreshActivityScrollAnimations() {
+  if (typeof window.refreshScrollAnimations === 'function') {
+    window.refreshScrollAnimations(false);
+  }
+}
+
 function renderSteamSkeleton() {
   return `
     <div class="activity-card steam-card contact-card activity-skeleton-card">
@@ -186,6 +192,7 @@ async function loadSteamGames(signal) {
           </div>
         </div>
       `;
+      refreshActivityScrollAnimations();
       return;
     }
 
@@ -250,6 +257,7 @@ async function loadSteamGames(signal) {
         </div>
       `;
     }
+    refreshActivityScrollAnimations();
   } catch (err) {
     if (signal?.aborted) return;
     console.warn('获取Steam数据失败:', err);
@@ -263,6 +271,7 @@ async function loadSteamGames(signal) {
         </div>
       </div>
     `;
+    refreshActivityScrollAnimations();
   }
 }
 
@@ -331,6 +340,7 @@ async function loadQzonePosts(signal) {
           </div>
         </div>
       `;
+      refreshActivityScrollAnimations();
       return;
     }
 
@@ -345,6 +355,7 @@ async function loadQzonePosts(signal) {
           </div>
         </div>
       `;
+      refreshActivityScrollAnimations();
       return;
     }
 
@@ -362,11 +373,12 @@ async function loadQzonePosts(signal) {
       const isoDate = Number(post.timestamp) > 0
         ? new Date(Number(post.timestamp) * 1000).toISOString()
         : '';
+      const timeMarkup = `<time class="activity-time-pill" ${isoDate ? `datetime="${isoDate}"` : ''}>${date}</time>`;
       return `
         <article class="activity-card qzone-card contact-card${images.length ? ' has-images' : ''}">
           <div class="activity-content">
             <p class="qzone-post-text">${text}</p>
-            <time class="activity-time-pill" ${isoDate ? `datetime="${isoDate}"` : ''}>${date}</time>
+            ${timeMarkup}
           </div>
           ${imageMarkup}
         </article>
@@ -413,6 +425,7 @@ async function loadQzonePosts(signal) {
         });
       });
     }
+    refreshActivityScrollAnimations();
   } catch (error) {
     if (signal?.aborted) return;
     console.warn('获取 QQ 空间说说失败:', error);
@@ -426,6 +439,7 @@ async function loadQzonePosts(signal) {
         </div>
       </div>
     `;
+    refreshActivityScrollAnimations();
   }
 }
 
@@ -471,9 +485,13 @@ function initActivityCarousel(signal) {
     'activity-carousel-exit-to-right'
   ];
   const animationElements = [titleEntrance, subtitleEntrance, ...slides];
+  const cardAnimationTokens = new WeakMap();
 
   function clearCarouselAnimations() {
     const cardElements = slides.flatMap(slide => Array.from(slide.querySelectorAll('.activity-card')));
+    cardElements.forEach(card => {
+      cardAnimationTokens.set(card, (cardAnimationTokens.get(card) || 0) + 1);
+    });
     [...animationElements, ...cardElements].forEach(element => {
       element.classList.remove(...animationClasses);
       element.style.removeProperty('--activity-carousel-delay');
@@ -488,10 +506,24 @@ function initActivityCarousel(signal) {
     return animation ? animation.finished.catch(() => {}) : Promise.resolve();
   }
 
+  function startSlideCardAnimation(card, animationClass, delay) {
+    const token = (cardAnimationTokens.get(card) || 0) + 1;
+    cardAnimationTokens.set(card, token);
+    const animation = startCarouselAnimation(card, animationClass, delay);
+    if (animationClass.startsWith('activity-carousel-enter-')) {
+      animation.then(() => {
+        if (cardAnimationTokens.get(card) !== token) return;
+        card.classList.remove(animationClass);
+        card.style.removeProperty('--activity-carousel-delay');
+      });
+    }
+    return animation;
+  }
+
   function startSlideCardAnimations(slide, animationClass, baseDelay) {
     const cards = Array.from(slide.querySelectorAll('.activity-card.steam-card, .activity-card.qzone-card')).slice(0, 3);
     if (window.matchMedia('(max-width: 768px)').matches) {
-      return cards.map((card, index) => startCarouselAnimation(card, animationClass, baseDelay + index * 60));
+      return cards.map((card, index) => startSlideCardAnimation(card, animationClass, baseDelay + index * 60));
     }
 
     const movesRight = animationClass.endsWith('from-left') || animationClass.endsWith('to-right');
@@ -499,7 +531,7 @@ function initActivityCarousel(signal) {
       const horizontalDifference = first.getBoundingClientRect().left - second.getBoundingClientRect().left;
       return movesRight ? -horizontalDifference : horizontalDifference;
     });
-    return orderedCards.map((card, index) => startCarouselAnimation(card, animationClass, baseDelay + index * 60));
+    return orderedCards.map((card, index) => startSlideCardAnimation(card, animationClass, baseDelay + index * 60));
   }
 
   function getProgressScale(timestamp) {
@@ -760,6 +792,7 @@ function initRecentActivities() {
     `.repeat(3);
   }
 
+  refreshActivityScrollAnimations();
   initActivityCarousel(signal);
   if (steamContainer) loadSteamGames(signal);
   if (qzoneContainer) loadQzonePosts(signal);
