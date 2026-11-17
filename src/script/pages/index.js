@@ -131,6 +131,9 @@ function initZelynnCardBg() {
 
 /* ========== 最近动态板块 (Steam 与 QQ 空间) ========== */
 let activitiesAbortController = null;
+let activityCarouselInterval = null;
+const ACTIVITY_CAROUSEL_DURATION = 8000;
+const ACTIVITY_CAROUSEL_TICK = 100;
 
 function formatActivityHours(minutes) {
   if (!minutes || minutes <= 0) return '0 小时';
@@ -160,28 +163,11 @@ function renderSteamSkeleton() {
   `.repeat(3);
 }
 
-function updateSteamProfileLink(steamId) {
-  const profileLink = document.getElementById('steam-profile-link');
-  if (!profileLink || !steamId) return;
-
-  const profileUrl = `https://steamcommunity.com/profiles/${steamId}`;
-  const profileScheme = `steam://url/SteamIDPage/${steamId}`;
-  profileLink.onclick = function() {
-    const modal = document.getElementById('globalModal');
-    if (modal) {
-      modal.with(this).alert('是否跳转到 Steam 个人主页？', profileUrl, profileScheme);
-    } else {
-      window.open(profileUrl, '_blank');
-    }
-  };
-}
-
 async function loadSteamGames(signal) {
   const container = document.getElementById('steam-games-list');
   if (!container) return;
 
   const steamId = window.SITE_CONFIG?.STEAM_ID || '';
-  updateSteamProfileLink(steamId);
   const queryParam = steamId ? `?steamid=${encodeURIComponent(steamId)}` : '';
 
   try {
@@ -190,9 +176,6 @@ async function loadSteamGames(signal) {
     const data = await res.json();
 
     if (!container.isConnected) return;
-
-    // 若配置了 Steam ID，更新个人主页跳转链接
-    updateSteamProfileLink(steamId || data.steamid || '');
 
     if (data.configured === false) {
       container.innerHTML = `
@@ -334,11 +317,6 @@ async function loadQzonePosts(signal) {
       return;
     }
 
-    const profileLink = document.getElementById('qzone-profile-link');
-    if (profileLink && /^\d{5,12}$/.test(String(data.uin || ''))) {
-      profileLink.href = `https://user.qzone.qq.com/${data.uin}`;
-    }
-
     container.innerHTML = posts.map(post => {
       const text = escapeActivityHtml(post.text || '').replace(/\r\n?/g, '\n').replace(/\n/g, '<br>');
       const date = formatQzoneDate(Number(post.timestamp));
@@ -370,6 +348,55 @@ async function loadQzonePosts(signal) {
   }
 }
 
+function initActivityCarousel(signal) {
+  const carousel = document.getElementById('activity-carousel');
+  if (!carousel) return;
+
+  const slides = Array.from(carousel.querySelectorAll('[data-activity-slide]'));
+  const switcherButtons = Array.from(carousel.querySelectorAll('[data-activity-target]'));
+  const progress = document.getElementById('activity-carousel-progress');
+  const title = document.getElementById('activity-current-title');
+  const subtitle = document.getElementById('activity-current-subtitle');
+  if (slides.length < 2 || switcherButtons.length !== slides.length || !progress || !title || !subtitle) return;
+
+  let activeIndex = 0;
+  let elapsed = 0;
+
+  function showSlide(index) {
+    activeIndex = (index + slides.length) % slides.length;
+    slides.forEach((slide, slideIndex) => {
+      slide.hidden = slideIndex !== activeIndex;
+    });
+    switcherButtons.forEach((button, buttonIndex) => {
+      const isActive = buttonIndex === activeIndex;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    });
+    title.textContent = slides[activeIndex].dataset.activityTitle;
+    subtitle.textContent = slides[activeIndex].dataset.activitySubtitle;
+
+    elapsed = 0;
+    progress.classList.remove('is-running');
+    progress.style.animationDuration = `${ACTIVITY_CAROUSEL_DURATION}ms`;
+    progress.style.transform = 'scaleX(0)';
+    void progress.offsetWidth;
+    progress.style.removeProperty('transform');
+    progress.classList.add('is-running');
+  }
+
+  switcherButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      showSlide(Number(button.dataset.activityTarget));
+    }, { signal });
+  });
+
+  showSlide(activeIndex);
+  activityCarouselInterval = setInterval(() => {
+    elapsed += ACTIVITY_CAROUSEL_TICK;
+    if (elapsed >= ACTIVITY_CAROUSEL_DURATION) showSlide(activeIndex + 1);
+  }, ACTIVITY_CAROUSEL_TICK);
+}
+
 function initRecentActivities() {
   const steamContainer = document.getElementById('steam-games-list');
   const qzoneContainer = document.getElementById('qzone-status-list');
@@ -393,6 +420,7 @@ function initRecentActivities() {
     `.repeat(3);
   }
 
+  initActivityCarousel(signal);
   if (steamContainer) loadSteamGames(signal);
   if (qzoneContainer) loadQzonePosts(signal);
 }
@@ -401,6 +429,10 @@ window.cleanupIndexPage = function() {
   if (indexBgInterval) {
     clearInterval(indexBgInterval);
     indexBgInterval = null;
+  }
+  if (activityCarouselInterval) {
+    clearInterval(activityCarouselInterval);
+    activityCarouselInterval = null;
   }
   if (activitiesAbortController) {
     activitiesAbortController.abort();
