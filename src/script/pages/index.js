@@ -351,12 +351,12 @@ async function loadQzonePosts(signal) {
     container.innerHTML = posts.map(post => {
       const text = renderQzoneText(post.text || '');
       const images = Array.isArray(post.images)
-        ? post.images.map(getQzoneImageUrl).filter(Boolean).slice(0, 3)
+        ? post.images.map(getQzoneImageUrl).filter(Boolean)
         : [];
       const imageMarkup = images.length
-        ? `<div class="qzone-photo-grid qzone-photo-grid-${images.length}" role="group" aria-label="说说图片">${images.map((image, index) => `
-            <img src="${escapeActivityHtml(`/api/qzone/image?src=${encodeURIComponent(image)}`)}" alt="说说图片 ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-          `).join('')}</div>`
+        ? `<button class="qzone-photo-gallery" type="button" aria-label="查看此说说的 ${images.length} 张图片">${images.map((image, index) => `
+            <img src="${escapeActivityHtml(`/api/qzone/image?src=${encodeURIComponent(image)}`)}" alt="QQ 空间说说图片 ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+          `).join('')}</button>`
         : '';
       const date = formatQzoneDate(Number(post.timestamp));
       const isoDate = Number(post.timestamp) > 0
@@ -366,9 +366,9 @@ async function loadQzonePosts(signal) {
         <article class="activity-card qzone-card contact-card${images.length ? ' has-images' : ''}">
           <div class="activity-content">
             <p class="qzone-post-text">${text}</p>
-            ${imageMarkup}
             <time class="activity-time-pill" ${isoDate ? `datetime="${isoDate}"` : ''}>${date}</time>
           </div>
+          ${imageMarkup}
         </article>
       `;
     }).join('');
@@ -384,6 +384,31 @@ async function loadQzonePosts(signal) {
         image.src = `https://qzonestyle.gtimg.cn/qzone/em/${code}.png`;
       });
     });
+
+    const ViewerConstructor = window.Viewer;
+    if (typeof ViewerConstructor === 'function') {
+      if (typeof window.syncViewerOpenToHtml === 'function') {
+        window.syncViewerOpenToHtml();
+      }
+      container.querySelectorAll('.qzone-photo-gallery').forEach(gallery => {
+        new ViewerConstructor(gallery, {
+          url: 'src',
+          backdrop: true,
+          toolbar: true,
+          navbar: true,
+          tooltip: true,
+          movable: true,
+          zoomable: true,
+          rotatable: true,
+          scalable: true,
+          transition: true,
+          fullscreen: true,
+          keyboard: true,
+          title: false,
+          className: 'viewer-custom'
+        });
+      });
+    }
   } catch (error) {
     if (signal?.aborted) return;
     console.warn('获取 QQ 空间说说失败:', error);
@@ -405,6 +430,7 @@ function initActivityCarousel(signal) {
   if (!carousel) return;
 
   const slides = Array.from(carousel.querySelectorAll('[data-activity-slide]'));
+  const steamSlide = slides.find(slide => slide.querySelector('#steam-games-list'));
   const switcherButtons = Array.from(carousel.querySelectorAll('[data-activity-target]'));
   const progress = document.getElementById('activity-carousel-progress');
   const title = document.getElementById('activity-current-title');
@@ -443,7 +469,8 @@ function initActivityCarousel(signal) {
   const animationElements = [titleEntrance, subtitleEntrance, ...slides];
 
   function clearCarouselAnimations() {
-    animationElements.forEach(element => {
+    const cardElements = slides.flatMap(slide => Array.from(slide.querySelectorAll('.activity-card')));
+    [...animationElements, ...cardElements].forEach(element => {
       element.classList.remove(...animationClasses);
       element.style.removeProperty('--activity-carousel-delay');
     });
@@ -455,6 +482,20 @@ function initActivityCarousel(signal) {
     element.classList.add(animationClass);
     const animation = element.getAnimations().find(item => item.animationName === animationClass);
     return animation ? animation.finished.catch(() => {}) : Promise.resolve();
+  }
+
+  function startSlideCardAnimations(slide, animationClass, baseDelay) {
+    const cards = Array.from(slide.querySelectorAll('.activity-card.steam-card, .activity-card.qzone-card')).slice(0, 3);
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      return cards.map((card, index) => startCarouselAnimation(card, animationClass, baseDelay + index * 60));
+    }
+
+    const movesRight = animationClass.endsWith('from-left') || animationClass.endsWith('to-right');
+    const orderedCards = cards.sort((first, second) => {
+      const horizontalDifference = first.getBoundingClientRect().left - second.getBoundingClientRect().left;
+      return movesRight ? -horizontalDifference : horizontalDifference;
+    });
+    return orderedCards.map((card, index) => startCarouselAnimation(card, animationClass, baseDelay + index * 60));
   }
 
   function getProgressScale(timestamp) {
@@ -551,6 +592,7 @@ function initActivityCarousel(signal) {
       startCarouselAnimation(titleEntrance, enterClass, 0);
       startCarouselAnimation(subtitleEntrance, enterClass, 100);
       startCarouselAnimation(slides[activeIndex], enterClass, 200);
+      startSlideCardAnimations(slides[activeIndex], enterClass, 220);
     }
   }
 
@@ -592,7 +634,8 @@ function initActivityCarousel(signal) {
     Promise.all([
       startCarouselAnimation(titleEntrance, exitClass, 0),
       startCarouselAnimation(subtitleEntrance, exitClass, 80),
-      startCarouselAnimation(slides[previousIndex], exitClass, 160)
+      startCarouselAnimation(slides[previousIndex], exitClass, 160),
+      ...startSlideCardAnimations(slides[previousIndex], exitClass, 160)
     ]).then(() => {
       if (token !== transitionToken) return;
 
@@ -609,18 +652,18 @@ function initActivityCarousel(signal) {
     if (!carousel.isConnected) return;
 
     const slideContainer = carousel.querySelector('.activity-carousel-slides');
-    if (!slideContainer) return;
+    if (!slideContainer || !steamSlide) return;
 
     slideContainer.style.height = 'auto';
-    let maxHeight = 0;
-    slides.forEach(targetSlide => {
-      const wasHidden = targetSlide.hidden;
-      if (wasHidden) targetSlide.hidden = false;
-      maxHeight = Math.max(maxHeight, targetSlide.offsetHeight);
-      if (wasHidden) targetSlide.hidden = true;
+    const hiddenStates = slides.map(slide => slide.hidden);
+    slides.forEach(slide => {
+      slide.hidden = slide !== steamSlide;
     });
-
-    slideContainer.style.height = `${Math.ceil(maxHeight)}px`;
+    const steamHeight = steamSlide.offsetHeight;
+    slides.forEach((slide, index) => {
+      slide.hidden = hiddenStates[index];
+    });
+    slideContainer.style.height = `${Math.ceil(steamHeight)}px`;
   }
 
   function scheduleCarouselHeightUpdate() {
