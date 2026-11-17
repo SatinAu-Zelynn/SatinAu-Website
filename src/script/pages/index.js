@@ -383,9 +383,9 @@ async function loadQzonePosts(signal) {
         ? post.images.map(getQzoneImageUrl).filter(Boolean)
         : [];
       const imageMarkup = images.length
-        ? `<button class="qzone-photo-gallery" type="button" aria-label="查看此说说的 ${images.length} 张图片">${images.map((image, index) => `
+        ? `<div class="qzone-photo-gallery">${images.map((image, index) => `
             <img src="${escapeActivityHtml(`/api/qzone/image?src=${encodeURIComponent(image)}`)}" alt="QQ 空间说说图片 ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-          `).join('')}</button>`
+          `).join('')}</div>`
         : '';
       const date = formatQzoneDate(Number(post.timestamp));
       const isoDate = Number(post.timestamp) > 0
@@ -402,10 +402,6 @@ async function loadQzonePosts(signal) {
         </article>
       `;
     }).join('');
-
-    container.querySelectorAll('.qzone-card').forEach(card => {
-      card.addEventListener('click', event => event.stopPropagation());
-    });
 
     container.querySelectorAll('.qzone-emoji').forEach(image => {
       image.addEventListener('error', () => {
@@ -425,7 +421,7 @@ async function loadQzonePosts(signal) {
         window.syncViewerOpenToHtml();
       }
       container.querySelectorAll('.qzone-photo-gallery').forEach(gallery => {
-        new ViewerConstructor(gallery, {
+        const viewer = new ViewerConstructor(gallery, {
           url: 'src',
           backdrop: true,
           toolbar: true,
@@ -440,6 +436,17 @@ async function loadQzonePosts(signal) {
           keyboard: true,
           title: false,
           className: 'viewer-custom'
+        });
+        const card = gallery.closest('.qzone-card');
+        if (!card) return;
+
+        card.tabIndex = 0;
+        card.setAttribute('aria-label', `查看此说说的 ${gallery.querySelectorAll('img').length} 张图片`);
+        card.addEventListener('click', () => viewer.show());
+        card.addEventListener('keydown', event => {
+          if (event.target !== card || (event.key !== 'Enter' && event.key !== ' ')) return;
+          event.preventDefault();
+          viewer.show();
         });
       });
     }
