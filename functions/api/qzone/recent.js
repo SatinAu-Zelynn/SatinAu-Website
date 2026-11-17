@@ -76,7 +76,9 @@ function normalizeQzoneImageUrl(value) {
     const trustedHost = hostname === 'qpic.cn'
       || hostname.endsWith('.qpic.cn')
       || hostname === 'gtimg.cn'
-      || hostname.endsWith('.gtimg.cn');
+      || hostname.endsWith('.gtimg.cn')
+      || hostname === 'photo.store.qq.com'
+      || hostname.endsWith('.photo.store.qq.com');
     if (!trustedHost || !['http:', 'https:'].includes(url.protocol)) return '';
 
     url.protocol = 'https:';
@@ -94,7 +96,7 @@ function getQzoneImages(post) {
     .map(picture => {
       if (!picture || typeof picture !== 'object') return '';
       return normalizeQzoneImageUrl(
-        picture.url3 || picture.url2 || picture.url1 || picture.smallurl || ''
+        picture.url2 || picture.url3 || picture.url1 || picture.smallurl || ''
       );
     })
     .filter(Boolean)

@@ -303,7 +303,9 @@ function getQzoneImageUrl(value) {
     const trustedHost = hostname === 'qpic.cn'
       || hostname.endsWith('.qpic.cn')
       || hostname === 'gtimg.cn'
-      || hostname.endsWith('.gtimg.cn');
+      || hostname.endsWith('.gtimg.cn')
+      || hostname === 'photo.store.qq.com'
+      || hostname.endsWith('.photo.store.qq.com');
     return trustedHost && url.protocol === 'https:' ? url.href : '';
   } catch {
     return '';
@@ -354,7 +356,7 @@ async function loadQzonePosts(signal) {
         : [];
       const imageMarkup = images.length
         ? `<div class="qzone-photo-grid qzone-photo-grid-${images.length}" role="group" aria-label="说说图片">${images.map((image, index) => `
-            <img src="${escapeActivityHtml(image)}" alt="说说图片 ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+            <img src="${escapeActivityHtml(`/api/qzone/image?src=${encodeURIComponent(image)}`)}" alt="说说图片 ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
           `).join('')}</div>`
         : '';
       const date = formatQzoneDate(Number(post.timestamp));
@@ -412,6 +414,7 @@ function initActivityCarousel(signal) {
 
   let activeIndex = 0;
   let elapsed = 0;
+  let heightUpdateFrame = null;
 
   function showSlide(index) {
     activeIndex = (index + slides.length) % slides.length;
@@ -435,6 +438,36 @@ function initActivityCarousel(signal) {
     progress.classList.add('is-running');
   }
 
+  function updateCarouselHeight() {
+    if (!carousel.isConnected) return;
+
+    const slideContainer = carousel.querySelector('.activity-carousel-slides');
+    if (!slideContainer) return;
+
+    const visibleIndex = Math.max(0, slides.findIndex(slide => !slide.hidden));
+    slideContainer.style.height = 'auto';
+    let maxHeight = 0;
+    slides.forEach((targetSlide, targetIndex) => {
+      slides.forEach((slide, slideIndex) => {
+        slide.hidden = slideIndex !== targetIndex;
+      });
+      maxHeight = Math.max(maxHeight, targetSlide.offsetHeight);
+    });
+
+    slides.forEach((slide, slideIndex) => {
+      slide.hidden = slideIndex !== visibleIndex;
+    });
+    slideContainer.style.height = `${Math.ceil(maxHeight)}px`;
+  }
+
+  function scheduleCarouselHeightUpdate() {
+    if (heightUpdateFrame !== null) cancelAnimationFrame(heightUpdateFrame);
+    heightUpdateFrame = requestAnimationFrame(() => {
+      heightUpdateFrame = null;
+      updateCarouselHeight();
+    });
+  }
+
   switcherButtons.forEach(button => {
     button.addEventListener('click', () => {
       showSlide(Number(button.dataset.activityTarget));
@@ -442,6 +475,24 @@ function initActivityCarousel(signal) {
   });
 
   showSlide(activeIndex);
+  const contentObserver = new MutationObserver(scheduleCarouselHeightUpdate);
+  slides.forEach(slide => {
+    const content = slide.querySelector('.activity-cards-list, .qzone-cards-list');
+    if (content) {
+      contentObserver.observe(content, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+    }
+  });
+  window.addEventListener('resize', scheduleCarouselHeightUpdate, { signal, passive: true });
+  signal.addEventListener('abort', () => {
+    contentObserver.disconnect();
+    if (heightUpdateFrame !== null) cancelAnimationFrame(heightUpdateFrame);
+  }, { once: true });
+  scheduleCarouselHeightUpdate();
+
   activityCarouselInterval = setInterval(() => {
     elapsed += ACTIVITY_CAROUSEL_TICK;
     if (elapsed >= ACTIVITY_CAROUSEL_DURATION) showSlide(activeIndex + 1);
