@@ -4818,7 +4818,7 @@ body.hero-open {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .qzone-photo-gallery img:not(:first-child) {
