@@ -4737,11 +4737,11 @@ body.hero-open {
 
 .activity-card.qzone-card {
   box-sizing: border-box;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   height: auto;
   min-height: 0;
-  gap: 10px;
+  gap: 8px;
   padding: 12px !important;
   cursor: default;
 }
@@ -4771,10 +4771,11 @@ body.hero-open {
 
 .qzone-photo-gallery {
   display: block;
-  flex: 0 0 clamp(64px, 24%, 84px);
-  width: clamp(64px, 24%, 84px);
-  max-height: 63px;
-  aspect-ratio: 4 / 3;
+  flex: 0 0 clamp(56px, 7vw, 88px);
+  width: 100%;
+  height: clamp(56px, 7vw, 88px);
+  max-height: 88px;
+  aspect-ratio: auto;
   padding: 0;
   border: 0;
   border-radius: var(--border-radius-sm);
@@ -4782,6 +4783,14 @@ body.hero-open {
   overflow: hidden;
   cursor: zoom-in;
   line-height: 0;
+}
+
+.activity-card.qzone-card::after {
+  pointer-events: none;
+}
+
+.activity-card.qzone-card:active:not(.is-animating) {
+  transform: none !important;
 }
 
 .qzone-photo-gallery img:first-child {
@@ -4805,7 +4814,7 @@ body.hero-open {
 }
 
 .qzone-card .activity-content {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
   min-height: 0;
   justify-content: space-between;
@@ -5012,7 +5021,12 @@ body.hero-open {
   .qzone-photo-gallery {
     flex-basis: 72px;
     width: 72px;
+    height: 54px;
     max-height: 54px;
+  }
+
+  .qzone-card .activity-content {
+    flex: 1 1 0;
   }
 
   .qzone-card.has-images .activity-content {

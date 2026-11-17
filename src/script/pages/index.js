@@ -373,6 +373,10 @@ async function loadQzonePosts(signal) {
       `;
     }).join('');
 
+    container.querySelectorAll('.qzone-card').forEach(card => {
+      card.addEventListener('click', event => event.stopPropagation());
+    });
+
     container.querySelectorAll('.qzone-emoji').forEach(image => {
       image.addEventListener('error', () => {
         const code = image.dataset.code;
@@ -655,14 +659,34 @@ function initActivityCarousel(signal) {
     if (!slideContainer || !steamSlide) return;
 
     slideContainer.style.height = 'auto';
-    const hiddenStates = slides.map(slide => slide.hidden);
-    slides.forEach(slide => {
-      slide.hidden = slide !== steamSlide;
-    });
-    const steamHeight = steamSlide.offsetHeight;
-    slides.forEach((slide, index) => {
-      slide.hidden = hiddenStates[index];
-    });
+    let steamHeight = steamSlide.offsetHeight;
+    if (steamSlide.hidden) {
+      const previousStyles = {
+        position: steamSlide.style.position,
+        top: steamSlide.style.top,
+        left: steamSlide.style.left,
+        width: steamSlide.style.width,
+        height: steamSlide.style.height,
+        visibility: steamSlide.style.visibility,
+        pointerEvents: steamSlide.style.pointerEvents
+      };
+
+      // Measure Steam off-flow without hiding the active Qzone slide and restarting its entrance animations.
+      steamSlide.hidden = false;
+      steamSlide.style.position = 'absolute';
+      steamSlide.style.top = '0';
+      steamSlide.style.left = '-10000px';
+      steamSlide.style.width = `${slideContainer.clientWidth}px`;
+      steamSlide.style.height = 'auto';
+      steamSlide.style.visibility = 'hidden';
+      steamSlide.style.pointerEvents = 'none';
+      try {
+        steamHeight = steamSlide.offsetHeight;
+      } finally {
+        Object.assign(steamSlide.style, previousStyles);
+        steamSlide.hidden = true;
+      }
+    }
     slideContainer.style.height = `${Math.ceil(steamHeight)}px`;
   }
 

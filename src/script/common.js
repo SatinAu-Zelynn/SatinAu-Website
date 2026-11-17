@@ -487,6 +487,8 @@ function showToast(msg) {
 
   function shouldExcludeElement(el) {
     if (!el || !(el instanceof HTMLElement)) return true;
+    // Activity cards use carousel transitions and must not be reanimated by viewport resize updates.
+    if (el.matches('.activity-card') && el.closest('#activity-carousel')) return true;
     // 排除首页大标题与首屏简介、关于我粘性开场、博客正文/Markdown正文、协议正文及各类弹窗内部
     if (el.closest('.intro-screen, #scroll-sequence, #postView, .md-article, .md-body, .agreement-content, .modal')) {
       return true;
