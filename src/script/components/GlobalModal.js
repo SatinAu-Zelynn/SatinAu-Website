@@ -24,6 +24,11 @@ class GlobalModal extends HTMLElement {
 
     // 滚动锁定状态
     this.isScrollLocked = false;
+
+    // 最小化后的多任务队列（最多保留 3 个任务）
+    this.minimizedTasks = [];
+    this.maxMinimizedTasks = 3;
+    this.taskCounter = 0;
   }
 
   connectedCallback() {
@@ -36,8 +41,10 @@ class GlobalModal extends HTMLElement {
   bindEvents() {
     document.addEventListener('keydown', (e) => {
       // 按 Escape 键时，如果最顶层弹窗正处于全屏模式，优先退出全屏；否则关闭弹窗
-      if (e.key === 'Escape' && this.layers.length > 0) {
-        const topLayer = this.layers[this.layers.length - 1];
+      if (e.key === 'Escape') {
+        const activeLayers = this.layers.filter(l => !l.isClosing);
+        if (activeLayers.length === 0) return;
+        const topLayer = activeLayers[activeLayers.length - 1];
         if (topLayer.modal && topLayer.modal.classList.contains('fullscreen-mode')) {
           const zoomBtn = topLayer.modal.querySelector('#docZoomBtn');
           if (zoomBtn) {
@@ -107,12 +114,13 @@ class GlobalModal extends HTMLElement {
   // ==========================================
   // 统一底层引擎：开启独立弹窗图层
   // ==========================================
-  open({ className = 'modal', content = '', onMount = null }) {
+  open({ className = 'modal', content = '', onMount = null, minimizable = false, taskMeta = null }) {
     const trigger = this.pendingTrigger;
     this.pendingTrigger = null; // 消费触发源
 
     // 计算当前层级 z-index，保证新弹窗始终覆盖在旧弹窗上方
     const baseZ = 9980 + this.layers.length * 10;
+    const taskId = `modal-task-${++this.taskCounter}`;
 
     // 1. 构建独立图层 DOM
     const overlay = document.createElement('div');
@@ -136,11 +144,15 @@ class GlobalModal extends HTMLElement {
     this.appendChild(modal);
 
     let cleanupTimer = null;
+    let minimizeTimer = null;
     let audioInstance = null;
     let destroyCallback = null;
+    let hasBeenMinimized = false;
 
     // 2. 清理状态并从 DOM 中移除图层
     const destroyLayer = () => {
+      clearTimeout(cleanupTimer);
+      clearTimeout(minimizeTimer);
       if (typeof destroyCallback === 'function') {
         try { destroyCallback(); } catch (e) {}
         destroyCallback = null;
@@ -148,10 +160,12 @@ class GlobalModal extends HTMLElement {
       overlay.remove();
       modal.remove();
       this.layers = this.layers.filter(l => l !== layer);
-      // 当所有弹窗全部关闭后，恢复页面滚动
+      this.minimizedTasks = this.minimizedTasks.filter(l => l !== layer);
+      // 当所有可见弹窗全部关闭后，恢复页面滚动
       if (this.layers.length === 0) {
         this._unlockScroll();
       }
+      this._notifyTasksChanged();
     };
 
     // 3. 统一动画核心：关闭
@@ -159,6 +173,8 @@ class GlobalModal extends HTMLElement {
       // 避免重复触发退出动画
       if (layer.isClosing) return;
       layer.isClosing = true;
+
+      clearTimeout(minimizeTimer);
 
       if (audioInstance) {
         audioInstance.pause();
@@ -168,12 +184,22 @@ class GlobalModal extends HTMLElement {
       // 清除可能存在的旧定时器
       if (cleanupTimer) clearTimeout(cleanupTimer);
 
-      // 如果没有触发源，降级为默认关闭 (普通淡出)
-      if (!trigger) {
+      // 若本身已处于最小化后台状态，直接销毁并释放内存
+      if (layer.isMinimized) {
+        this.minimizedTasks = this.minimizedTasks.filter(l => l !== layer);
+        destroyLayer();
+        return;
+      }
+
+      // 如果没有触发源、触发源已脱离 DOM 或曾被最小化过，降级为默认关闭
+      if (!trigger || !trigger.isConnected || hasBeenMinimized) {
+        if (trigger && trigger.classList.contains('hero-hidden')) {
+          trigger.style.opacity = '';
+          trigger.classList.remove('hero-hidden');
+        }
         overlay.classList.remove('show');
         modal.classList.remove('show');
         
-        // 等待 CSS transition (0.4s) 完成后再清理
         cleanupTimer = setTimeout(destroyLayer, 350);
         return;
       }
@@ -200,14 +226,128 @@ class GlobalModal extends HTMLElement {
       }, 400);
     };
 
+    // 4. 最小化至多任务栏（保留 DOM 与 iframe 内存不卸载）
+    const minimizeLayer = () => {
+      if (!layer.minimizable || layer.isClosing || layer.isMinimized) return false;
+
+      const multitaskEnabled = typeof window.isMultitaskEnabled === 'function' ? window.isMultitaskEnabled() : true;
+      if (!multitaskEnabled) {
+        this.showToast('请前往设置中开启多任务管理');
+        return false;
+      }
+
+      clearTimeout(minimizeTimer);
+      clearTimeout(cleanupTimer);
+
+      if (trigger && trigger.classList.contains('hero-hidden')) {
+        trigger.style.opacity = '';
+        trigger.classList.remove('hero-hidden');
+      }
+      hasBeenMinimized = true;
+
+      modal.classList.remove('hero-animating');
+      modal.style.transition = '';
+      modal.style.transform = '';
+      modal.style.transformOrigin = '';
+      contentWrapper.style.transition = '';
+      contentWrapper.style.opacity = '1';
+
+      this.layers = this.layers.filter(l => l !== layer);
+
+      if (!this.minimizedTasks.includes(layer)) {
+        while (this.minimizedTasks.length >= this.maxMinimizedTasks) {
+          const evicted = this.minimizedTasks.shift();
+          if (evicted) evicted._forceDestroy();
+          this.showToast(`多任务最多保留 ${this.maxMinimizedTasks} 个，已自动关闭最早的任务`);
+        }
+        this.minimizedTasks.push(layer);
+      }
+
+      layer.isMinimized = true;
+      layer.lastActiveAt = Date.now();
+
+      if (this.layers.length === 0) this._unlockScroll();
+
+      overlay.classList.remove('show');
+      modal.classList.remove('show');
+      modal.classList.add('is-minimized');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.inert = true;
+
+      minimizeTimer = setTimeout(() => {
+        if (layer.isMinimized && !layer.isClosing) {
+          modal.classList.add('is-minimized-settled');
+          overlay.classList.add('is-minimized-settled');
+        }
+      }, 380);
+
+      this._notifyTasksChanged();
+      return true;
+    };
+
+    // 5. 从多任务栏恢复显示
+    const restoreLayer = () => {
+      if (layer.isClosing || !layer.isMinimized) return false;
+
+      clearTimeout(minimizeTimer);
+      clearTimeout(cleanupTimer);
+      hasBeenMinimized = true;
+      this.minimizedTasks = this.minimizedTasks.filter(l => l !== layer);
+
+      const nextZ = 9980 + this.layers.length * 10;
+      overlay.style.zIndex = nextZ;
+      modal.style.zIndex = nextZ + 1;
+      this.layers.push(layer);
+      layer.isMinimized = false;
+      layer.lastActiveAt = Date.now();
+      this._lockScroll();
+
+      modal.inert = false;
+      modal.removeAttribute('aria-hidden');
+      modal.classList.remove('is-minimized-settled');
+      overlay.classList.remove('is-minimized-settled');
+
+      void modal.offsetHeight;
+      modal.classList.remove('is-minimized');
+      modal.classList.add('show');
+      overlay.classList.add('show');
+
+      this._notifyTasksChanged();
+      return true;
+    };
+
+    const forceDestroyLayer = () => {
+      layer.isClosing = true;
+      if (audioInstance) {
+        audioInstance.pause();
+        audioInstance = null;
+      }
+      if (trigger && trigger.classList.contains('hero-hidden')) {
+        trigger.style.opacity = '';
+        trigger.classList.remove('hero-hidden');
+      }
+      destroyLayer();
+    };
+
     overlay.addEventListener('click', closeLayer);
 
     const layer = {
+      taskId,
+      minimizable: Boolean(minimizable),
+      isMinimized: false,
+      isClosing: false,
+      taskType: (taskMeta && taskMeta.type) || 'modal',
+      taskTitle: (taskMeta && taskMeta.title) || '后台窗口',
+      taskSubtitle: (taskMeta && taskMeta.subtitle) || '',
+      createdAt: Date.now(),
+      lastActiveAt: Date.now(),
       overlay,
       modal,
       content: contentWrapper,
       close: closeLayer,
-      isClosing: false,
+      minimize: minimizeLayer,
+      restore: restoreLayer,
+      _forceDestroy: forceDestroyLayer,
       setAudio: (audio) => { audioInstance = audio; },
       onDestroy: (fn) => { destroyCallback = fn; }
     };
@@ -305,11 +445,52 @@ class GlobalModal extends HTMLElement {
     }
   }
 
-  // 关闭所有已打开的弹窗图层
-  closeAll() {
+  // 关闭所有已打开的弹窗图层（默认保留已最小化任务）
+  closeAll(options = {}) {
+    const { includeMinimized = false } = options;
     [...this.layers].reverse().forEach(l => {
       if (!l.isClosing) l.close();
     });
+    if (includeMinimized) this.closeAllTasks();
+  }
+
+  _notifyTasksChanged() {
+    window.dispatchEvent(new CustomEvent('modal-tasks-changed', {
+      detail: { tasks: this.getTasks() }
+    }));
+  }
+
+  getTasks() {
+    return this.minimizedTasks
+      .filter(l => !l.isClosing)
+      .map(l => ({
+        taskId: l.taskId,
+        type: l.taskType,
+        title: l.taskTitle,
+        subtitle: l.taskSubtitle,
+        lastActiveAt: l.lastActiveAt
+      }));
+  }
+
+  restoreTask(taskId) {
+    const target = this.minimizedTasks.find(l => l.taskId === taskId && !l.isClosing);
+    return target ? target.restore() : false;
+  }
+
+  closeTask(taskId) {
+    const target = this.minimizedTasks.find(l => l.taskId === taskId);
+    if (target) {
+      target.close();
+      return true;
+    }
+    return false;
+  }
+
+  closeAllTasks() {
+    if (this.minimizedTasks.length === 0) return;
+    [...this.minimizedTasks].forEach(l => l._forceDestroy());
+    this.minimizedTasks = [];
+    this._notifyTasksChanged();
   }
 
   // ==========================================
@@ -424,7 +605,7 @@ class GlobalModal extends HTMLElement {
   // ==========================================
   // 通用网页/Iframe 弹窗
   // ==========================================
-  openWeb(url, languageSelector = null) {
+  openWeb(url, languageSelector = null, customTitle = null) {
     const languageSelectorMarkup = languageSelector
       ? `
         <div class="web-modal-language">
@@ -443,14 +624,51 @@ class GlobalModal extends HTMLElement {
       `
       : '';
 
+    const initialUrl = new URL(url, window.location.href);
+    const deriveTaskTitle = (urlObj, explicitTitle = null) => {
+      if (explicitTitle && String(explicitTitle).trim()) return String(explicitTitle).trim();
+      const pathMap = {
+        '/pages/help/agreement.html': '用户协议',
+        '/pages/help/privacy.html': '隐私政策',
+        '/pages/help/compatibility.html': '兼容性报告'
+      };
+      const cleanPath = (urlObj.pathname || '').replace(/\/+$/, '');
+      if (urlObj.origin === window.location.origin) {
+        if (pathMap[cleanPath]) return pathMap[cleanPath];
+        const parts = cleanPath.split('/').filter(Boolean);
+        const last = parts.pop() || '';
+        const name = last.replace(/\.html?$/i, '');
+        if (name && name.toLowerCase() !== 'index') {
+          try { return decodeURIComponent(name); } catch (e) { return name; }
+        }
+        if (parts.length > 0) {
+          try { return decodeURIComponent(parts.pop()); } catch (e) { return parts.pop(); }
+        }
+        return '网页窗口';
+      }
+      return urlObj.hostname || '网页窗口';
+    };
+    const getTaskSubtitle = (urlObj) => urlObj.origin === window.location.origin
+      ? urlObj.pathname + urlObj.search
+      : urlObj.hostname + urlObj.pathname;
+
     this.open({
       className: 'modal web-modal',
+      minimizable: true,
+      taskMeta: {
+        type: 'web',
+        title: deriveTaskTitle(initialUrl, customTitle),
+        subtitle: getTaskSubtitle(initialUrl)
+      },
       // 渲染内容
       content: `
         <div class="web-modal-titlebar">
           ${languageSelectorMarkup}
           <button id="webModalAddress" class="web-modal-address" type="button" aria-label="复制网页地址"></button>
           <div class="web-modal-actions">
+            <button id="docMinimizeBtn" class="web-modal-action web-modal-minimize" type="button" title="最小化 / Minimize" aria-label="最小化">
+              <svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg>
+            </button>
             <button id="docZoomBtn" class="web-modal-action" type="button" title="全屏查看 / Fullscreen" aria-label="全屏查看">
               <svg id="icon-expand" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
               <svg id="icon-compress" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5z"/></svg>
@@ -467,22 +685,28 @@ class GlobalModal extends HTMLElement {
           <iframe id="webFrame" src="${url}" title="Web Content" allowfullscreen></iframe>
         </div>
       `,
-      onMount: ({ modal, close }) => {
+      onMount: (layer) => {
+        const { modal, close } = layer;
         // 绑定事件
+        const minimizeBtn = modal.querySelector('#docMinimizeBtn');
         const zoomBtn = modal.querySelector('#docZoomBtn');
         const closeBtn = modal.querySelector('#docCloseBtn');
         const addressBtn = modal.querySelector('#webModalAddress');
         const webFrame = modal.querySelector('#webFrame');
         const loadingOverlay = modal.querySelector('#webLoadingOverlay');
-        let pageUrl = new URL(url, window.location.href);
+        let pageUrl = initialUrl;
 
         const updateAddress = () => {
           addressBtn.textContent = pageUrl.href;
           addressBtn.title = `点击复制：${pageUrl.href}`;
+          layer.taskSubtitle = getTaskSubtitle(pageUrl);
+          if (!customTitle) layer.taskTitle = deriveTaskTitle(pageUrl, null);
+          if (layer.isMinimized) this._notifyTasksChanged();
         };
         updateAddress();
 
         addressBtn.onclick = () => this.copyToClipboard(pageUrl.href);
+        if (minimizeBtn) minimizeBtn.onclick = () => layer.minimize();
 
         const languageWrapper = modal.querySelector('#webModalLanguageSelect');
         if (languageWrapper && typeof initCustomSelect === 'function') {
@@ -499,6 +723,15 @@ class GlobalModal extends HTMLElement {
           webFrame.addEventListener('load', () => {
             loadingOverlay.classList.remove('show');
             setTimeout(() => loadingOverlay.remove(), 300);
+            if (!customTitle) {
+              try {
+                const docTitle = webFrame.contentDocument && webFrame.contentDocument.title;
+                if (docTitle && docTitle.trim()) {
+                  layer.taskTitle = docTitle.trim();
+                  if (layer.isMinimized) this._notifyTasksChanged();
+                }
+              } catch (e) {}
+            }
           });
         }
 
@@ -537,8 +770,9 @@ class GlobalModal extends HTMLElement {
   // ==========================================
   showSettings(anchorId = null) {
     // 检查当前是否已打开设置弹窗，若已存在则直接滚动到目标锚点，避免新建图层
-    const existingLayer = this.layers.find(l => l.modal.classList.contains('settings-modal'));
+    const existingLayer = this.layers.find(l => !l.isClosing && l.modal.classList.contains('settings-modal'));
     if (existingLayer) {
+      this.pendingTrigger = null;
       if (anchorId) {
         const target = existingLayer.modal.querySelector(`#${anchorId}`);
         if (target) {
@@ -563,13 +797,15 @@ class GlobalModal extends HTMLElement {
           },
           querySelector: (s) => layer.modal.querySelector(s),
           querySelectorAll: (s) => layer.modal.querySelectorAll(s),
-          openWeb: (url) => this.openWeb(url),
+          openWeb: (...args) => this.openWeb(...args),
           showToast: (msg) => this.showToast(msg),
           confirmAction: (msg, onConfirm, text) => this.confirmAction(msg, onConfirm, text),
           with: (el) => this.with(el)
         };
 
-        const mount = () => window.mountSettingsToModal(context, anchorId);
+        const mount = () => {
+          window.mountSettingsToModal(context, anchorId);
+        };
 
         if (typeof window.mountSettingsToModal === 'function') {
           mount();

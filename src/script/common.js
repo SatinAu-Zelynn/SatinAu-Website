@@ -1320,6 +1320,14 @@ let notifyMenuVisible = false;
 function closeMoreMenu() {
   const dropdown = document.querySelector('.more-dropdown');
   if (dropdown) dropdown.classList.remove('show');
+  const nav = document.querySelector('.bottom-nav');
+  if (nav) {
+    nav.classList.remove('more-open');
+    const mainLinks = nav.querySelector('.nav-main-links');
+    const taskBar = nav.querySelector('.nav-task-bar');
+    if (mainLinks) mainLinks.setAttribute('aria-hidden', 'false');
+    if (taskBar) taskBar.setAttribute('aria-hidden', 'true');
+  }
   moreMenuVisible = false;
 }
 
@@ -1345,6 +1353,15 @@ function toggleMoreMenu() {
     }
     moreMenuVisible = !moreMenuVisible;
     dropdown.classList.toggle('show', moreMenuVisible);
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) {
+      nav.classList.toggle('more-open', moreMenuVisible);
+      const multitaskOn = typeof isMultitaskEnabled === 'function' ? isMultitaskEnabled() : true;
+      const mainLinks = nav.querySelector('.nav-main-links');
+      const taskBar = nav.querySelector('.nav-task-bar');
+      if (mainLinks) mainLinks.setAttribute('aria-hidden', String(moreMenuVisible && multitaskOn));
+      if (taskBar) taskBar.setAttribute('aria-hidden', String(!(moreMenuVisible && multitaskOn)));
+    }
   }
 }
 
@@ -1370,8 +1387,15 @@ function toggleNotifyMenu() {
 
 // 点击其他区域关闭菜单
 document.addEventListener('click', function(e) {
+  if (e.target && e.target.isConnected === false) return;
   const moreContainer = document.querySelector('.more-menu-container');
-  if (moreMenuVisible && moreContainer && !moreContainer.contains(e.target)) {
+  const taskBar = document.querySelector('.nav-task-bar');
+  if (
+    moreMenuVisible &&
+    moreContainer &&
+    !moreContainer.contains(e.target) &&
+    (!taskBar || !taskBar.contains(e.target))
+  ) {
     closeMoreMenu();
   }
   const notifyContainer = document.querySelector('.notify-menu-container');
@@ -1426,7 +1450,7 @@ function consoleBeautify() {
 window.addEventListener('load', consoleBeautify);
 
 window.initMobileMoreMenu = function() {
-  // === 重构：移动端一体式下拉菜单（双页左右平移：更多菜单 + 通知中心）初始化 ===
+  // === 移动端一体式下拉菜单（三页左右平移：多任务中心 + 更多菜单 + 通知中心）初始化 ===
   const desktopDropdown = document.querySelector('.more-dropdown');
   const bottomNav = document.querySelector('.bottom-nav');
   
@@ -1441,7 +1465,26 @@ window.initMobileMoreMenu = function() {
     const menuTrack = document.createElement('div');
     menuTrack.className = 'mobile-menu-track';
 
-    // 第一页（左页，默认打开）：更多菜单
+    // 第一页（左页）：多任务中心
+    const pageTasks = document.createElement('div');
+    pageTasks.className = 'mobile-menu-page mobile-page-tasks';
+    const taskInner = document.createElement('div');
+    taskInner.className = 'mobile-task-inner';
+    taskInner.innerHTML = `
+      <div class="notify-dropdown-header mobile-task-header">
+        <span class="notify-dropdown-title">多任务中心</span>
+        <span class="task-header-actions">
+          <span class="task-count-pill" id="mobileTaskCount">0 / 3</span>
+          <span class="notify-mark-read task-clear-all" id="mobileTaskClearAll" style="display: none;">全部关闭</span>
+        </span>
+      </div>
+      <div class="notify-dropdown-body mobile-task-list" id="mobileTaskList">
+        <div class="notify-empty-tip">暂无后台任务</div>
+      </div>
+    `;
+    pageTasks.appendChild(taskInner);
+
+    // 第二页（中页，默认打开）：更多菜单
     const pageMore = document.createElement('div');
     pageMore.className = 'mobile-menu-page mobile-page-more';
     const innerContent = document.createElement('div');
@@ -1449,7 +1492,7 @@ window.initMobileMoreMenu = function() {
     innerContent.innerHTML = desktopDropdown.innerHTML;
     pageMore.appendChild(innerContent);
 
-    // 第二页（右页）：通知中心
+    // 第三页（右页）：通知中心
     const pageNotify = document.createElement('div');
     pageNotify.className = 'mobile-menu-page mobile-page-notify';
     const notifyInner = document.createElement('div');
@@ -1465,16 +1508,20 @@ window.initMobileMoreMenu = function() {
     `;
     pageNotify.appendChild(notifyInner);
 
+    menuTrack.appendChild(pageTasks);
     menuTrack.appendChild(pageMore);
     menuTrack.appendChild(pageNotify);
     viewport.appendChild(menuTrack);
 
-    // 底部双页指示点
+    // 底部三页指示点
     const paginationEl = document.createElement('div');
     paginationEl.className = 'mobile-menu-pagination';
     paginationEl.innerHTML = `
-      <span class="mobile-page-dot active" data-page="0" aria-label="更多菜单"></span>
-      <span class="mobile-page-dot" data-page="1" aria-label="通知中心">
+      <span class="mobile-page-dot" data-page="0" aria-label="多任务中心">
+        <i class="task-badge mobile-dot-badge" id="mobileTaskBadge"></i>
+      </span>
+      <span class="mobile-page-dot active" data-page="1" aria-label="更多菜单"></span>
+      <span class="mobile-page-dot" data-page="2" aria-label="通知中心">
         <i class="notify-badge mobile-dot-badge" id="mobileNotifyBadge"></i>
       </span>
     `;
@@ -1483,49 +1530,80 @@ window.initMobileMoreMenu = function() {
     mobileMenuWrapper.appendChild(paginationEl);
     bottomNav.prepend(mobileMenuWrapper); // 插至最前
     
-    const navLinks = bottomNav.querySelectorAll('a:not(.dropdown-item)'); 
+    const navLinks = bottomNav.querySelectorAll('.nav-main-links > a');
     let startX = 0, startY = 0, currentX = 0, currentY = 0;
     let isDragging = false, isMenuOpen = false, isNavLinkTouched = false;
     let gestureMode = null; // null | 'vertical' | 'horizontal' | 'scroll'
-    let currentPage = 0; // 0: 更多菜单(左页), 1: 通知中心(右页)
+    let currentPage = 1; // 0: 多任务中心, 1: 更多菜单, 2: 通知中心
+    const getMinPage = () => (typeof isMultitaskEnabled === 'function' && !isMultitaskEnabled()) ? 1 : 0;
+    const maxPage = 2;
     let maxMenuHeight = 0, currentHeight = 0, touchStartTime = 0;
     let didMoveSignificantly = false;
     
-    // 同步通知页高度与更多菜单页一致，保持左右平移高度稳定
-    function syncNotifyPageHeight() {
+    // 同步左右侧功能页高度与更多菜单页一致，保持左右平移高度稳定
+    function syncSidePagesHeight() {
       const moreH = innerContent.offsetHeight;
       if (moreH > 0) {
         notifyInner.style.height = `${moreH}px`;
+        taskInner.style.height = `${moreH}px`;
       }
     }
 
     // 获取实际内容的精准高度
     function getMenuMaxHeight() {
-      syncNotifyPageHeight();
+      syncSidePagesHeight();
       const paginationH = paginationEl.offsetHeight || 18;
       return innerContent.offsetHeight + paginationH;
     }
 
-    // 切换移动端双页 (0: 更多菜单, 1: 通知中心)
+    // 切换移动端多页 (0: 多任务中心, 1: 更多菜单, 2: 通知中心；关闭多任务时范围为 1~2)
     function switchMobileMenuPage(pageIdx, animate = true) {
       const prevPage = currentPage;
-      currentPage = pageIdx === 1 ? 1 : 0;
+      const minPage = getMinPage();
+      const pageCount = maxPage - minPage + 1;
+      currentPage = Math.max(minPage, Math.min(maxPage, Number.isFinite(pageIdx) ? pageIdx : 1));
       if (animate) {
         menuTrack.style.transition = 'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)';
       } else {
         menuTrack.style.transition = 'none';
       }
-      menuTrack.style.transform = currentPage === 1 ? 'translateX(-50%)' : 'translateX(0%)';
+      const visibleIndex = currentPage - minPage;
+      menuTrack.style.transform = `translateX(${-visibleIndex * (100 / pageCount)}%)`;
       paginationEl.querySelectorAll('.mobile-page-dot').forEach(dot => {
         dot.classList.toggle('active', parseInt(dot.dataset.page, 10) === currentPage);
       });
-      if (currentPage === 1 && typeof window.markAllNoticesRead === 'function') {
+      if (currentPage === 0 && typeof window.renderTaskCenter === 'function') {
+        window.renderTaskCenter();
+      } else if (currentPage === 2 && typeof window.markAllNoticesRead === 'function') {
         window.markAllNoticesRead();
-      } else if (prevPage === 1 && currentPage === 0 && typeof window.renderNoticeCenter === 'function') {
+      }
+      if (prevPage === 2 && currentPage !== 2 && typeof window.renderNoticeCenter === 'function') {
         setTimeout(() => {
-          if (currentPage === 0) window.renderNoticeCenter();
+          if (currentPage !== 2) window.renderNoticeCenter();
         }, 300);
       }
+    }
+
+    window.syncMobileMultitaskState = (enabled) => {
+      if (!enabled && currentPage === 0) {
+        switchMobileMenuPage(1, false);
+      } else {
+        switchMobileMenuPage(currentPage, false);
+      }
+      if (isMenuOpen) {
+        maxMenuHeight = getMenuMaxHeight();
+        mobileMenuWrapper.style.height = `${maxMenuHeight}px`;
+      }
+    };
+
+    switchMobileMenuPage(1, false);
+
+    const clearAllBtn = taskInner.querySelector('#mobileTaskClearAll');
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof window.clearAllModalTasks === 'function') window.clearAllModalTasks();
+      });
     }
 
     // 点击分页指示点切换页面
@@ -1592,8 +1670,8 @@ window.initMobileMoreMenu = function() {
           bottomNav.classList.add('is-dragging');
         } else {
           // 若当前在通知页且手指在通知列表内纵向滑动，优先允许列表内部滚动
-          const scrollList = e.target.closest('.mobile-notify-list');
-          if (isMenuOpen && currentPage === 1 && scrollList && scrollList.scrollHeight > scrollList.clientHeight) {
+          const scrollList = e.target.closest('.mobile-notify-list, .mobile-task-list');
+          if (isMenuOpen && (currentPage === 0 || currentPage === 2) && scrollList && scrollList.scrollHeight > scrollList.clientHeight) {
             const atTop = scrollList.scrollTop <= 0;
             const atBottom = scrollList.scrollTop + scrollList.clientHeight >= scrollList.scrollHeight - 1;
             if ((diffY > 0 && !atBottom) || (diffY < 0 && !atTop)) {
@@ -1613,25 +1691,13 @@ window.initMobileMoreMenu = function() {
 
       if (gestureMode === 'horizontal') {
         e.preventDefault();
+        const minPage = getMinPage();
         const pageWidth = viewport.offsetWidth || bottomNav.offsetWidth || 300;
-        let targetOffset;
-        if (currentPage === 0) {
-          // 在左页（更多菜单）时，支持右滑或左滑平滑过渡至右页（通知中心）
-          const moveDist = Math.abs(diffX);
-          if (moveDist <= pageWidth) {
-            targetOffset = -moveDist;
-          } else {
-            targetOffset = -pageWidth - (moveDist - pageWidth) * 0.2;
-          }
-        } else {
-          // 在右页（通知中心）时，滑动平滑返回左页（更多菜单）
-          const moveDist = Math.abs(diffX);
-          if (moveDist <= pageWidth) {
-            targetOffset = -pageWidth + moveDist;
-          } else {
-            targetOffset = (moveDist - pageWidth) * 0.2;
-          }
-        }
+        const baseOffset = -(currentPage - minPage) * pageWidth;
+        const minOffset = -(maxPage - minPage) * pageWidth;
+        let targetOffset = baseOffset + diffX;
+        if (targetOffset > 0) targetOffset = targetOffset * 0.2;
+        else if (targetOffset < minOffset) targetOffset = minOffset + (targetOffset - minOffset) * 0.2;
         menuTrack.style.transform = `translateX(${targetOffset}px)`;
         return;
       }
@@ -1672,7 +1738,7 @@ window.initMobileMoreMenu = function() {
       document.body.style.overflow = '';
       setTimeout(() => {
         if (!isMenuOpen) {
-          switchMobileMenuPage(0, false);
+          switchMobileMenuPage(1, false);
         }
       }, 400);
     }
@@ -1722,16 +1788,17 @@ window.initMobileMoreMenu = function() {
       }
 
       if (gestureMode === 'horizontal') {
+        const minPage = getMinPage();
         const diffX = currentX - startX;
         const pageWidth = viewport.offsetWidth || bottomNav.offsetWidth || 300;
         const velocityX = Math.abs(diffX) / touchDuration;
         const shouldSwitch = Math.abs(diffX) > pageWidth / 4 || velocityX > 0.35;
-
+        let targetPage = currentPage;
         if (shouldSwitch) {
-          switchMobileMenuPage(currentPage === 0 ? 1 : 0, true);
-        } else {
-          switchMobileMenuPage(currentPage, true);
+          if (diffX > 0 && currentPage > minPage) targetPage = currentPage - 1;
+          else if (diffX < 0 && currentPage < maxPage) targetPage = currentPage + 1;
         }
+        switchMobileMenuPage(targetPage, true);
         gestureMode = null;
         return;
       }
@@ -1765,6 +1832,7 @@ window.initMobileMoreMenu = function() {
     
     // 点击非底栏区域时自动关合
     document.addEventListener('click', function(e) {
+      if (e.target && e.target.isConnected === false) return;
       if (isMenuOpen && !bottomNav.contains(e.target)) closeMenu();
     });
     
@@ -1790,6 +1858,9 @@ window.initMobileMoreMenu = function() {
     // 若公告数据已就绪，立即渲染到移动端通知列表
     if (typeof window.renderNoticeCenter === 'function') {
       window.renderNoticeCenter();
+    }
+    if (typeof window.renderTaskCenter === 'function') {
+      window.renderTaskCenter();
     }
   }
 
@@ -2634,6 +2705,245 @@ window.toggleNativeNotifications = function() {
   }
 };
 
+/* ========== 多任务管理开关逻辑 ========== */
+const MULTITASK_KEY = 'setting_multitask_enabled';
+
+function isMultitaskEnabled() {
+  const setting = localStorage.getItem(MULTITASK_KEY);
+  return setting === null ? true : setting === 'true'; // 默认开启
+}
+window.isMultitaskEnabled = isMultitaskEnabled;
+
+window.applyMultitaskState = function(enabled = isMultitaskEnabled()) {
+  document.documentElement.classList.toggle('multitask-disabled', !enabled);
+
+  const nav = document.querySelector('.bottom-nav');
+  if (nav) {
+    const mainLinks = nav.querySelector('.nav-main-links');
+    const taskBar = nav.querySelector('.nav-task-bar');
+    const showDesktopTasks = Boolean(enabled && typeof moreMenuVisible !== 'undefined' && moreMenuVisible);
+    if (mainLinks) mainLinks.setAttribute('aria-hidden', String(showDesktopTasks));
+    if (taskBar) taskBar.setAttribute('aria-hidden', String(!showDesktopTasks));
+  }
+
+  if (typeof window.syncMobileMultitaskState === 'function') {
+    window.syncMobileMultitaskState(enabled);
+  }
+  if (typeof window.renderTaskCenter === 'function') {
+    window.renderTaskCenter();
+  }
+};
+
+window.toggleMultitask = function() {
+  const checkbox = document.getElementById('multitaskToggle');
+  if (!checkbox) return;
+  const enabled = checkbox.checked;
+  localStorage.setItem(MULTITASK_KEY, enabled);
+  window.applyMultitaskState(enabled);
+
+  if (!enabled) {
+    const modal = document.querySelector('global-modal');
+    if (modal && typeof modal.closeAllTasks === 'function') {
+      modal.closeAllTasks();
+    }
+    if (typeof closeMoreMenu === 'function' && moreMenuVisible) {
+      closeMoreMenu();
+    }
+    showToast("多任务管理：已禁用");
+  } else {
+    showToast("多任务管理：已启用");
+  }
+};
+
+(function preApplyMultitask() {
+  if (!isMultitaskEnabled()) {
+    document.documentElement.classList.add('multitask-disabled');
+  }
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('multitaskToggle');
+  if (toggle) {
+    toggle.checked = isMultitaskEnabled();
+  }
+  window.applyMultitaskState(isMultitaskEnabled());
+});
+
+/* ========== 多任务管理中心同步逻辑 (Desktop + Mobile) ========== */
+const restoringTaskIds = new Set();
+
+function escapeTaskHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function getTaskTypeIconSvg() {
+  return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+}
+
+function showTaskEmptyPlaceholder(container, html, animate = true) {
+  if (!container || container.querySelector('[data-task-id], .nav-task-empty, .notify-empty-tip')) return;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html.trim();
+  const emptyEl = wrapper.firstElementChild;
+  if (!emptyEl) return;
+  if (animate) {
+    emptyEl.classList.add('is-entering');
+    container.appendChild(emptyEl);
+    void emptyEl.offsetWidth;
+    requestAnimationFrame(() => emptyEl.classList.remove('is-entering'));
+  } else {
+    container.appendChild(emptyEl);
+  }
+}
+
+function animateTaskItemRemoval(container, el, isMobile, delay, onAfterEmpty) {
+  if (!el || el.classList.contains('is-removing')) return;
+  const nav = document.querySelector('.bottom-nav');
+  const isVisible = isMobile
+    ? Boolean(nav && nav.classList.contains('menu-open'))
+    : Boolean(nav && nav.classList.contains('more-open'));
+  if (!isVisible) {
+    el.remove();
+    if (typeof onAfterEmpty === 'function') onAfterEmpty(false);
+    return;
+  }
+  if (isMobile) {
+    const h = el.getBoundingClientRect().height;
+    el.style.height = `${h}px`;
+    el.style.minHeight = `${h}px`;
+  } else {
+    const w = el.getBoundingClientRect().width;
+    el.style.flex = '0 0 auto';
+    el.style.width = `${w}px`;
+    el.style.maxWidth = `${w}px`;
+  }
+  void el.offsetWidth;
+  if (delay > 0) el.style.transitionDelay = `${delay}ms`;
+  el.classList.add('is-removing');
+  if (isMobile) {
+    el.style.height = '0px';
+    el.style.minHeight = '0px';
+  } else {
+    el.style.width = '0px';
+    el.style.maxWidth = '0px';
+  }
+  setTimeout(() => {
+    if (el.isConnected) el.remove();
+    if (typeof onAfterEmpty === 'function') onAfterEmpty(true);
+  }, 320 + delay);
+}
+
+function createTaskItemEl(task, isMobile) {
+  const safeId = escapeTaskHtml(task.taskId);
+  const safeTitle = escapeTaskHtml(task.title);
+  const item = document.createElement('div');
+  item.className = isMobile ? 'nav-task-item mobile-nav-task-item' : 'nav-task-item';
+  item.setAttribute('data-task-id', task.taskId);
+  item.title = task.title || '';
+  item.innerHTML = isMobile ? `
+    <span class="nav-task-icon">${getTaskTypeIconSvg()}</span>
+    <span class="nav-task-text"><span class="nav-task-title">${safeTitle}</span>${task.subtitle ? `<span class="nav-task-subtitle">${escapeTaskHtml(task.subtitle)}</span>` : ''}</span>
+    <button type="button" class="nav-task-close" data-close-task="${safeId}" aria-label="关闭任务" title="关闭并释放"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+  ` : `
+    <span class="nav-task-icon">${getTaskTypeIconSvg()}</span><span class="nav-task-title">${safeTitle}</span>
+    <button type="button" class="nav-task-close" data-close-task="${safeId}" aria-label="关闭任务" title="关闭并释放"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+  `;
+  item.addEventListener('click', () => window.restoreModalTask(task.taskId));
+  const closeBtn = item.querySelector('.nav-task-close');
+  if (closeBtn) closeBtn.addEventListener('click', (e) => window.closeModalTask(task.taskId, e));
+  return item;
+}
+
+window.restoreModalTask = function(taskId) {
+  const modal = document.querySelector('global-modal');
+  if (!modal || typeof modal.restoreTask !== 'function') return;
+  restoringTaskIds.add(taskId);
+  if (typeof closeMoreMenu === 'function') closeMoreMenu();
+  if (typeof window.closeMobileMoreMenu === 'function') window.closeMobileMoreMenu();
+  modal.restoreTask(taskId);
+  restoringTaskIds.delete(taskId);
+};
+
+window.closeModalTask = function(taskId, event = null) {
+  if (event) event.stopPropagation();
+  const modal = document.querySelector('global-modal');
+  if (modal && typeof modal.closeTask === 'function') modal.closeTask(taskId);
+};
+
+window.clearAllModalTasks = function() {
+  const modal = document.querySelector('global-modal');
+  if (modal && typeof modal.closeAllTasks === 'function') modal.closeAllTasks();
+  if (typeof showToast === 'function') showToast('已关闭全部后台任务');
+};
+
+window.renderTaskCenter = function() {
+  const enabled = isMultitaskEnabled();
+  const modal = document.querySelector('global-modal');
+  const maxTasks = (modal && modal.maxMinimizedTasks) || 3;
+  const tasks = enabled && modal && typeof modal.getTasks === 'function'
+    ? modal.getTasks().slice(0, maxTasks)
+    : [];
+  const activeTaskMap = new Map(tasks.map(task => [task.taskId, task]));
+
+  const desktopBadge = document.getElementById('desktopTaskBadge');
+  if (desktopBadge) {
+    desktopBadge.textContent = tasks.length ? String(tasks.length) : '';
+    desktopBadge.classList.toggle('show', tasks.length > 0);
+  }
+  const mobileBadge = document.getElementById('mobileTaskBadge');
+  if (mobileBadge) mobileBadge.classList.toggle('show', tasks.length > 0);
+  const mobileCount = document.getElementById('mobileTaskCount');
+  if (mobileCount) mobileCount.textContent = `${tasks.length} / ${maxTasks}`;
+  const mobileClearAll = document.getElementById('mobileTaskClearAll');
+  if (mobileClearAll) mobileClearAll.style.display = tasks.length ? '' : 'none';
+
+  const syncContainer = (container, isMobile, emptyHtml) => {
+    if (!container) return;
+    if (tasks.length) container.querySelectorAll('.nav-task-empty, .notify-empty-tip').forEach(el => el.remove());
+    const existingNodes = Array.from(container.querySelectorAll('[data-task-id]'));
+    const existingIds = new Set();
+    let removeIndex = 0;
+
+    existingNodes.forEach(el => {
+      const id = el.getAttribute('data-task-id');
+      const task = activeTaskMap.get(id);
+      if (task) {
+        existingIds.add(id);
+        const titleEl = el.querySelector('.nav-task-title');
+        if (titleEl) titleEl.textContent = task.title || '';
+        el.title = task.title || '';
+        if (isMobile) {
+          const subEl = el.querySelector('.nav-task-subtitle');
+          if (subEl) subEl.textContent = task.subtitle || '';
+        }
+      } else if (restoringTaskIds.has(id)) {
+        el.remove();
+      } else if (!el.classList.contains('is-removing')) {
+        animateTaskItemRemoval(container, el, isMobile, removeIndex * 45, (animated) => {
+          if (container.querySelectorAll('[data-task-id]:not(.is-removing)').length === 0) {
+            showTaskEmptyPlaceholder(container, emptyHtml, animated);
+          }
+        });
+        removeIndex++;
+      }
+    });
+
+    tasks.forEach(task => {
+      if (!existingIds.has(task.taskId)) container.appendChild(createTaskItemEl(task, isMobile));
+    });
+
+    if (!tasks.length && container.querySelectorAll('[data-task-id]').length === 0) {
+      showTaskEmptyPlaceholder(container, emptyHtml, false);
+    }
+  };
+
+  syncContainer(document.getElementById('desktopTaskBar'), false, '<div class="nav-task-empty">暂无后台任务</div>');
+  syncContainer(document.getElementById('mobileTaskList'), true, '<div class="notify-empty-tip">暂无后台任务，可最小化网页弹窗以保持运行</div>');
+};
+
+window.addEventListener('modal-tasks-changed', window.renderTaskCenter);
+document.addEventListener('DOMContentLoaded', window.renderTaskCenter);
+
 /* ========== 站点公告与通知中心集成逻辑 ========== */
 const LAST_PUSHED_NOTICE_ID_KEY = 'last_processed_notice_id';
 const LAST_READ_NOTICE_ID_KEY = 'last_read_notice_id';
@@ -2848,6 +3158,7 @@ window.restoreDefaultSettings = function(triggerElement) {
       'setting_theme_mode',                 // 颜色模式
       'setting_performance_mode_enabled',   // 性能模式
       'setting_autohide_nav_enabled',       // 导航栏隐藏
+      'setting_multitask_enabled',          // 多任务管理
       'setting_native_notifications_enabled', // 系统通知
       'setting_hourly_chime_enabled',       // 整点报时
       'setting_custom_context_menu_enabled', // 右键菜单

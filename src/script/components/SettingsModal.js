@@ -149,6 +149,17 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
         <h2 class="setting-group-title">功能开关</h2>
         <p class="setting-group-desc">控制网站的一些额外功能和交互</p>
 
+        <div class="setting-item" id="multitask-setting-anchor">
+          <label for="multitaskToggle">
+            多任务管理
+            <span class="tooltip">开启后，可在导航栏多任务中心管理最小化的网页弹窗（默认开启）</span>
+          </label>
+          <div class="toggle-switch">
+            <input type="checkbox" id="multitaskToggle" onchange="toggleMultitask()">
+            <label for="multitaskToggle" class="switch-slider"></label>
+          </div>
+        </div>
+
         <div class="setting-item">
           <label for="autoHideNavToggle">
             自动隐藏导航栏
@@ -321,6 +332,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
   }
   initToggle('performanceModeToggle', () => typeof isPerformanceMode === 'function' ? isPerformanceMode() : false);
   initToggle('autoHideNavToggle', () => typeof isAutoHideNavEnabled === 'function' ? isAutoHideNavEnabled() : false);
+  initToggle('multitaskToggle', () => typeof isMultitaskEnabled === 'function' ? isMultitaskEnabled() : true);
   initToggle('customRightClickMenuToggle', () => typeof getCustomMenuSetting === 'function' ? getCustomMenuSetting() : true);
   initToggle('nativeNotificationToggle', () => typeof isNativeNotificationEnabled === 'function' ? isNativeNotificationEnabled() : false);
   initToggle('chimeToggle', () => typeof isChimeEnabled === 'function' ? isChimeEnabled() : true);

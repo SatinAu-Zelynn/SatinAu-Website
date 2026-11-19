@@ -61,7 +61,7 @@ class NavigateBar extends HTMLElement {
     if (bottomNav) {
       bottomNav.classList.toggle('more-active', isMoreActive);
       bottomNav.classList.remove('nav-hidden');
-      bottomNav.querySelectorAll(':scope > a').forEach(a => {
+      bottomNav.querySelectorAll('.nav-main-links > a').forEach(a => {
         const href = a.getAttribute('href') || '';
         const itemBase = href.split('/').pop().replace('.html', '');
         a.classList.toggle('active', currentPath === itemBase);
@@ -239,15 +239,22 @@ class NavigateBar extends HTMLElement {
             </div>
           </div>
         </div>
-        ${navItems.map(item => `
-          <a 
-            href="/${item.href}.html" 
-            class="${currentPath === item.href ? 'active' : ''}"
-          >
-            <span class="nav-cn">${item.cn}</span>
-            <span class="nav-en">${item.en}</span>
-          </a>
-        `).join('')}
+        <div class="nav-center-stage">
+          <div class="nav-main-links">
+            ${navItems.map(item => `
+              <a
+                href="/${item.href}.html"
+                class="${currentPath === item.href ? 'active' : ''}"
+              >
+                <span class="nav-cn">${item.cn}</span>
+                <span class="nav-en">${item.en}</span>
+              </a>
+            `).join('')}
+          </div>
+          <div class="nav-task-bar" id="desktopTaskBar" aria-hidden="true">
+            <div class="nav-task-empty">暂无后台任务</div>
+          </div>
+        </div>
         <div class="more-menu-container">
           <button class="more-btn ${isMoreActive ? 'active' : ''}" onclick="toggleMoreMenu()">
             <svg class="more-btn-svg" viewBox="0 0 24 24" width="24" height="24">
@@ -255,6 +262,7 @@ class NavigateBar extends HTMLElement {
               <circle cx="12" cy="12" r="2" />
               <circle cx="18" cy="12" r="2" />
             </svg>
+            <span class="task-badge" id="desktopTaskBadge"></span>
           </button>
           <div class="more-dropdown">
             ${moreItems.map(item => {
@@ -290,6 +298,9 @@ class NavigateBar extends HTMLElement {
         </div>
       </nav>
     `;
+    if (typeof window.renderTaskCenter === 'function') {
+      window.renderTaskCenter();
+    }
     // 初始化滚动监听
     let lastScrollY = window.scrollY;
     let ticking = false;
