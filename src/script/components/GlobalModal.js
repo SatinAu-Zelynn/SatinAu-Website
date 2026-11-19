@@ -424,36 +424,75 @@ class GlobalModal extends HTMLElement {
   // ==========================================
   // 通用网页/Iframe 弹窗
   // ==========================================
-  openWeb(url) {
+  openWeb(url, languageSelector = null) {
+    const languageSelectorMarkup = languageSelector
+      ? `
+        <div class="web-modal-language">
+          <div class="custom-select-wrapper" id="webModalLanguageSelect">
+            <div class="custom-select-trigger" tabindex="0">
+              <span class="selected-value"></span>
+              <div class="arrow"></div>
+            </div>
+            <div class="custom-options">
+              ${languageSelector.options.map(option => `
+                <div class="custom-option${option.value === languageSelector.defaultValue ? ' selected' : ''}" data-value="${option.value}">${option.label}</div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `
+      : '';
+
     this.open({
       className: 'modal web-modal',
       // 渲染内容
       content: `
+        <div class="web-modal-titlebar">
+          ${languageSelectorMarkup}
+          <button id="webModalAddress" class="web-modal-address" type="button" aria-label="复制网页地址"></button>
+          <div class="web-modal-actions">
+            <button id="docZoomBtn" class="web-modal-action" type="button" title="全屏查看 / Fullscreen" aria-label="全屏查看">
+              <svg id="icon-expand" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+              <svg id="icon-compress" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5z"/></svg>
+            </button>
+            <button id="docCloseBtn" class="web-modal-action web-modal-close" type="button" title="关闭 / Close" aria-label="关闭">
+              <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+          </div>
+        </div>
         <div class="doc-container">
           <div class="loading-overlay show" id="webLoadingOverlay">
             <div class="spinner"></div>
           </div>
           <iframe id="webFrame" src="${url}" title="Web Content" allowfullscreen></iframe>
-          <div class="doc-controls">
-            <!-- 全屏切换按钮 -->
-            <button id="docZoomBtn" class="doc-float-btn" title="全屏查看 / Fullscreen">
-              <svg id="icon-expand" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
-              <svg id="icon-compress" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5z"/></svg>
-            </button>
-            
-            <!-- 关闭按钮 -->
-            <button id="docCloseBtn" class="doc-float-btn close-btn" title="关闭 / Close">
-              <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            </button>
-          </div>
         </div>
       `,
       onMount: ({ modal, close }) => {
         // 绑定事件
         const zoomBtn = modal.querySelector('#docZoomBtn');
         const closeBtn = modal.querySelector('#docCloseBtn');
+        const addressBtn = modal.querySelector('#webModalAddress');
         const webFrame = modal.querySelector('#webFrame');
         const loadingOverlay = modal.querySelector('#webLoadingOverlay');
+        let pageUrl = new URL(url, window.location.href);
+
+        const updateAddress = () => {
+          addressBtn.textContent = pageUrl.href;
+          addressBtn.title = `点击复制：${pageUrl.href}`;
+        };
+        updateAddress();
+
+        addressBtn.onclick = () => this.copyToClipboard(pageUrl.href);
+
+        const languageWrapper = modal.querySelector('#webModalLanguageSelect');
+        if (languageWrapper && typeof initCustomSelect === 'function') {
+          initCustomSelect(languageWrapper, null, (language) => {
+            const option = languageSelector.options.find(item => item.value === language);
+            webFrame.src = option.url;
+            pageUrl = new URL(option.url, window.location.href);
+            updateAddress();
+          }, languageSelector.defaultValue);
+        }
 
         // 监听 iframe 加载完成
         if (webFrame && loadingOverlay) {
@@ -482,6 +521,7 @@ class GlobalModal extends HTMLElement {
           modal.classList.add('is-resizing');
           const isFullscreen = modal.classList.toggle('fullscreen-mode');
           zoomBtn.title = isFullscreen ? "退出全屏 / Exit Fullscreen" : "全屏查看 / Fullscreen";
+          zoomBtn.setAttribute('aria-label', isFullscreen ? '退出全屏' : '全屏查看');
 
           setTimeout(() => {
             modal.classList.remove('is-resizing');

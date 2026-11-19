@@ -17,6 +17,42 @@
 /* ============= zelynn.html 独有逻辑 ============= */
 let zelynnGalleryViewer = null;
 
+const zelynnOverviewOptions = [
+  { value: 'zh-CN', label: '简体中文', url: 'https://www.kdocs.cn/l/cbnmJFr498XG' },
+  { value: 'zh-TW', label: '繁體中文', url: 'https://www.kdocs.cn/l/caB01lLIj8q2' },
+  { value: 'en', label: 'English', url: 'https://www.kdocs.cn/l/cjSN22oChlaT' }
+];
+
+function getZelynnOverviewLanguage() {
+  const languages = navigator.languages && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || ''];
+
+  for (const language of languages) {
+    const normalizedLanguage = language.toLowerCase();
+    if (/^zh-(tw|hk|mo)(-|$)/.test(normalizedLanguage) || normalizedLanguage.includes('hant')) {
+      return 'zh-TW';
+    }
+    if (/^zh(?:-|$)/.test(normalizedLanguage)) {
+      return 'zh-CN';
+    }
+    if (/^en(?:-|$)/.test(normalizedLanguage)) {
+      return 'en';
+    }
+  }
+
+  return 'zh-CN';
+}
+
+window.openZelynnOverview = function() {
+  const language = getZelynnOverviewLanguage();
+  const selectedOption = zelynnOverviewOptions.find(option => option.value === language);
+  document.getElementById('globalModal').openWeb(selectedOption.url, {
+    options: zelynnOverviewOptions,
+    defaultValue: language
+  });
+};
+
 window.cleanupZelynnPage = function() {
   if (zelynnGalleryViewer) {
     zelynnGalleryViewer.destroy();

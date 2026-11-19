@@ -1977,13 +1977,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 2. 通用自定义 Select 组件初始化
-function initCustomSelect(wrapper, storageKey, callback) {
+function initCustomSelect(wrapper, storageKey, callback, initialValue = null) {
   const trigger = wrapper.querySelector('.custom-select-trigger');
   const triggerText = wrapper.querySelector('.selected-value');
   const options = wrapper.querySelectorAll('.custom-option');
   
   // 读取当前设置
-  const savedValue = localStorage.getItem(storageKey); 
+  const savedValue = storageKey ? localStorage.getItem(storageKey) : initialValue;
 
   // 更新 UI 显示状态
   let found = false;
@@ -2028,7 +2028,7 @@ function initCustomSelect(wrapper, storageKey, callback) {
       wrapper.classList.remove('open');
       
       const val = option.dataset.value;
-      localStorage.setItem(storageKey, val);
+      if (storageKey) localStorage.setItem(storageKey, val);
       
       if (typeof callback === 'function') {
         callback(val);
