@@ -178,7 +178,10 @@ button,
 .search-cancel-btn,
 .history-chip,
 .history-chip-del,
-.search-history-clear-btn {
+.search-history-clear-btn,
+.blog-group-tab,
+.blog-group-tab-close,
+.viewer-button.viewer-minimize {
   cursor: var(--custom-cursor) !important;
 }
 
@@ -2031,7 +2034,7 @@ html:has(body#blog-page) {
     z-index: 1900;
     margin-top: -30px;
     margin-bottom: 14px;
-    padding: max(14px, calc(env(safe-area-inset-top, 0px) + 10px)) 0 20px 44px;
+    padding: max(14px, calc(env(safe-area-inset-top, 0px) + 10px)) 44px 20px 44px;
     box-sizing: border-box;
 
     @media (min-width: 768px) {
@@ -2129,6 +2132,20 @@ html:has(body#blog-page) {
   }
 }
 
+/* 博客文章页顶部最小化按钮：移动端固定在页面右上角，桌面端固定在导航栏右侧 */
+#minimizePost {
+  position: fixed;
+  top: max(16px, calc(env(safe-area-inset-top, 0px) + 12px));
+  right: 16px;
+  margin-bottom: 0;
+  z-index: 2001;
+
+  @media (min-width: 768px) {
+    top: 25px;
+    right: max(12px, calc(50% + var(--scrollbar-compensate, 0px) / 2 - min(90vw, 600px) / 2 - 56px));
+  }
+}
+
 .md-article .post-date {
   margin: 0;
   color: light-dark(#666, #aaa);
@@ -2216,8 +2233,8 @@ html:has(body#blog-page) {
   }
 }
 
-/* 二级页面淡入动画（避免在 .md-article 容器本身设置 transform/filter，以免破坏内部 #backToList 的 position: fixed 视口定位） */
-.md-article:not(.hero-enter) > .post-meta > :not(#backToList),
+/* 二级页面淡入动画（避免在 .md-article 容器本身设置 transform/filter，以免破坏内部 #backToList 与 #minimizePost 的 position: fixed 视口定位） */
+.md-article:not(.hero-enter) > .post-meta > :not(#backToList):not(#minimizePost),
 .md-article:not(.hero-enter) > .md-body,
 .md-article:not(.hero-enter) > .post-actions-panel,
 .md-article:not(.hero-enter) > #postError {
@@ -2785,10 +2802,62 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   transform: scale(0.9);
 }
 
+/* 右上角最小化按钮 */
+.viewer-button.viewer-minimize {
+  width: 44px;
+  height: 44px;
+  top: 30px;
+  right: 86px;
+  border-radius: 50%;
+  background-color: light-dark(rgba(255, 255, 255, 0.5), rgba(40, 40, 40, 0.5));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  color: var(--word-color);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewer-button.viewer-minimize::before {
+  display: none !important;
+  content: none !important;
+}
+
+.viewer-button.viewer-minimize svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.viewer-button.viewer-minimize:focus {
+  outline: 0;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+@media (hover: hover) {
+  .viewer-button.viewer-minimize:hover {
+    background-color: light-dark(rgba(255, 255, 255, 0.8), rgba(60, 60, 60, 0.8));
+    color: var(--primary-color);
+    transform: scale(1.08);
+  }
+}
+
+.viewer-button.viewer-minimize:active {
+  transform: scale(0.9);
+}
+
 @media (max-width: 768px) {
   .viewer-button.viewer-close {
     top: 16px;
     right: 16px;
+  }
+
+  .viewer-button.viewer-minimize {
+    top: 16px;
+    right: 72px;
   }
 }
 
@@ -4601,6 +4670,7 @@ body.hero-list-entering main.page #blogList {
 }
 
 .md-article.hero-enter #backToList,
+.md-article.hero-enter #minimizePost,
 .md-article.hero-enter > .md-body,
 .md-article.hero-enter > .post-actions-panel {
   animation: blurFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -6189,6 +6259,277 @@ iframe#webFrame {
   .mobile-menu-inner .nav-settings-btn {
     grid-column: 1 / -1;
   }
+
+/* ========== 博客文章浮窗 (GlobalModal Blog) ========== */
+.modal.blog-modal {
+  width: 90vw;
+  max-width: 1200px;
+  height: 85vh;
+  height: 85dvh;
+  padding: 0;
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  background: light-dark(rgba(255, 255, 255, 0.5), rgba(30, 30, 30, 0.5));
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.12));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25), inset 0 0 30px rgba(255, 255, 255, 0.1);
+  text-align: left;
+  box-sizing: border-box;
+  transition:
+    opacity 0.4s cubic-bezier(0.22, 1.4, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.modal.blog-modal .modal-content-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.blog-modal-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px 24px 28px;
+  color: var(--word-color);
+  background: transparent;
+  border-bottom: none;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.blog-modal-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 与设置弹窗一致的双层渐进模糊 */
+.blog-modal-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+}
+
+.blog-modal-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: transparent;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 85%);
+}
+
+.blog-modal-title,
+.blog-modal-actions {
+  pointer-events: auto;
+}
+
+.blog-modal-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--word-color);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blog-modal-actions {
+  flex-shrink: 0;
+}
+
+.blog-group-tabs {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  pointer-events: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.blog-group-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.modal.blog-modal.has-group-tabs .blog-group-tabs {
+  display: flex;
+}
+
+.modal.blog-modal.has-group-tabs .blog-modal-body {
+  scroll-padding-top: 116px;
+  padding-top: 108px;
+}
+
+.blog-group-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 200px;
+  padding: 5px 8px 5px 12px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--word-color);
+  background: light-dark(rgba(255, 255, 255, 0.55), rgba(60, 60, 60, 0.55));
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.14));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  user-select: none;
+}
+
+@media (hover: hover) {
+  .blog-group-tab:hover:not(.active) {
+    background: light-dark(rgba(255, 255, 255, 0.8), rgba(80, 80, 80, 0.75));
+  }
+}
+
+.blog-group-tab.active {
+  background: var(--primary-color);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--primary-color) 35%, transparent);
+}
+
+.blog-group-tab-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blog-group-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.16));
+  color: inherit;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.blog-group-tab.active .blog-group-tab-close {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+@media (hover: hover) {
+  .blog-group-tab-close:hover {
+    background: light-dark(rgba(255, 59, 48, 0.18), rgba(255, 69, 58, 0.35));
+    color: light-dark(#ff3b30, #ffffff);
+    transform: scale(1.1);
+  }
+
+  .blog-group-tab.active .blog-group-tab-close:hover {
+    background: rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+  }
+}
+
+.blog-modal-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-padding-top: 76px;
+  padding: 68px 28px 40px;
+  box-sizing: border-box;
+}
+
+.blog-modal-body .md-body {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.blog-modal-body .md-body > :first-child {
+  margin-top: 0;
+}
+
+.modal.blog-modal .loading-overlay {
+  position: absolute;
+  border-radius: inherit;
+  z-index: 9;
+}
+
+.blog-modal-status {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--word-color);
+}
+
+.blog-modal-status p {
+  margin: 0 0 14px;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .modal.blog-modal {
+    width: 92vw;
+    height: 80vh;
+    height: 80dvh;
+  }
+
+  .blog-modal-header {
+    padding: 14px 16px 24px;
+  }
+
+  .blog-modal-title {
+    font-size: 1rem;
+  }
+
+  .blog-modal-body {
+    scroll-padding-top: 68px;
+    padding: 60px 16px 32px;
+  }
+
+  .modal.blog-modal.has-group-tabs .blog-modal-body {
+    scroll-padding-top: 102px;
+    padding-top: 96px;
+  }
+
+  .blog-group-tab {
+    max-width: 160px;
+    font-size: 12px;
+    padding: 4px 7px 4px 10px;
+  }
+}
 
   /* ========== CDN 线路优选弹窗 ========== */
 .modal.cdn-modal {

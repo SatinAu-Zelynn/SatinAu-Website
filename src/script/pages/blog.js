@@ -22,6 +22,7 @@ let postTitle = document.getElementById("postTitle");
 let postDate = document.getElementById("postDate");
 let postContent = document.getElementById("postContent");
 let backToList = document.getElementById("backToList");
+let minimizePost = document.getElementById("minimizePost");
 let loader = document.getElementById("loadingOverlay");
 let emptyState = document.getElementById("emptyState");
 let errorState = document.getElementById("errorState");
@@ -49,6 +50,7 @@ function refreshBlogDomRefs() {
     postDate = document.getElementById("postDate");
     postContent = document.getElementById("postContent");
     backToList = document.getElementById("backToList");
+    minimizePost = document.getElementById("minimizePost");
     loader = document.getElementById("loadingOverlay");
     emptyState = document.getElementById("emptyState");
     errorState = document.getElementById("errorState");
@@ -87,14 +89,23 @@ let activeCardRect = null;    // 卡片点击时的位置尺寸信息
 let listScrollY = 0;
 let isHeroAnimating = false;
 let heroCleanupTimers = [];
+let progressSyncCleanup = null;
 
 function clearHeroTimers() {
     heroCleanupTimers.forEach(t => clearTimeout(t));
     heroCleanupTimers = [];
 }
 
+function clearProgressSyncCleanup() {
+    if (typeof progressSyncCleanup === 'function') {
+        progressSyncCleanup();
+        progressSyncCleanup = null;
+    }
+}
+
 window.cleanupBlogPage = function() {
     clearHeroTimers();
+    clearProgressSyncCleanup();
     isHeroAnimating = false;
     if (window.imageViewer) {
         window.imageViewer.destroy();
@@ -152,7 +163,7 @@ window.handleBlogPopState = function(event) {
                     postsData.find(p => p.title === stateTitle);
         if (post) {
             const card = findCardForPost(post);
-            if (card && postView.style.display === 'none' && !isHeroAnimating) {
+            if (card && card.offsetParent !== null && postView.style.display === 'none' && !isHeroAnimating) {
                 openPostWithHero(card, post, false);
             } else {
                 loadPost(post);
@@ -222,6 +233,14 @@ function initBlog() {
         backToList.dataset.bound = "true";
     }
 
+    // 最小化到多任务按钮事件
+    if (minimizePost && !minimizePost.dataset.bound) {
+        minimizePost.addEventListener("click", () => {
+            minimizeCurrentPostToTasks();
+        });
+        minimizePost.dataset.bound = "true";
+    }
+
     // 重试按钮事件
     if (retryBtn && !retryBtn.dataset.bound) {
         retryBtn.addEventListener("click", loadPostsList);
@@ -241,6 +260,7 @@ function initBlog() {
 
 function resetBlogView(pushHistory = true) {
     clearHeroTimers();
+    clearProgressSyncCleanup();
     isHeroAnimating = false;
     document.title = "博客Blog - 缎金SatinAu";
     const header = document.querySelector('header');
@@ -588,6 +608,7 @@ function openPostWithHero(card, post, pushHistory = true) {
         mdResult = md;
         if (heroRevealed && currentPost === post) {
             renderPostBodyContent(post, md);
+            applyPendingProgressOrTop(post, false);
             showLoading(false);
         }
     }).catch(err => {
@@ -609,6 +630,7 @@ function openPostWithHero(card, post, pushHistory = true) {
                 heroRevealed = true;
                 if (mdResult !== null) {
                     renderPostBodyContent(post, mdResult);
+                    applyPendingProgressOrTop(post, false);
                 } else if (mdError) {
                     postContent.innerHTML = "";
                     postError.style.display = "block";
@@ -874,9 +896,216 @@ function animateHeroClose(callback) {
     }
 }
 
+function getPostMarkdownBlocks() {
+    if (!postContent) return [];
+    return Array.from(postContent.children).filter(
+        el => !el.classList.contains('ai-summary-card') && el.id !== 'comments-container'
+    );
+}
+
+function captureCurrentPostProgress() {
+    if (!postContent || !postView || postView.style.display === 'none') return null;
+    const blocks = getPostMarkdownBlocks();
+    if (blocks.length === 0) return { ratio: 0, blockIndex: 0, blockOffsetRatio: 0 };
+
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    if (scrollY <= 4) {
+        return { ratio: 0, blockIndex: 0, blockOffsetRatio: 0 };
+    }
+
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const postMeta = postView.querySelector('.post-meta');
+    const stickyBottom = postMeta ? postMeta.getBoundingClientRect().bottom : 0;
+    const refY = stickyBottom + 12;
+
+    const lastBlock = blocks[blocks.length - 1];
+    const lastRect = lastBlock.getBoundingClientRect();
+    const lastBottomDoc = lastRect.bottom + scrollY;
+    const endScrollY = Math.max(0, lastBottomDoc - vh);
+
+    if (endScrollY > 4 && scrollY >= endScrollY - 4) {
+        return { ratio: 1, blockIndex: blocks.length - 1, blockOffsetRatio: 1 };
+    }
+
+    let blockIndex = 0;
+    let blockOffsetRatio = 0;
+    for (let i = 0; i < blocks.length; i++) {
+        const rect = blocks[i].getBoundingClientRect();
+        if (rect.height <= 0 && rect.width <= 0) continue;
+        if (rect.bottom > refY) {
+            blockIndex = i;
+            blockOffsetRatio = (rect.top < refY && rect.height > 0)
+                ? Math.max(0, Math.min(1, (refY - rect.top) / rect.height))
+                : 0;
+            break;
+        }
+        blockIndex = i;
+        blockOffsetRatio = 1;
+    }
+
+    const maxPageScroll = Math.max(0, document.documentElement.scrollHeight - vh);
+    const ratio = endScrollY > 0
+        ? Math.max(0, Math.min(1, scrollY / endScrollY))
+        : (maxPageScroll > 0 ? Math.max(0, Math.min(1, scrollY / maxPageScroll)) : 0);
+    return { ratio, blockIndex, blockOffsetRatio };
+}
+
+function consumePendingPostProgress(post) {
+    if (!post) return null;
+    let pending = window.__pendingBlogReadingProgress || null;
+    if (!pending) {
+        try {
+            const raw = sessionStorage.getItem('blog_pending_reading_progress');
+            if (raw) pending = JSON.parse(raw);
+        } catch (e) {}
+    }
+    if (!pending || !pending.progress) return null;
+
+    const isFresh = !pending.ts || (Date.now() - pending.ts) < 30000;
+    const matchesFile = pending.file && post.file && pending.file === post.file;
+    const matchesTitle = pending.title && post.title && pending.title === post.title;
+    if (!isFresh || (!matchesFile && !matchesTitle)) {
+        return null;
+    }
+
+    window.__pendingBlogReadingProgress = null;
+    try {
+        sessionStorage.removeItem('blog_pending_reading_progress');
+    } catch (e) {}
+    return pending.progress;
+}
+
+function applyPostReadingProgress(progress) {
+    if (!progress || !postContent || !postView || postView.style.display === 'none') return;
+    const ratio = Math.max(0, Math.min(1, Number(progress.ratio) || 0));
+    if (ratio <= 0.005) {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        return;
+    }
+
+    const blocks = getPostMarkdownBlocks();
+    if (blocks.length === 0) return;
+
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const postMeta = postView.querySelector('.post-meta');
+    const stickyBottom = postMeta ? postMeta.getBoundingClientRect().bottom : 0;
+    const refY = stickyBottom + 12;
+
+    const lastBlock = blocks[blocks.length - 1];
+    const lastBottomDoc = lastBlock.getBoundingClientRect().bottom + scrollY;
+    const endScrollY = Math.max(0, lastBottomDoc - vh + 24);
+
+    if (ratio >= 0.995) {
+        window.scrollTo({ top: endScrollY, behavior: 'instant' });
+        return;
+    }
+
+    const idx = Math.max(0, Math.min(blocks.length - 1, Number(progress.blockIndex) || 0));
+    const targetBlock = blocks[idx];
+    if (targetBlock && targetBlock.offsetHeight > 0) {
+        const rect = targetBlock.getBoundingClientRect();
+        const offsetRatio = Math.max(0, Math.min(1, Number(progress.blockOffsetRatio) || 0));
+        const targetDocY = scrollY + rect.top + offsetRatio * rect.height;
+        const targetScrollY = Math.max(0, Math.min(endScrollY, targetDocY - refY));
+        window.scrollTo({ top: targetScrollY, behavior: 'instant' });
+    } else {
+        window.scrollTo({ top: Math.round(endScrollY * ratio), behavior: 'instant' });
+    }
+}
+
+function applyPendingProgressOrTop(post, scrollToTopIfNone = false) {
+    clearProgressSyncCleanup();
+    const pendingProgress = consumePendingPostProgress(post);
+    if (!pendingProgress) {
+        if (scrollToTopIfNone) {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+        return false;
+    }
+
+    applyPostReadingProgress(pendingProgress);
+
+    const incompleteImgs = Array.from(postContent.querySelectorAll('img')).filter(
+        img => !img.classList.contains('comment-avatar') && !img.closest('#comments-container') && !img.classList.contains('ai-icon') && !img.complete
+    );
+    if (incompleteImgs.length > 0) {
+        let userInteracted = false;
+        const onUserInteract = () => { userInteracted = true; };
+        window.addEventListener('wheel', onUserInteract, { passive: true, once: true });
+        window.addEventListener('touchstart', onUserInteract, { passive: true, once: true });
+        window.addEventListener('keydown', onUserInteract, { passive: true, once: true });
+        const onImgDone = () => {
+            if (!userInteracted && currentPost === post && postView && postView.style.display !== 'none') {
+                applyPostReadingProgress(pendingProgress);
+            }
+        };
+        incompleteImgs.forEach(img => {
+            img.addEventListener('load', onImgDone, { once: true });
+            img.addEventListener('error', onImgDone, { once: true });
+        });
+        const timer = setTimeout(clearProgressSyncCleanup, 4000);
+        progressSyncCleanup = () => {
+            clearTimeout(timer);
+            window.removeEventListener('wheel', onUserInteract);
+            window.removeEventListener('touchstart', onUserInteract);
+            window.removeEventListener('keydown', onUserInteract);
+            incompleteImgs.forEach(img => {
+                img.removeEventListener('load', onImgDone);
+                img.removeEventListener('error', onImgDone);
+            });
+        };
+    }
+    return true;
+}
+
+window.syncCurrentBlogReadingProgress = function() {
+    if (document.body.id !== 'blog-page' || !postView || postView.style.display === 'none' || !currentPost) {
+        return false;
+    }
+    return applyPendingProgressOrTop(currentPost, false);
+};
+
+function minimizeCurrentPostToTasks() {
+    if (isHeroAnimating || !currentPost) return;
+    const multitaskEnabled = typeof window.isMultitaskEnabled === 'function' ? window.isMultitaskEnabled() : true;
+    if (!multitaskEnabled) {
+        if (typeof showToast === 'function') showToast('请前往设置中开启多任务管理');
+        return;
+    }
+
+    let modal = document.getElementById('globalModal') || document.querySelector('global-modal');
+    if (!modal) {
+        modal = document.createElement('global-modal');
+        modal.id = 'globalModal';
+        document.body.appendChild(modal);
+    }
+
+    if (typeof modal.minimizeBlog !== 'function') return;
+
+    const readingProgress = captureCurrentPostProgress();
+    const cachedMd = postCache.get(currentPost.file);
+    const taskLayer = modal.minimizeBlog({
+        title: currentPost.title,
+        date: currentPost.date,
+        file: currentPost.file,
+        cover: currentPost.cover,
+        markdown: typeof cachedMd === 'string' ? cachedMd : null,
+        readingProgress
+    });
+
+    if (!taskLayer) return;
+
+    if (!taskLayer.evictedOnStart && !taskLayer.mergedIntoGroup && typeof showToast === 'function') {
+        showToast('已最小化到多任务');
+    }
+    closePostWithHero(true);
+}
+
 // 加载单篇文章（用于直链访问或重试）
 function loadPost(post, forceRefresh = false) {
     currentPost = post;
+    if (post && post.title) postCache.set(post.title, post);
     postError.style.display = "none";
     postContent.innerHTML = "";
 
@@ -1022,7 +1251,7 @@ function renderPost(post, mdContent) {
     postView.classList.add("hero-enter", "show");
 
     showLoading(false);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    applyPendingProgressOrTop(post, true);
 }
 
 // 显示/隐藏加载动画

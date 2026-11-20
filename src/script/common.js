@@ -1043,6 +1043,11 @@ function ensureLoadingOverlay() {
           window.handleBlogPopState({ state: history.state });
           return;
         }
+        if (targetUrl.search && targetUrl.search === window.location.search && typeof window.syncCurrentBlogReadingProgress === 'function') {
+          if (window.syncCurrentBlogReadingProgress()) {
+            return;
+          }
+        }
       }
 
       if (targetUrl.search === window.location.search) {
@@ -2776,7 +2781,19 @@ function escapeTaskHtml(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function getTaskTypeIconSvg() {
+function getTaskTypeIconSvg(type = 'web') {
+  if (type === 'image-group') {
+    return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v11"></path><rect x="7" y="7" width="14" height="14" rx="2"></rect><circle cx="11.5" cy="11.5" r="1.3"></circle><path d="M21 17l-4.5-4.5L9 20"></path></svg>';
+  }
+  if (type === 'image') {
+    return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+  }
+  if (type === 'blog-group') {
+    return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v11"></path><rect x="7" y="7" width="14" height="14" rx="2"></rect><line x1="11" y1="12" x2="17" y2="12"></line><line x1="11" y1="16" x2="15" y2="16"></line></svg>';
+  }
+  if (type === 'blog') {
+    return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
+  }
   return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
 }
 
@@ -2841,11 +2858,11 @@ function createTaskItemEl(task, isMobile) {
   item.setAttribute('data-task-id', task.taskId);
   item.title = task.title || '';
   item.innerHTML = isMobile ? `
-    <span class="nav-task-icon">${getTaskTypeIconSvg()}</span>
+    <span class="nav-task-icon">${getTaskTypeIconSvg(task.type)}</span>
     <span class="nav-task-text"><span class="nav-task-title">${safeTitle}</span>${task.subtitle ? `<span class="nav-task-subtitle">${escapeTaskHtml(task.subtitle)}</span>` : ''}</span>
     <button type="button" class="nav-task-close" data-close-task="${safeId}" aria-label="关闭任务" title="关闭并释放"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
   ` : `
-    <span class="nav-task-icon">${getTaskTypeIconSvg()}</span><span class="nav-task-title">${safeTitle}</span>
+    <span class="nav-task-icon">${getTaskTypeIconSvg(task.type)}</span><span class="nav-task-title">${safeTitle}</span>
     <button type="button" class="nav-task-close" data-close-task="${safeId}" aria-label="关闭任务" title="关闭并释放"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
   `;
   item.addEventListener('click', () => window.restoreModalTask(task.taskId));
@@ -2876,7 +2893,7 @@ window.clearAllModalTasks = function() {
   if (typeof showToast === 'function') showToast('已关闭全部后台任务');
 };
 
-window.renderTaskCenter = function() {
+window.renderTaskCenter = function(event = null) {
   const enabled = isMultitaskEnabled();
   const modal = document.querySelector('global-modal');
   const maxTasks = (modal && modal.maxMinimizedTasks) || 3;
@@ -2884,6 +2901,11 @@ window.renderTaskCenter = function() {
     ? modal.getTasks().slice(0, maxTasks)
     : [];
   const activeTaskMap = new Map(tasks.map(task => [task.taskId, task]));
+  const replacedIds = new Set(
+    event && event.detail && Array.isArray(event.detail.replacedTaskIds)
+      ? event.detail.replacedTaskIds
+      : []
+  );
 
   const desktopBadge = document.getElementById('desktopTaskBadge');
   if (desktopBadge) {
@@ -2901,14 +2923,18 @@ window.renderTaskCenter = function() {
     if (!container) return;
     if (tasks.length) container.querySelectorAll('.nav-task-empty, .notify-empty-tip').forEach(el => el.remove());
     const existingNodes = Array.from(container.querySelectorAll('[data-task-id]'));
-    const existingIds = new Set();
+    const liveNodeById = new Map();
     let removeIndex = 0;
 
     existingNodes.forEach(el => {
       const id = el.getAttribute('data-task-id');
       const task = activeTaskMap.get(id);
       if (task) {
-        existingIds.add(id);
+        if (el.dataset.taskType && el.dataset.taskType !== (task.type || 'web')) {
+          el.remove();
+          return;
+        }
+        liveNodeById.set(id, el);
         const titleEl = el.querySelector('.nav-task-title');
         if (titleEl) titleEl.textContent = task.title || '';
         el.title = task.title || '';
@@ -2916,7 +2942,7 @@ window.renderTaskCenter = function() {
           const subEl = el.querySelector('.nav-task-subtitle');
           if (subEl) subEl.textContent = task.subtitle || '';
         }
-      } else if (restoringTaskIds.has(id)) {
+      } else if (restoringTaskIds.has(id) || replacedIds.has(id)) {
         el.remove();
       } else if (!el.classList.contains('is-removing')) {
         animateTaskItemRemoval(container, el, isMobile, removeIndex * 45, (animated) => {
@@ -2929,8 +2955,34 @@ window.renderTaskCenter = function() {
     });
 
     tasks.forEach(task => {
-      if (!existingIds.has(task.taskId)) container.appendChild(createTaskItemEl(task, isMobile));
+      if (!liveNodeById.has(task.taskId)) {
+        const newEl = createTaskItemEl(task, isMobile);
+        newEl.dataset.taskType = task.type || 'web';
+        container.appendChild(newEl);
+        liveNodeById.set(task.taskId, newEl);
+      }
     });
+
+    let anchor = null;
+    for (let i = tasks.length - 1; i >= 0; i--) {
+      const node = liveNodeById.get(tasks[i].taskId);
+      if (!node) continue;
+      if (anchor && node.nextElementSibling !== anchor) {
+        container.insertBefore(node, anchor);
+      } else if (!anchor && node !== container.lastElementChild) {
+        let hasNonRemovingAfter = false;
+        let sib = node.nextElementSibling;
+        while (sib) {
+          if (!sib.classList.contains('is-removing')) {
+            hasNonRemovingAfter = true;
+            break;
+          }
+          sib = sib.nextElementSibling;
+        }
+        if (hasNonRemovingAfter) container.appendChild(node);
+      }
+      anchor = node;
+    }
 
     if (!tasks.length && container.querySelectorAll('[data-task-id]').length === 0) {
       showTaskEmptyPlaceholder(container, emptyHtml, false);
@@ -2938,7 +2990,7 @@ window.renderTaskCenter = function() {
   };
 
   syncContainer(document.getElementById('desktopTaskBar'), false, '<div class="nav-task-empty">暂无后台任务</div>');
-  syncContainer(document.getElementById('mobileTaskList'), true, '<div class="notify-empty-tip">暂无后台任务，可最小化网页弹窗以保持运行</div>');
+  syncContainer(document.getElementById('mobileTaskList'), true, '<div class="notify-empty-tip">暂无后台任务，可最小化网页、文章或图片</div>');
 };
 
 window.addEventListener('modal-tasks-changed', window.renderTaskCenter);
@@ -3613,6 +3665,168 @@ function checkGlobalAuthStatus() {
 
 document.addEventListener('DOMContentLoaded', checkGlobalAuthStatus);
 
+function extractViewerImageInfo(viewerInst) {
+  if (!viewerInst) return null;
+  const idx = typeof viewerInst.index === 'number' ? viewerInst.index : 0;
+  const origImg = (viewerInst.images && viewerInst.images[idx]) || viewerInst.image || null;
+  const currentImg = viewerInst.image || origImg;
+  if (!currentImg && !origImg) return null;
+
+  const src = (currentImg && currentImg.src) || (origImg && origImg.src) || '';
+  if (!src) return null;
+
+  const rawAlt = ((origImg && origImg.alt) || (currentImg && currentImg.alt) || '').trim();
+  const link = (origImg && origImg.dataset && origImg.dataset.link) ? origImg.dataset.link.trim() : '';
+  const width = (viewerInst.imageData && viewerInst.imageData.naturalWidth)
+    || (currentImg && currentImg.naturalWidth)
+    || (origImg && origImg.naturalWidth)
+    || 0;
+  const height = (viewerInst.imageData && viewerInst.imageData.naturalHeight)
+    || (currentImg && currentImg.naturalHeight)
+    || (origImg && origImg.naturalHeight)
+    || 0;
+
+  let displayTitle = rawAlt;
+  if (!displayTitle && origImg && origImg.dataset && origImg.dataset.displayTitle) {
+    displayTitle = origImg.dataset.displayTitle.trim();
+  }
+  if (!displayTitle && viewerInst.viewer) {
+    const titleNode = viewerInst.viewer.querySelector('.viewer-title');
+    const rawTitle = titleNode ? titleNode.textContent.trim() : '';
+    const stripped = rawTitle.replace(/\s*\(\d+\s*[×x]\s*\d+\)\s*$/i, '').trim();
+    let fname = '';
+    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+      try {
+        const u = new URL(src, window.location.href);
+        fname = decodeURIComponent(u.pathname.split('/').pop() || '').trim();
+      } catch (e) {}
+    }
+    if (stripped && fname) displayTitle = `${stripped} · ${fname}`;
+    else displayTitle = stripped || fname;
+  }
+  if (!displayTitle) displayTitle = '图片';
+
+  return {
+    src,
+    title: displayTitle,
+    alt: rawAlt || displayTitle,
+    link,
+    width,
+    height
+  };
+}
+
+function injectViewerMinimizeBtn(viewerInst) {
+  if (!viewerInst || !viewerInst.viewer || (viewerInst.options && viewerInst.options.inline)) return;
+  const closeBtn = viewerInst.viewer.querySelector('.viewer-button.viewer-close');
+  if (!closeBtn || viewerInst.viewer.querySelector('.viewer-button.viewer-minimize')) return;
+
+  const minBtn = document.createElement('div');
+  minBtn.setAttribute('role', 'button');
+  minBtn.setAttribute('tabindex', '0');
+  minBtn.className = 'viewer-button viewer-minimize';
+  minBtn.title = '最小化到多任务 / Minimize';
+  minBtn.setAttribute('aria-label', '最小化到多任务');
+  minBtn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg>';
+
+  ['pointerdown', 'mousedown', 'touchstart'].forEach(evt => {
+    minBtn.addEventListener(evt, (e) => e.stopPropagation(), { passive: true });
+  });
+
+  const handleMinimize = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const multitaskEnabled = typeof window.isMultitaskEnabled === 'function' ? window.isMultitaskEnabled() : true;
+    if (!multitaskEnabled) {
+      if (typeof window.showToast === 'function') window.showToast('请前往设置中开启多任务管理');
+      return;
+    }
+
+    let modal = document.getElementById('globalModal') || document.querySelector('global-modal');
+    if (!modal) {
+      modal = document.createElement('global-modal');
+      modal.id = 'globalModal';
+      document.body.appendChild(modal);
+    }
+
+    if (typeof viewerInst._globalModalMinimizeHandler === 'function') {
+      viewerInst._globalModalMinimizeHandler();
+      return;
+    }
+
+    const imgInfo = extractViewerImageInfo(viewerInst);
+    if (!imgInfo || typeof modal.minimizeImage !== 'function') return;
+
+    const res = modal.minimizeImage(imgInfo);
+    if (!res) return;
+
+    if (!res.evictedOnStart && !res.mergedIntoGroup && typeof window.showToast === 'function') {
+      window.showToast('已最小化到多任务');
+    }
+    viewerInst.hide();
+  };
+
+  minBtn.addEventListener('click', handleMinimize);
+  minBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      handleMinimize(e);
+    }
+  });
+
+  closeBtn.parentNode.insertBefore(minBtn, closeBtn);
+}
+
+function alignViewerNavbar(viewerInst, snap = false) {
+  if (!viewerInst || !viewerInst.isShown || viewerInst.hiding) return;
+  const list = viewerInst.list;
+  const navbar = viewerInst.navbar;
+  if (!list || !navbar || !viewerInst.items || viewerInst.items.length === 0) return;
+  if (navbar.clientWidth <= 0 || list.offsetHeight <= 0) return;
+
+  const hadTransition = list.classList.contains('viewer-transition');
+  if (snap && hadTransition) {
+    list.classList.remove('viewer-transition');
+  }
+
+  if (typeof viewerInst.initContainer === 'function') viewerInst.initContainer();
+  if (typeof viewerInst.initViewer === 'function') viewerInst.initViewer();
+  void navbar.offsetWidth;
+  void list.offsetWidth;
+
+  if (typeof viewerInst.renderList === 'function') {
+    viewerInst.renderList(viewerInst.index);
+  }
+
+  // 校验激活缩略图实际视口位置，若仍偏离导航栏中心则直接校准 translateX
+  const activeItem = list.querySelector('li.viewer-active') || viewerInst.items[viewerInst.index];
+  if (activeItem && navbar.clientWidth >= navbar.clientHeight) {
+    const navRect = navbar.getBoundingClientRect();
+    const itemRect = activeItem.getBoundingClientRect();
+    if (navRect.width > 0 && itemRect.width > 0) {
+      const diff = (navRect.left + navRect.width / 2) - (itemRect.left + itemRect.width / 2);
+      if (Math.abs(diff) > 2) {
+        const cs = window.getComputedStyle(list);
+        let curX = 0;
+        if (cs.transform && cs.transform !== 'none') {
+          try {
+            curX = new DOMMatrixReadOnly(cs.transform).m41 || 0;
+          } catch (e) {
+            const m = cs.transform.match(/matrix\(([^)]+)\)/);
+            if (m) curX = parseFloat(m[1].split(',')[4]) || 0;
+          }
+        }
+        list.style.transform = `translateX(${(curX + diff).toFixed(2)}px)`;
+      }
+    }
+  }
+
+  if (snap && hadTransition) {
+    void list.offsetWidth;
+    list.classList.add('viewer-transition');
+  }
+}
+
 // 同步 Viewer.js 打开状态至 html 根节点以完全隐藏视口滚动条，同时保留并同步滚动条宽度补偿防止页面与固定导航栏抖动
 function syncViewerOpenToHtml() {
   const V = window.Viewer;
@@ -3622,7 +3836,38 @@ function syncViewerOpenToHtml() {
   const origShow = V.prototype.show;
   if (typeof origShow === 'function') {
     V.prototype.show = function(...args) {
+      if (!this._minimizeReadyBound && this.element) {
+        this._minimizeReadyBound = true;
+        this.element.addEventListener('ready', () => injectViewerMinimizeBtn(this));
+      }
+
+      if (!this._navbarAlignBound && this.element) {
+        this._navbarAlignBound = true;
+        this.element.addEventListener('shown', () => {
+          if (!this._pendingInitialAlign) return;
+          const targetIdx = this.index;
+          alignViewerNavbar(this, true);
+          requestAnimationFrame(() => {
+            if (this.isShown && !this.hiding && this._pendingInitialAlign && this.index === targetIdx) {
+              alignViewerNavbar(this, true);
+            }
+          });
+        });
+        this.element.addEventListener('viewed', () => {
+          if (!this._pendingInitialAlign) return;
+          this._pendingInitialAlign = false;
+          const targetIdx = this.index;
+          alignViewerNavbar(this, true);
+          requestAnimationFrame(() => {
+            if (this.isShown && !this.hiding && this.index === targetIdx) {
+              alignViewerNavbar(this, true);
+            }
+          });
+        });
+      }
+
       if (!this.isShown && !this.showing) {
+        this._pendingInitialAlign = true;
         // 在 Viewer.js 锁定页面及隐藏滚动条前，精准获取当前滚动条实际宽度
         const measured = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
         const scrollbarWidth = measured > 0
@@ -3648,6 +3893,8 @@ function syncViewerOpenToHtml() {
         throw err;
       }
 
+      injectViewerMinimizeBtn(this);
+
       // 若触发 show 但被事件阻止（如 preventDefault）且未成功打开，回退清理
       if (!this.showing && !this.isShown && (!document.body || !document.body.classList.contains('viewer-open'))) {
         document.documentElement.classList.remove('viewer-open');
@@ -3663,6 +3910,7 @@ function syncViewerOpenToHtml() {
   const origHide = V.prototype.hide;
   if (typeof origHide === 'function') {
     V.prototype.hide = function(...args) {
+      this._pendingInitialAlign = false;
       const result = origHide.apply(this, args);
       // 若处于非动画直接关闭（例如 hide(true)）且 body 已无 viewer-open，立即恢复
       if (!this.hiding && !this.isShown && (!document.body || !document.body.classList.contains('viewer-open'))) {
