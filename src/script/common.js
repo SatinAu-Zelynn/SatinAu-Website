@@ -1740,7 +1740,7 @@ window.initMobileMoreMenu = function() {
       mobileMenuWrapper.style.height = `${maxMenuHeight}px`;
       mobileMenuWrapper.style.opacity = '1';
       bottomNav.classList.add('menu-open');
-      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     }
 
     function closeMenu() {
@@ -1748,7 +1748,7 @@ window.initMobileMoreMenu = function() {
       mobileMenuWrapper.style.height = '0px';
       mobileMenuWrapper.style.opacity = '0';
       bottomNav.classList.remove('menu-open');
-      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
       setTimeout(() => {
         if (!isMenuOpen) {
           switchMobileMenuPage(1, false);

@@ -958,6 +958,7 @@ body#index-page {
     /* 从底部移到顶部 */
     bottom: auto;
     top: 20px;
+    height: 52px;
     /* 保持悬浮效果 */
     position: fixed;
     align-items: center;
@@ -2108,13 +2109,13 @@ html:has(body#blog-page) {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid light-dark(rgba(255,255,255,0.35), rgba(255,255,255,0.2));
-  background: light-dark(rgba(255,255,255,0.25), rgba(40,40,40,0.4));
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  backdrop-filter: blur(18px) saturate(180%);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+  background: light-dark(rgba(255, 255, 255, 0.5), rgba(30, 30, 30, 0.5));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.12), inset 0 0 30px rgba(255, 255, 255, 0.12);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   margin-bottom: 10px;
   svg {
     width: 20px;
@@ -2126,7 +2127,7 @@ html:has(body#blog-page) {
   @media (hover: hover) {
     &:hover {
       transform: scale(1.08);
-      background: light-dark(rgba(255,255,255,0.45), rgba(60,60,60,0.6));
+      background: light-dark(rgba(255, 255, 255, 0.68), rgba(55, 55, 55, 0.68));
     }
   }
   &:active {
@@ -2143,7 +2144,7 @@ html:has(body#blog-page) {
   z-index: 2001;
 
   @media (min-width: 768px) {
-    top: 25px;
+    top: 24px;
     left: max(12px, calc(50% - var(--scrollbar-compensate, 0px) / 2 - min(90vw, 600px) / 2 - 56px));
   }
 }
@@ -2163,22 +2164,22 @@ html:has(body#blog-page) {
   box-sizing: border-box;
 
   @media (min-width: 768px) and (max-width: 899px) {
-    top: 25px;
+    top: 24px;
     right: max(12px, calc(50% + var(--scrollbar-compensate, 0px) / 2 - min(90vw, 600px) / 2 - 56px));
   }
 
   @media (min-width: 900px) {
-    top: 25px;
+    top: 24px;
     left: calc(50% - var(--scrollbar-compensate, 0px) / 2 + min(90vw, 600px) / 2 + 12px);
     right: auto;
     width: auto;
     padding: 4px;
     border-radius: 999px;
-    border: 1px solid light-dark(rgba(255,255,255,0.35), rgba(255,255,255,0.2));
-    background: light-dark(rgba(255,255,255,0.25), rgba(40,40,40,0.4));
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
-    backdrop-filter: blur(18px) saturate(180%);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
+    border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+    background: light-dark(rgba(255, 255, 255, 0.5), rgba(30, 30, 30, 0.5));
+    -webkit-backdrop-filter: var(--filter-blur);
+    backdrop-filter: var(--filter-blur);
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.12), inset 0 0 30px rgba(255, 255, 255, 0.12);
     transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
   }
 }
@@ -2192,14 +2193,14 @@ html:has(body#blog-page) {
   padding: 0;
   box-sizing: border-box;
   border-radius: 50%;
-  border: 1px solid light-dark(rgba(255,255,255,0.35), rgba(255,255,255,0.2));
-  background: light-dark(rgba(255,255,255,0.25), rgba(40,40,40,0.4));
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  backdrop-filter: blur(18px) saturate(180%);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+  background: light-dark(rgba(255, 255, 255, 0.5), rgba(30, 30, 30, 0.5));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.12), inset 0 0 30px rgba(255, 255, 255, 0.12);
   color: var(--primary-color);
   cursor: var(--custom-cursor, pointer);
-  transition: background 0.3s ease, transform 0.3s ease;
+  transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   -webkit-tap-highlight-color: transparent;
 
   svg {
@@ -2210,7 +2211,7 @@ html:has(body#blog-page) {
   @media (hover: hover) {
     &:hover {
       transform: scale(1.08);
-      background: light-dark(rgba(255,255,255,0.45), rgba(60,60,60,0.6));
+      background: light-dark(rgba(255, 255, 255, 0.68), rgba(55, 55, 55, 0.68));
     }
   }
 
@@ -2787,15 +2788,18 @@ input:checked + .switch-slider {
 
 /* 打开图片时完全隐藏视口滚动条，同时保留 Viewer.js 计算的 padding-right 补偿避免页面向右跳动 */
 html.viewer-open,
-body.viewer-open,
 html:has(body.viewer-open) {
   overflow: hidden !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
+body.viewer-open {
+  overflow: visible !important;
+  overflow-x: clip !important;
+}
+
 html.viewer-open::-webkit-scrollbar,
-body.viewer-open::-webkit-scrollbar,
 html:has(body.viewer-open)::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
@@ -3651,140 +3655,369 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   cursor: pointer;
 }
 
-/* ========== AI Summary Card Style ========== */
+/* ========== Gemini AI Summary Card ========== */
 .ai-summary-card {
-  margin: 0 0 40px 0;
-  padding: 20px 24px;
-  border-radius: var(--border-radius-lg);
-  /* 适配你的玻璃拟态风格 */
-  background: light-dark(rgba(255, 255, 255, 0.45), rgba(40, 40, 40, 0.4));
-  border: 1px solid light-dark(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.12));
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  --gemini-blue: light-dark(#1a73e8, #8ab4f8);
+  --gemini-surface: light-dark(rgba(255, 255, 255, 0.56), rgba(32, 33, 36, 0.56));
+  --gemini-border: light-dark(rgba(26, 115, 232, 0.14), rgba(138, 180, 248, 0.16));
+  --gemini-muted: light-dark(rgba(17, 17, 17, 0.52), rgba(245, 245, 245, 0.52));
+
   position: relative;
+  margin: 0 0 32px 0;
+  padding: 14px 18px;
+  border-radius: var(--border-radius-lg);
+  background: var(--gemini-surface);
+  border: 1px solid var(--gemini-border);
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
+  box-shadow: 0 4px 20px light-dark(rgba(15, 23, 42, 0.04), rgba(0, 0, 0, 0.22));
   overflow: hidden;
-  animation: blurFadeUp 0.8s ease forwards;
-  transition: all 0.3s ease;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
 }
 
-/* 顶部 Gemini 品牌色流光条 */
 .ai-summary-card::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
-  z-index: 2;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse 85% 95% at 18% 0%,
+    rgba(66, 133, 244, 0.16) 0%,
+    rgba(155, 114, 203, 0.1) 42%,
+    rgba(217, 101, 112, 0.04) 70%,
+    transparent 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  z-index: 0;
 }
 
-.ai-header {
+.ai-summary-card:hover::before,
+.ai-summary-card.is-thinking::before,
+.ai-summary-card.is-streaming::before {
+  opacity: 1;
+}
+
+.ai-summary-card.is-thinking,
+.ai-summary-card.is-streaming {
+  border-color: light-dark(rgba(66, 133, 244, 0.32), rgba(138, 180, 248, 0.34));
+  box-shadow: 0 8px 28px light-dark(rgba(66, 133, 244, 0.09), rgba(0, 0, 0, 0.32));
+}
+
+.gemini-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.gemini-title-group {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.gemini-sparkle {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  transform-origin: center;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ai-summary-card.is-thinking .gemini-sparkle {
+  animation: geminiSpin 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.ai-summary-card.is-streaming .gemini-sparkle {
+  animation: geminiBreathe 1.8s ease-in-out infinite;
+}
+
+.gemini-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--word-color);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.gemini-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gemini-muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: light-dark(rgba(0, 0, 0, 0.045), rgba(255, 255, 255, 0.07));
+  white-space: nowrap;
+}
+
+.gemini-status-text {
+  font-size: 12.5px;
+  color: var(--gemini-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gemini-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid light-dark(rgba(26, 115, 232, 0.22), rgba(138, 180, 248, 0.26));
+  background: light-dark(rgba(26, 115, 232, 0.08), rgba(138, 180, 248, 0.14));
+  color: var(--gemini-blue);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: var(--custom-cursor, pointer);
+  transition: background 0.22s ease, border-color 0.22s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .ai-generate-btn:hover {
+    background: light-dark(rgba(26, 115, 232, 0.14), rgba(138, 180, 248, 0.22));
+    border-color: light-dark(rgba(26, 115, 232, 0.36), rgba(138, 180, 248, 0.42));
+  }
+}
+
+.ai-generate-btn:active {
+  transform: scale(0.96);
+}
+
+.gemini-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gemini-muted);
+  cursor: var(--custom-cursor, pointer);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+@media (hover: hover) {
+  .gemini-icon-btn:hover {
+    background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.1));
+    color: var(--word-color);
+  }
+}
+
+.gemini-icon-btn:active {
+  transform: scale(0.92);
+}
+
+.gemini-icon-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ai-summary-card.is-collapsed .gemini-toggle-btn svg {
+  transform: rotate(180deg);
+}
+
+.gemini-body-wrap {
+  position: relative;
+  z-index: 1;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+}
+
+.ai-summary-card.is-collapsed .gemini-body-wrap {
+  opacity: 0;
+}
+
+.gemini-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  padding-bottom: 2px;
+}
+
+.gemini-skeleton-bar {
+  height: 11px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    light-dark(rgba(66, 133, 244, 0.1), rgba(138, 180, 248, 0.12)) 0%,
+    light-dark(rgba(155, 114, 203, 0.24), rgba(197, 138, 249, 0.28)) 48%,
+    light-dark(rgba(66, 133, 244, 0.1), rgba(138, 180, 248, 0.12)) 100%
+  );
+  background-size: 220% 100%;
+  animation: geminiShimmer 1.5s ease-in-out infinite;
+}
+
+.gemini-skeleton-bar:nth-child(1) { width: 96%; }
+.gemini-skeleton-bar:nth-child(2) { width: 68%; animation-delay: 0.15s; }
+
+.ai-content {
+  padding-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.78;
+  color: var(--word-color);
+  opacity: 0.92;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gemini-chunk {
+  display: inline;
+  opacity: 0;
+  filter: blur(2.5px);
+  animation: geminiChunkIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.gemini-error-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  font-size: 13px;
+  color: light-dark(#c5221f, #f28b82);
+}
+
+@keyframes geminiSpin {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes geminiBreathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.12); opacity: 0.82; }
+}
+
+@keyframes geminiShimmer {
+  0%   { background-position: 180% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@keyframes geminiChunkIn {
+  from {
+    opacity: 0;
+    filter: blur(2.5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-summary-card .gemini-sparkle,
+  .gemini-skeleton-bar,
+  .gemini-chunk {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+  .gemini-body-wrap {
+    transition: none !important;
+  }
+}
+
+/* ========== 帮助中心说明卡片（与 AI 摘要容器分离） ========== */
+.help-card {
+  position: relative;
+  margin: 0 0 32px 0;
+  padding: 22px 24px;
+  border-radius: var(--border-radius-lg);
+  background: light-dark(rgba(255, 255, 255, 0.45), rgba(36, 36, 36, 0.45));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
+  box-shadow: 0 8px 28px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.24));
+  text-align: left;
+  animation: blurFadeUp 0.6s ease forwards;
+}
+
+.help-card-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  font-size: 16px;
   font-weight: 700;
-  font-size: 15px;
-  /* 使用渐变文字 */
-  background: linear-gradient(90deg, #4285f4, #d96570);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.ai-icon {
-  width: 20px;
-  height: 20px;
-  animation: starPulse 2s infinite ease-in-out;
-  color: initial;
-}
-
-.ai-content {
-  font-size: 15px;
-  line-height: 1.7;
   color: var(--word-color);
-  opacity: 0.95;
 }
 
-/* 生成按钮 */
-.ai-generate-btn {
-  background: light-dark(rgba(255,255,255,0.8), rgba(60,60,60,0.6));
-  border: 1px solid light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.1));
-  padding: 8px 18px;
-  border-radius: 20px;
-  color: var(--word-color);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
+.help-card-icon {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
 
-.ai-generate-btn:hover {
-  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
-  color: #333; /* 悬停时文字变黑 */
-  transform: translateY(-2px) scale(1.02);
-  border-color: transparent;
-  box-shadow: 0 8px 20px rgba(142, 197, 252, 0.3);
+.help-card-content {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--word-color);
+  opacity: 0.92;
+  white-space: normal;
 }
 
-.ai-generate-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
+.help-card-content > p:first-child {
+  margin-top: 0;
 }
 
-/* 加载转圈 */
-.ai-loading-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(0,0,0,0.1);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.help-card-content > p:last-child {
+  margin-bottom: 0;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.help-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.14));
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: var(--custom-cursor, pointer);
+  box-shadow: 0 4px 14px rgba(0, 122, 255, 0.24);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease, box-shadow 0.2s ease;
 }
 
-@keyframes starPulse {
-  0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(66, 133, 244, 0)); }
-  50% { transform: scale(1.15); filter: drop-shadow(0 0 5px rgba(66, 133, 244, 0.5)); }
-  100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(66, 133, 244, 0)); }
-}
-
-/* ========== AI 打字机特效 ========== */
-
-/* 单个字符的基础样式 */
-.ai-char {
-  display: inline-block; /* 必须是 inline-block 才能应用 transform */
-  opacity: 0;            /* 初始隐藏 */
-  filter: blur(4px);     /* 初始模糊 */
-  transform: translateY(4px); /* 初始微下沉 */
-  animation: charBlurIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  white-space: pre-wrap; /* 保留空格和换行 */
-  will-change: opacity, filter, transform;
-}
-
-/* 字符进入动画关键帧 */
-@keyframes charBlurIn {
-  0% {
-    opacity: 0;
-    filter: blur(4px);
-    transform: translateY(4px) scale(0.95);
+@media (hover: hover) {
+  .help-action-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
   }
-  100% {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateY(0) scale(1);
-  }
+}
+
+.help-action-btn:active {
+  transform: scale(0.96);
 }
 
 /* 点赞按钮样式 */

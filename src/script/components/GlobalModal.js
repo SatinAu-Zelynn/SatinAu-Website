@@ -77,13 +77,9 @@ class GlobalModal extends HTMLElement {
       document.documentElement.style.setProperty('--scrollbar-compensate', `${scrollbarWidth}px`);
     }
     
-    // 同时锁定 html 和 body
-    // 只锁定 body 在部分浏览器/CSS重置下无效
+    // 仅锁定 html，避免 body 成为滚动容器导致 position: sticky（如博客标题栏）失效
     document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    
-    // 移动端防止滚动穿透 (Overscroll Behavior)
-    document.body.style.overscrollBehavior = 'none';
+    document.documentElement.style.overscrollBehavior = 'none';
 
     this.isScrollLocked = true;
   }
@@ -95,9 +91,8 @@ class GlobalModal extends HTMLElement {
     const isViewerOpen = document.body && document.body.classList.contains('viewer-open');
     if (!isViewerOpen) {
       document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
+      document.documentElement.style.overscrollBehavior = '';
       document.body.style.paddingRight = '';
-      document.body.style.overscrollBehavior = '';
       document.documentElement.style.removeProperty('--scrollbar-compensate');
     }
     
@@ -2034,7 +2029,6 @@ class GlobalModal extends HTMLElement {
                 hidden: () => {
                   if (!layer.isClosing && !layer.isMinimized && this.layers.includes(layer)) {
                     document.documentElement.style.overflow = 'hidden';
-                    document.body.style.overflow = 'hidden';
                     const scrollbarWidth = parseFloat(document.documentElement.style.getPropertyValue('--scrollbar-compensate')) || 0;
                     if (scrollbarWidth > 0) {
                       document.body.style.paddingRight = `${scrollbarWidth}px`;

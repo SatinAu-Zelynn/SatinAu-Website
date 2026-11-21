@@ -98,7 +98,8 @@
 #loginBtn, #logoutBtn, .back-button, .post-top-actions-toggle, .post-actions .back-button,
 .satin-notify-card,
 .hero-surface,
-.live2d-menu {
+.live2d-menu,
+.help-card {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
 }
 
@@ -153,15 +154,18 @@
 }
 
 html.viewer-open,
-body.viewer-open,
 html:has(body.viewer-open) {
   overflow: hidden !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
+body.viewer-open {
+  overflow: visible !important;
+  overflow-x: clip !important;
+}
+
 html.viewer-open::-webkit-scrollbar,
-body.viewer-open::-webkit-scrollbar,
 html:has(body.viewer-open)::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;

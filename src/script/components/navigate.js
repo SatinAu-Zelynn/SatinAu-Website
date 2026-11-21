@@ -333,7 +333,7 @@ class NavigateBar extends HTMLElement {
                   mobileMenu.style.height = '0px';
                   mobileMenu.style.opacity = '0';
                 }
-                document.body.style.overflow = ''; // 释放页面滚动锁定
+                document.documentElement.style.overflow = ''; // 释放页面滚动锁定
               }
             }
           }

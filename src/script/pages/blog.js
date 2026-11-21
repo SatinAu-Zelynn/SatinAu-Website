@@ -1176,7 +1176,7 @@ function renderPostBodyContent(post, mdContent) {
         const cachedSummary = sessionStorage.getItem(cacheKey);
 
         if (cachedSummary) {
-            renderAiSummary(summaryContainer, cachedSummary);
+            renderAiSummary(summaryContainer, cachedSummary, { animate: false });
         } else {
             renderGenerateButton(summaryContainer, mdContent, cacheKey);
         }
@@ -2009,105 +2009,219 @@ function calculateReadingStats(mdText) {
   return `${totalCount} 字 · 约 ${readingMinutes} 分钟`;
 }
 
-/* ========== AI Summary Helper Functions ========== */
+/* ========== AI Summary Helper Functions (Gemini Style) ========== */
 
-// 渲染 AI 结果
-function renderAiSummary(container, text) {
+const GEMINI_SPARKLE_SVG = `
+  <svg class="gemini-sparkle" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="geminiSparkleGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#4285F4"/>
+        <stop offset="52%" stop-color="#9B72CB"/>
+        <stop offset="100%" stop-color="#D96570"/>
+      </linearGradient>
+    </defs>
+    <path d="M12 1.5C12.35 7.2 16.8 11.65 22.5 12C16.8 12.35 12.35 16.8 12 22.5C11.65 16.8 7.2 12.35 1.5 12C7.2 11.65 11.65 7.2 12 1.5Z" fill="url(#geminiSparkleGrad)"/>
+  </svg>
+`;
+
+function renderAiSummary(container, text, { animate = true } = {}) {
+    if (container._streamTimer) {
+        clearTimeout(container._streamTimer);
+        container._streamTimer = null;
+    }
+
+    const cleanSummary = String(text || '').trim();
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const shouldAnimate = animate && !reduceMotion;
+    const prevWrap = container.querySelector('.gemini-body-wrap');
+    const startHeight = prevWrap ? prevWrap.getBoundingClientRect().height : 0;
+
     container.style.display = 'block';
-    // 简单的打字机效果模拟
+    container.classList.remove('is-thinking', 'is-collapsed', 'is-done');
+    container.classList.toggle('is-streaming', shouldAnimate);
+    container.classList.toggle('is-done', !shouldAnimate);
+
     container.innerHTML = `
-        <div class="ai-header">
-            <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" fill="url(#gemini_grad)"/>
-                <defs>
-                    <linearGradient id="gemini_grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-                        <stop stop-color="#4285F4"/>
-                        <stop offset="1" stop-color="#D96570"/>
-                    </linearGradient>
-                </defs>
-            </svg>
-            AI 摘要
+        <div class="gemini-header">
+            <div class="gemini-title-group">
+                ${GEMINI_SPARKLE_SVG}
+                <span class="gemini-title">AI 摘要</span>
+                <span class="gemini-badge">Gemini</span>
+            </div>
+            <div class="gemini-actions" style="${shouldAnimate ? 'opacity:0;pointer-events:none;transition:opacity 0.25s ease;' : ''}">
+                <button type="button" class="gemini-icon-btn gemini-copy-btn" title="复制摘要" aria-label="复制摘要">
+                    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+                <button type="button" class="gemini-icon-btn gemini-toggle-btn" title="收起摘要" aria-label="收起或展开摘要" aria-expanded="true">
+                    <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+            </div>
         </div>
-        <div class="ai-content"></div>
+        <div class="gemini-body-wrap">
+            <div class="ai-content"></div>
+        </div>
     `;
 
-    // 获取内容容器并执行打字机特效
+    const bodyWrap = container.querySelector('.gemini-body-wrap');
     const contentBox = container.querySelector('.ai-content');
-    typewriterEffect(contentBox, text);
+    const actionsEl = container.querySelector('.gemini-actions');
+    const copyBtn = container.querySelector('.gemini-copy-btn');
+    const toggleBtn = container.querySelector('.gemini-toggle-btn');
+
+    copyBtn.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(cleanSummary);
+            if (typeof showToast === 'function') showToast('已复制 AI 摘要');
+        } catch {
+            if (typeof showToast === 'function') showToast('复制失败，请手动选中复制');
+        }
+    });
+
+    toggleBtn.addEventListener('click', () => {
+        const willCollapse = !container.classList.contains('is-collapsed');
+        if (willCollapse) {
+            bodyWrap.style.height = `${bodyWrap.scrollHeight}px`;
+            void bodyWrap.offsetHeight;
+            container.classList.add('is-collapsed');
+            bodyWrap.style.height = '0px';
+            toggleBtn.setAttribute('aria-expanded', 'false');
+            toggleBtn.title = '展开摘要';
+        } else {
+            container.classList.remove('is-collapsed');
+            bodyWrap.style.height = `${contentBox.scrollHeight}px`;
+            toggleBtn.setAttribute('aria-expanded', 'true');
+            toggleBtn.title = '收起摘要';
+            const onEnd = (e) => {
+                if (e.propertyName === 'height' && !container.classList.contains('is-collapsed')) {
+                    bodyWrap.style.height = 'auto';
+                }
+            };
+            bodyWrap.addEventListener('transitionend', onEnd, { once: true });
+        }
+    });
+
+    if (!shouldAnimate) {
+        contentBox.textContent = cleanSummary;
+        bodyWrap.style.height = 'auto';
+        return;
+    }
+
+    bodyWrap.style.height = `${startHeight}px`;
+    streamSummaryText(container, bodyWrap, contentBox, cleanSummary, () => {
+        container.classList.remove('is-streaming');
+        container.classList.add('is-done');
+        actionsEl.style.opacity = '1';
+        actionsEl.style.pointerEvents = 'auto';
+    });
 }
 
-function typewriterEffect(element, text) {
-    element.innerHTML = ''; // 清空现有内容
-    
-    let chars;
+function streamSummaryText(container, bodyWrap, contentEl, text, onComplete) {
+    contentEl.innerHTML = '';
 
-    // 尝试使用 Intl.Segmenter
+    let chars;
     if (window.Intl && Intl.Segmenter) {
         const segmenter = new Intl.Segmenter('zh', { granularity: 'grapheme' });
-        // 将迭代器转换为数组，提取 segment 属性
         chars = Array.from(segmenter.segment(text), s => s.segment);
-    } 
-    // 降级方案：使用 ES6 扩展运算符
-    else {
-        chars = [...text]; 
+    } else {
+        chars = [...text];
     }
-    
-    const fragment = document.createDocumentFragment();
-    
-    chars.forEach((char, index) => {
-        const span = document.createElement('span');
-        span.textContent = char;
-        span.className = 'ai-char';
-        
-        // 设置递增的延迟时间
-        span.style.animationDelay = `${index * 0.02}s`;
-        
-        fragment.appendChild(span);
-    });
-    
-    element.appendChild(fragment);
+
+    let cursor = 0;
+    let lastHeight = parseFloat(bodyWrap.style.height) || 0;
+    const chunkSize = 2;
+    const intervalMs = 26;
+
+    const syncHeight = () => {
+        const nextHeight = contentEl.scrollHeight;
+        if (nextHeight !== lastHeight) {
+            lastHeight = nextHeight;
+            bodyWrap.style.height = `${nextHeight}px`;
+        }
+    };
+
+    const tick = () => {
+        if (!container.isConnected) return;
+
+        const slice = chars.slice(cursor, cursor + chunkSize).join('');
+        cursor += chunkSize;
+
+        if (slice) {
+            const span = document.createElement('span');
+            span.className = 'gemini-chunk';
+            span.textContent = slice;
+            contentEl.appendChild(span);
+            syncHeight();
+        }
+
+        if (cursor < chars.length) {
+            container._streamTimer = setTimeout(tick, intervalMs);
+        } else {
+            container._streamTimer = setTimeout(() => {
+                if (!container.isConnected) return;
+                contentEl.textContent = text;
+                bodyWrap.style.height = 'auto';
+                container._streamTimer = null;
+                if (typeof onComplete === 'function') onComplete();
+            }, 320);
+        }
+    };
+
+    requestAnimationFrame(tick);
 }
 
-// 渲染生成按钮及处理点击事件
 function renderGenerateButton(container, rawMarkdown, cacheKey) {
     container.style.display = 'block';
-    container.innerHTML = ''; // 清空
+    container.classList.remove('is-thinking', 'is-streaming', 'is-done', 'is-collapsed');
 
-    const btn = document.createElement('button');
-    btn.className = 'ai-generate-btn';
-    btn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19,1L17.74,3.75L15,5L17.74,6.26L19,9L20.25,6.26L23,5L20.25,3.75M9,4L6.5,9.5L1,12L6.5,14.5L9,20L11.5,14.5L17,12L11.5,9.5M19,15L17.74,17.74L15,19L17.74,20.25L19,23L20.25,20.25L23,19L20.25,17.74"/>
-        </svg>
-        生成 AI 摘要
+    container.innerHTML = `
+        <div class="gemini-header">
+            <div class="gemini-title-group">
+                ${GEMINI_SPARKLE_SVG}
+                <span class="gemini-title">文章摘要</span>
+                <span class="gemini-badge">Gemini</span>
+            </div>
+            <div class="gemini-actions">
+                <button type="button" class="ai-generate-btn">生成摘要</button>
+            </div>
+        </div>
+        <div class="gemini-body-wrap"></div>
     `;
-    
-    // 提示文字
-    const hint = document.createElement('span');
-    hint.style.fontSize = '12px';
-    hint.style.opacity = '0.5';
-    hint.style.marginLeft = '10px';
-    hint.textContent = 'Powered by Gemini';
 
-    container.appendChild(btn);
-    container.appendChild(hint);
+    const btn = container.querySelector('.ai-generate-btn');
+    const titleGroup = container.querySelector('.gemini-title-group');
+    const bodyWrap = container.querySelector('.gemini-body-wrap');
 
-    btn.addEventListener('click', async () => {
-        // UI 切换为加载状态
-        btn.disabled = true;
-        btn.innerHTML = '<div class="ai-loading-spinner"></div> 正在思考...';
-        hint.textContent = '需要几秒钟...';
+    const startGenerate = async () => {
+        container.classList.add('is-thinking');
+        btn.style.display = 'none';
+
+        const badge = titleGroup.querySelector('.gemini-badge');
+        if (badge) badge.style.display = 'none';
+        let statusEl = titleGroup.querySelector('.gemini-status-text');
+        if (!statusEl) {
+            statusEl = document.createElement('span');
+            statusEl.className = 'gemini-status-text';
+            titleGroup.appendChild(statusEl);
+        }
+        statusEl.textContent = 'Gemini 正在阅读文章…';
+
+        bodyWrap.innerHTML = `
+            <div class="gemini-skeleton">
+                <div class="gemini-skeleton-bar"></div>
+                <div class="gemini-skeleton-bar"></div>
+            </div>
+        `;
+        requestAnimationFrame(() => {
+            bodyWrap.style.height = `${bodyWrap.scrollHeight}px`;
+        });
 
         try {
-            // 1. 清理 Markdown 符号，减少 Token 消耗
             const cleanText = rawMarkdown
-                .replace(/!\[.*?\]\(.*?\)/g, '') // 去除图片
-                .replace(/[#*`\[\]()]/g, '')     // 去除特殊符
-                .substring(0, 10000);            // 截断
+                .replace(/!\[.*?\]\(.*?\)/g, '')
+                .replace(/[#*`\[\]()]/g, '')
+                .substring(0, 10000);
 
-            // 2. 发送请求给 Cloudflare Worker
-            const WORKER_URL = "https://blog-ai-summary.satinau.cn"; 
-
+            const WORKER_URL = "https://blog-ai-summary.satinau.cn";
             const response = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2115,27 +2229,33 @@ function renderGenerateButton(container, rawMarkdown, cacheKey) {
             });
 
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(data.error || '请求失败');
             }
 
-            // 3. 成功，保存并显示
             const summary = data.summary;
-            sessionStorage.setItem(cacheKey, summary); // 缓存到会话
-            renderAiSummary(container, summary);
-
+            sessionStorage.setItem(cacheKey, summary);
+            renderAiSummary(container, summary, { animate: true });
         } catch (err) {
             console.error('AI Summary Error:', err);
-            // 恢复按钮状态，允许重试
-            btn.disabled = false;
-            btn.innerHTML = '⚠️ 生成失败，点击重试';
-            hint.textContent = '网络有点问题';
-            
-            // 使用现有的 Toast 组件报错
+            container.classList.remove('is-thinking');
+            if (statusEl) statusEl.remove();
+            if (badge) badge.style.display = '';
+            btn.style.display = '';
+            btn.textContent = '重试';
+
+            bodyWrap.innerHTML = `
+                <div class="gemini-error-row">
+                    <span>暂时无法生成摘要，请检查网络后重试</span>
+                </div>
+            `;
+            bodyWrap.style.height = `${bodyWrap.scrollHeight}px`;
+
             if (typeof showToast === 'function') {
                 showToast('AI 摘要生成失败，请重试');
             }
         }
-    });
+    };
+
+    btn.addEventListener('click', startGenerate);
 }
