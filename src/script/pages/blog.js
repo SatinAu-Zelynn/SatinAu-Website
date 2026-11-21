@@ -236,6 +236,7 @@ function initBlog() {
     // 最小化到多任务按钮事件
     if (minimizePost && !minimizePost.dataset.bound) {
         minimizePost.addEventListener("click", () => {
+            closePostTopActionsMenu();
             minimizeCurrentPostToTasks();
         });
         minimizePost.dataset.bound = "true";
@@ -259,6 +260,7 @@ function initBlog() {
 }
 
 function resetBlogView(pushHistory = true) {
+    closePostTopActionsMenu();
     clearHeroTimers();
     clearProgressSyncCleanup();
     isHeroAnimating = false;
@@ -1697,21 +1699,60 @@ function executeSearch() {
     }
 }
 
+// 关闭右上角多功能区弹出菜单
+function closePostTopActionsMenu() {
+    const container = document.getElementById('postTopActions');
+    const toggle = document.getElementById('postActionsToggle');
+    if (container) container.classList.remove('menu-open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+}
+window.closePostTopActionsMenu = closePostTopActionsMenu;
+
 // 初始化按钮事件监听
 function initBlogButtons() {
-    // 返回文章列表按钮
-    const backToListBtn = document.getElementById('backToListBtn');
-    if (backToListBtn && !backToListBtn.dataset.bound) {
-        backToListBtn.addEventListener('click', () => {
-            closePostWithHero(true);
+    // 右上角多功能区折叠菜单开关（移动端与窄桌面端）
+    const postTopActions = document.getElementById('postTopActions');
+    const postActionsToggle = document.getElementById('postActionsToggle');
+    if (postActionsToggle && postTopActions && !postActionsToggle.dataset.bound) {
+        postActionsToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = postTopActions.classList.toggle('menu-open');
+            postActionsToggle.setAttribute('aria-expanded', String(isOpen));
+            if (isOpen) {
+                if (typeof window.closeMoreMenu === 'function') window.closeMoreMenu();
+                if (typeof window.closeNotifyMenu === 'function') window.closeNotifyMenu();
+                if (typeof window.closeMobileMoreMenu === 'function') window.closeMobileMoreMenu();
+            }
         });
-        backToListBtn.dataset.bound = "true";
+        postActionsToggle.dataset.bound = "true";
+    }
+
+    if (!document.documentElement.dataset.postTopActionsDocBound) {
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('postTopActions');
+            if (!container || !container.classList.contains('menu-open')) return;
+            if (!container.contains(e.target)) {
+                closePostTopActionsMenu();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closePostTopActionsMenu();
+            }
+        });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 900) {
+                closePostTopActionsMenu();
+            }
+        });
+        document.documentElement.dataset.postTopActionsDocBound = "true";
     }
 
     // 返回顶部按钮
     const backToTopBtn = document.getElementById('backToTopBtn');
     if (backToTopBtn && !backToTopBtn.dataset.bound) {
         backToTopBtn.addEventListener('click', () => {
+            closePostTopActionsMenu();
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
@@ -1722,7 +1763,10 @@ function initBlogButtons() {
 
     const shareBtn = document.getElementById('shareArticleBtn');
     if (shareBtn && !shareBtn.dataset.bound) {
-        shareBtn.addEventListener('click', handleShare);
+        shareBtn.addEventListener('click', (e) => {
+            handleShare(e);
+            closePostTopActionsMenu();
+        });
         shareBtn.dataset.bound = "true";
     }
 
@@ -1874,11 +1918,10 @@ function handleShare(e) {
   // 获取当前 URL
   const url = window.location.href;
 
-  // 2. 调用 GlobalModal 生成分享卡片
+  // 2. 调用 GlobalModal 生成分享卡片（不使用 Hero 动画）
   const modal = document.getElementById('globalModal');
   if (modal && modal.share) {
-    const trigger = e ? e.currentTarget : document.getElementById('shareArticleBtn');
-    modal.with(trigger).share(title, plainText, url, date);
+    modal.share(title, plainText, url, date);
   } else {
     // 降级处理：如果没有加载 html2canvas 或 modal 异常，直接复制链接
     const tempInput = document.createElement('input');

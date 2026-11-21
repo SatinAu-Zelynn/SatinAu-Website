@@ -152,39 +152,38 @@
           <button id="backToList" class="back-button" aria-label="返回">
             <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
-          <button id="minimizePost" class="back-button" type="button" title="最小化到多任务" aria-label="最小化到多任务">
-            <svg viewBox="0 0 24 24"><path d="M6 12h12" stroke-linecap="round"/></svg>
-          </button>
+          <div id="postTopActions" class="post-top-actions" role="toolbar" aria-label="文章快捷操作">
+            <button id="postActionsToggle" class="post-top-actions-toggle" type="button" title="更多操作" aria-label="更多操作" aria-expanded="false" aria-controls="postActionsList">
+              <svg viewBox="0 0 24 24">
+                <circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+                <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+                <circle cx="19" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+            <div id="postActionsList" class="post-top-actions-list" role="menu">
+              <button id="backToTopBtn" class="post-top-action-btn" type="button" title="回到顶部" aria-label="回到顶部" role="menuitem">
+                <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="post-top-action-label">回到顶部</span>
+              </button>
+              <button id="shareArticleBtn" class="post-top-action-btn" type="button" title="分享文章" aria-label="分享文章" role="menuitem">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="18" cy="5" r="3"/>
+                  <circle cx="6" cy="12" r="3"/>
+                  <circle cx="18" cy="19" r="3"/>
+                  <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="post-top-action-label">分享文章</span>
+              </button>
+              <button id="minimizePost" class="post-top-action-btn" type="button" title="最小化到多任务" aria-label="最小化到多任务" role="menuitem">
+                <svg viewBox="0 0 24 24"><path d="M6 12h12" stroke-linecap="round"/></svg>
+                <span class="post-top-action-label">最小化</span>
+              </button>
+            </div>
+          </div>
           <h2 id="postTitle"></h2>
           <p id="postDate" class="post-date"></p>
         </div>
         <div id="postContent" class="md-body"></div>
-        <div class="post-actions-panel">
-          <!-- 文章列表按钮 -->
-          <div class="action-item">
-            <button id="backToListBtn" class="action-btn" aria-label="文章列表">
-              <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </button>
-            <span class="action-label">文章列表</span>
-          </div>
-
-          <!-- 回到顶部按钮 -->
-          <div class="action-item">
-            <button id="backToTopBtn" class="action-btn" aria-label="回到顶部">
-              <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <span class="action-label">回到顶部</span>
-          </div>
-
-          <div class="action-item">
-            <button id="shareArticleBtn" class="action-btn" aria-label="分享文章">
-              <svg viewBox="0 0 24 24">
-                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="currentColor"/>
-              </svg>
-            </button>
-            <span class="action-label">分享</span>
-          </div>
-        </div>
         <div id="postError" style="display: none; text-align: center; padding: 40px 20px;">
           <p>文章加载失败</p>
           <button class="retryPost back-button" style="margin-top: 15px;">

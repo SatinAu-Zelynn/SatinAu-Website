@@ -964,8 +964,26 @@ body#index-page {
     /* 调整宽度和内边距 */
     width: min(90vw, 600px);
     padding: 8px 20px;
-    /* 减小阴影强度：降低模糊半径和不透明度 */
-    box-shadow: 0 0 16px rgba(0,0,0,0.12), inset 0 0 30px rgba(255,255,255,0.12);
+    /* 由 ::before 承载毛玻璃材质，避免创建 Backdrop Root 阻断子菜单 .more-dropdown / .notify-dropdown 的背景模糊 */
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: light-dark(rgba(255, 255, 255, 0.5), rgba(30, 30, 30, 0.5));
+      -webkit-backdrop-filter: var(--filter-blur);
+      backdrop-filter: var(--filter-blur);
+      border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+      box-shadow: 0 0 16px rgba(0, 0, 0, 0.12), inset 0 0 30px rgba(255, 255, 255, 0.12);
+      pointer-events: none;
+      z-index: -1;
+    }
   
     /* 中英文在一行显示 */
     a {
@@ -1339,31 +1357,30 @@ body#index-page {
   right: 0;
   min-width: 160px;
   margin-top: 24px;
-  background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30));
+  background: light-dark(rgba(255, 255, 255, 0.62), rgba(30, 30, 30, 0.62));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
   border-radius: var(--border-radius-lg);
-  box-shadow: 0 16px 40px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.4));
+  box-shadow: 0 16px 40px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.4)), inset 0 0 20px rgba(255, 255, 255, 0.12);
   padding: 6px;
   
   /* 动画初始状态 */
   transform-origin: top right; /* 从按钮位置扩散 */
-  transform: scale(0.7) skewX(-2deg) translateY(-15px); /* 初始缩小并带一点微小的斜切 */
+  transform: scale(0.75) skewX(-2deg) translateY(-10px); /* 初始缩小并带一点微小的斜切 */
   opacity: 0;
-  filter: blur(12px); /* 初始状态是模糊的 */
   pointer-events: none;
   
   /* 复合过渡：弹簧效果 transform，线性透明度 */
   transition: 
-    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 0.3s ease,
-    filter 0.3s ease;
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease;
   z-index: 3000;
 
   /* 菜单显示状态 */
   &.show {
     transform: scale(1) skewX(0) translateY(0);
     opacity: 1;
-    filter: blur(0); /* 变得清晰 */
     pointer-events: auto;
   }
 }
@@ -1424,30 +1441,29 @@ body#index-page {
   left: 0;
   width: 300px;
   margin-top: 24px;
-  background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30));
+  background: light-dark(rgba(255, 255, 255, 0.62), rgba(30, 30, 30, 0.62));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
   border: 1px solid light-dark(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
   border-radius: var(--border-radius-lg);
-  box-shadow: 0 16px 40px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.4));
+  box-shadow: 0 16px 40px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.4)), inset 0 0 20px rgba(255, 255, 255, 0.12);
   padding: 10px;
   box-sizing: border-box;
 
   /* 动画初始状态：与右侧 .more-dropdown 镜像对称 */
   transform-origin: top left;
-  transform: scale(0.7) skewX(2deg) translateY(-15px);
+  transform: scale(0.75) skewX(2deg) translateY(-10px);
   opacity: 0;
-  filter: blur(12px);
   pointer-events: none;
 
   transition: 
-    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 0.3s ease,
-    filter 0.3s ease;
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease;
   z-index: 3000;
 
   &.show {
     transform: scale(1) skewX(0) translateY(0);
     opacity: 1;
-    filter: blur(0);
     pointer-events: auto;
   }
 }
@@ -2132,17 +2148,220 @@ html:has(body#blog-page) {
   }
 }
 
-/* 博客文章页顶部最小化按钮：移动端固定在页面右上角，桌面端固定在导航栏右侧 */
-#minimizePost {
+/* 博客文章页右上角多功能区（回到顶部 / 分享 / 最小化；窄屏与移动端合并为单按钮弹出菜单） */
+.post-top-actions {
   position: fixed;
   top: max(16px, calc(env(safe-area-inset-top, 0px) + 12px));
   right: 16px;
-  margin-bottom: 0;
   z-index: 2001;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  box-sizing: border-box;
 
-  @media (min-width: 768px) {
+  @media (min-width: 768px) and (max-width: 899px) {
     top: 25px;
     right: max(12px, calc(50% + var(--scrollbar-compensate, 0px) / 2 - min(90vw, 600px) / 2 - 56px));
+  }
+
+  @media (min-width: 900px) {
+    top: 25px;
+    left: calc(50% - var(--scrollbar-compensate, 0px) / 2 + min(90vw, 600px) / 2 + 12px);
+    right: auto;
+    width: auto;
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid light-dark(rgba(255,255,255,0.35), rgba(255,255,255,0.2));
+    background: light-dark(rgba(255,255,255,0.25), rgba(40,40,40,0.4));
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    backdrop-filter: blur(18px) saturate(180%);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
+    transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
+  }
+}
+
+.post-top-actions-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid light-dark(rgba(255,255,255,0.35), rgba(255,255,255,0.2));
+  background: light-dark(rgba(255,255,255,0.25), rgba(40,40,40,0.4));
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.15);
+  color: var(--primary-color);
+  cursor: var(--custom-cursor, pointer);
+  transition: background 0.3s ease, transform 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.08);
+      background: light-dark(rgba(255,255,255,0.45), rgba(60,60,60,0.6));
+    }
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
+
+  @media (min-width: 900px) {
+    display: none;
+  }
+}
+
+.post-top-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 148px;
+  padding: 6px;
+  box-sizing: border-box;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid light-dark(rgba(255,255,255,0.35), rgba(255,255,255,0.12));
+  background: light-dark(rgba(255,255,255,0.62), rgba(30,30,30,0.62));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
+  box-shadow: 0 16px 40px light-dark(rgba(0,0,0,0.15), rgba(0,0,0,0.4)), inset 0 0 20px rgba(255,255,255,0.12);
+  transform-origin: top right;
+  transform: scale(0.75) skewX(-2deg) translateY(-10px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease;
+  z-index: 2002;
+
+  @media (min-width: 900px) {
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    transform: none;
+    opacity: 1;
+    filter: none;
+    pointer-events: auto;
+    transition: none;
+  }
+}
+
+.post-top-actions.menu-open .post-top-actions-list {
+  transform: scale(1) skewX(0) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.post-top-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  background: transparent;
+  color: var(--word-color);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: var(--custom-cursor, pointer);
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  transform: translateX(8px);
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+
+  svg {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    stroke: var(--primary-color);
+    stroke-width: 2.2;
+    fill: none;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  @media (min-width: 900px) {
+    display: inline-flex;
+    justify-content: center;
+    gap: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--primary-color);
+    opacity: 1;
+    transform: none;
+    transition: transform 0.25s ease;
+
+    @media (hover: hover) {
+      &:hover {
+        transform: scale(1.08);
+      }
+    }
+
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+}
+
+.post-top-actions.menu-open .post-top-action-btn {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.2s ease;
+
+  &:nth-child(1) { transition-delay: 0.04s; }
+  &:nth-child(2) { transition-delay: 0.08s; }
+  &:nth-child(3) { transition-delay: 0.12s; }
+
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.03);
+      transition-delay: 0s;
+    }
+  }
+}
+
+.post-top-action-label {
+  display: inline-block;
+  line-height: 1.2;
+
+  @media (min-width: 900px) {
+    display: none;
   }
 }
 
@@ -2233,10 +2452,9 @@ html:has(body#blog-page) {
   }
 }
 
-/* 二级页面淡入动画（避免在 .md-article 容器本身设置 transform/filter，以免破坏内部 #backToList 与 #minimizePost 的 position: fixed 视口定位） */
-.md-article:not(.hero-enter) > .post-meta > :not(#backToList):not(#minimizePost),
+/* 二级页面淡入动画（避免在 .md-article 容器本身设置 transform/filter，以免破坏内部 #backToList 与 .post-top-actions 的 position: fixed 视口定位） */
+.md-article:not(.hero-enter) > .post-meta > :not(#backToList):not(.post-top-actions),
 .md-article:not(.hero-enter) > .md-body,
-.md-article:not(.hero-enter) > .post-actions-panel,
 .md-article:not(.hero-enter) > #postError {
   animation: blurFadeUp 0.5s ease forwards;
   opacity: 0;
@@ -3717,11 +3935,6 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   color: white;
 }
 
-/* 让回到顶部按钮在悬停时有个向上的小动画 */
-.action-item:hover #backToTopBtn svg {
-  transform: translateY(-2px);
-}
-
 .chime-modal h2 {
   background: linear-gradient(90deg, #FF9999, #FFE92C);
   -webkit-background-clip: text;
@@ -4669,11 +4882,22 @@ body.hero-list-entering main.page #blogList {
   transform: none;
 }
 
+@keyframes heroActionsFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .md-article.hero-enter #backToList,
-.md-article.hero-enter #minimizePost,
-.md-article.hero-enter > .md-body,
-.md-article.hero-enter > .post-actions-panel {
+.md-article.hero-enter > .md-body {
   animation: blurFadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.md-article.hero-enter .post-top-actions {
+  animation: heroActionsFadeIn 0.4s ease;
 }
 
 .md-article .post-date-main,

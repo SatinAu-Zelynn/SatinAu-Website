@@ -94,11 +94,33 @@
 .modal, pre,
 .toast,
 .setting-item, .setting-item-group, .mobile-more-menu,
-#loginBtn, #logoutBtn, .back-button, .post-actions .back-button,
+.more-dropdown, .notify-dropdown,
+#loginBtn, #logoutBtn, .back-button, .post-top-actions-toggle, .post-actions .back-button,
 .satin-notify-card,
 .hero-surface,
 .live2d-menu {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    background: transparent !important;
+  }
+  .bottom-nav::before {
+    background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .post-top-actions {
+    background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .post-top-actions-list {
+    background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
+  }
 }
 
 .setting-item-group .setting-item {

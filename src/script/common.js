@@ -1353,8 +1353,9 @@ function closeNotifyMenu() {
 function toggleMoreMenu() {
   const dropdown = document.querySelector('.more-dropdown');
   if (dropdown) {
-    if (!moreMenuVisible && notifyMenuVisible) {
-      closeNotifyMenu();
+    if (!moreMenuVisible) {
+      if (notifyMenuVisible) closeNotifyMenu();
+      if (typeof window.closePostTopActionsMenu === 'function') window.closePostTopActionsMenu();
     }
     moreMenuVisible = !moreMenuVisible;
     dropdown.classList.toggle('show', moreMenuVisible);
@@ -1374,8 +1375,9 @@ function toggleNotifyMenu() {
   const dropdown = document.querySelector('.notify-dropdown');
   const btn = document.querySelector('.notify-btn');
   if (dropdown) {
-    if (!notifyMenuVisible && moreMenuVisible) {
-      closeMoreMenu();
+    if (!notifyMenuVisible) {
+      if (moreMenuVisible) closeMoreMenu();
+      if (typeof window.closePostTopActionsMenu === 'function') window.closePostTopActionsMenu();
     }
     notifyMenuVisible = !notifyMenuVisible;
     dropdown.classList.toggle('show', notifyMenuVisible);
@@ -1389,6 +1391,9 @@ function toggleNotifyMenu() {
     }
   }
 }
+
+window.closeMoreMenu = closeMoreMenu;
+window.closeNotifyMenu = closeNotifyMenu;
 
 // 点击其他区域关闭菜单
 document.addEventListener('click', function(e) {
@@ -1727,6 +1732,9 @@ window.initMobileMoreMenu = function() {
     }, { passive: false });
     
     function openMenu() {
+      if (typeof window.closePostTopActionsMenu === 'function') {
+        window.closePostTopActionsMenu();
+      }
       isMenuOpen = true;
       maxMenuHeight = getMenuMaxHeight();
       mobileMenuWrapper.style.height = `${maxMenuHeight}px`;
