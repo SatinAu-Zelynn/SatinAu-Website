@@ -3480,10 +3480,12 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         hoverTimer = setTimeout(() => menu.classList.remove('show'), 400); // 400ms后消失
       };
 
-      canvas.addEventListener('mouseenter', showMenu);
-      canvas.addEventListener('mouseleave', hideMenu);
-      menu.addEventListener('mouseenter', showMenu);
-      menu.addEventListener('mouseleave', hideMenu);
+      if (window.matchMedia('(hover: hover)').matches) {
+        canvas.addEventListener('mouseenter', showMenu);
+        canvas.addEventListener('mouseleave', hideMenu);
+        menu.addEventListener('mouseenter', showMenu);
+        menu.addEventListener('mouseleave', hideMenu);
+      }
 
       app = new PIXI.Application({
         view: canvas,

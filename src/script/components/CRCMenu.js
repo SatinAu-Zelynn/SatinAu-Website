@@ -149,11 +149,17 @@ class CustomRightClickMenu extends HTMLElement {
             opacity: 0;
             transition: transform var(--item-transition-speed) ease, opacity var(--item-transition-speed) ease;
         }
-        .menu-item:hover::before,
         .menu-item.expanded::before {
             transform: scale(1);
             background-color: var(--item-hover-bg);
             opacity: 1;
+        }
+        @media (hover: hover) {
+            .menu-item:hover::before {
+                transform: scale(1);
+                background-color: var(--item-hover-bg);
+                opacity: 1;
+            }
         }
         .menu-item:active::before {
             transform: scale(0.94);
@@ -581,52 +587,54 @@ class CustomRightClickMenu extends HTMLElement {
                         subMenu.style.top = `${finalTop}px`;
                         subMenu.style.transformOrigin = origin;
 
-                        subMenu.addEventListener('mouseenter', () => {
-                            if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-                            subMenu.classList.add('active');
-                            menuItem.classList.add('expanded');
+                        if (window.matchMedia('(hover: hover)').matches) {
+                            subMenu.addEventListener('mouseenter', () => {
+                                if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+                                subMenu.classList.add('active');
+                                menuItem.classList.add('expanded');
 
-                            let p = parentContainer;
-                            while (p && p.classList.contains('sub-menu')) {
-                                p.classList.add('active');
-                                const parentId = p.getAttribute('data-parent-id');
-                                const pItem = this.shadowRoot.querySelector(`.menu-item[data-id="${parentId}"]`);
-                                if (pItem) pItem.classList.add('expanded');
-                                p = pItem ? pItem.parentElement : null;
-                            }
-                        });
-
-                        subMenu.addEventListener('mouseleave', (e) => {
-                            if (e.relatedTarget && (menuItem === e.relatedTarget || menuItem.contains(e.relatedTarget))) return;
-
-                            if (e.relatedTarget && e.relatedTarget.classList.contains('sub-menu')) {
-                                const relatedParentId = e.relatedTarget.getAttribute('data-parent-id');
-                                if (subMenu.querySelector(`.menu-item[data-id="${relatedParentId}"]`)) {
-                                    return;
+                                let p = parentContainer;
+                                while (p && p.classList.contains('sub-menu')) {
+                                    p.classList.add('active');
+                                    const parentId = p.getAttribute('data-parent-id');
+                                    const pItem = this.shadowRoot.querySelector(`.menu-item[data-id="${parentId}"]`);
+                                    if (pItem) pItem.classList.add('expanded');
+                                    p = pItem ? pItem.parentElement : null;
                                 }
-                            }
+                            });
 
-                            if (subMenu) {
-                                subMenu.classList.remove('active');
-                                menuItem.classList.remove('expanded');
-                                if (hideTimer) clearTimeout(hideTimer);
-                                hideTimer = setTimeout(() => {
-                                    if (subMenu && !subMenu.classList.contains('active')) {
-                                        subMenu.remove();
-                                        subMenu = null;
+                            subMenu.addEventListener('mouseleave', (e) => {
+                                if (e.relatedTarget && (menuItem === e.relatedTarget || menuItem.contains(e.relatedTarget))) return;
+
+                                if (e.relatedTarget && e.relatedTarget.classList.contains('sub-menu')) {
+                                    const relatedParentId = e.relatedTarget.getAttribute('data-parent-id');
+                                    if (subMenu.querySelector(`.menu-item[data-id="${relatedParentId}"]`)) {
+                                        return;
                                     }
-                                }, 200);
-                            }
+                                }
 
-                            let p = parentContainer;
-                            while (p && p.classList.contains('sub-menu')) {
-                                p.classList.remove('active');
-                                const parentId = p.getAttribute('data-parent-id');
-                                const parentItem = this.shadowRoot.querySelector(`.menu-item[data-id="${parentId}"]`);
-                                if (parentItem) parentItem.classList.remove('expanded');
-                                p = parentItem ? parentItem.parentElement : null;
-                            }
-                        });
+                                if (subMenu) {
+                                    subMenu.classList.remove('active');
+                                    menuItem.classList.remove('expanded');
+                                    if (hideTimer) clearTimeout(hideTimer);
+                                    hideTimer = setTimeout(() => {
+                                        if (subMenu && !subMenu.classList.contains('active')) {
+                                            subMenu.remove();
+                                            subMenu = null;
+                                        }
+                                    }, 200);
+                                }
+
+                                let p = parentContainer;
+                                while (p && p.classList.contains('sub-menu')) {
+                                    p.classList.remove('active');
+                                    const parentId = p.getAttribute('data-parent-id');
+                                    const parentItem = this.shadowRoot.querySelector(`.menu-item[data-id="${parentId}"]`);
+                                    if (parentItem) parentItem.classList.remove('expanded');
+                                    p = parentItem ? parentItem.parentElement : null;
+                                }
+                            });
+                        }
                     }
 
                     subMenu.style.visibility = 'visible';
@@ -650,8 +658,10 @@ class CustomRightClickMenu extends HTMLElement {
                     }
                 };
 
-                menuItem.addEventListener('mouseenter', handleShow);
-                menuItem.addEventListener('mouseleave', handleHide);
+                if (window.matchMedia('(hover: hover)').matches) {
+                    menuItem.addEventListener('mouseenter', handleShow);
+                    menuItem.addEventListener('mouseleave', handleHide);
+                }
             } else {
                 menuItem.addEventListener('click', (e) => {
                     e.stopPropagation();

@@ -64,9 +64,11 @@
       margin-bottom: 24px; /* 纵向间距 */
     }
 
-    .moment-card:hover {
-      box-shadow: 0 16px 48px rgba(0,0,0,0.12);
-      background: light-dark(rgba(255, 255, 255, 0.35), rgba(30, 30, 30, 0.3));
+    @media (hover: hover) {
+      .moment-card:hover {
+        box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+        background: light-dark(rgba(255, 255, 255, 0.35), rgba(30, 30, 30, 0.3));
+      }
     }
 
     /* 头部：头像与信息 */
@@ -126,8 +128,10 @@
         color: var(--primary-color);
         text-decoration: none;
         font-weight: 500;
-        &:hover {
-        text-decoration: underline;
+        @media (hover: hover) {
+            &:hover {
+                text-decoration: underline;
+            }
         }
     }
 
@@ -157,8 +161,10 @@
             transition: filter 0.3s ease;
             background: rgba(0,0,0,0.05);
 
-            &:hover {
-            filter: brightness(0.9);
+            @media (hover: hover) {
+                &:hover {
+                    filter: brightness(0.9);
+                }
             }
             &:active {
                 transform: scale(0.98);
@@ -188,8 +194,10 @@
         display: block;
     }
 
-    .moment-gallery img:hover {
-        filter: brightness(0.9);
+    @media (hover: hover) {
+        .moment-gallery img:hover {
+            filter: brightness(0.9);
+        }
     }
 
     /* 播放后的视频样式 */
@@ -226,9 +234,11 @@
         border: 1px solid rgba(255,255,255,0.2);
     }
 
-    .live-badge:hover {
-        background: rgba(0, 0, 0, 0.6);
-        transform: scale(1.05);
+    @media (hover: hover) {
+        .live-badge:hover {
+            background: rgba(0, 0, 0, 0.6);
+            transform: scale(1.05);
+        }
     }
 
     .live-badge svg {

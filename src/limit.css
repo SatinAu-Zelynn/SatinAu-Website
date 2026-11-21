@@ -229,8 +229,10 @@ body.search-active #momentsCard,
         &.active{
             background: light-dark(rgba(240, 240, 240), rgba(50, 50, 50)) !important;
         }
-        &:hover{
-            background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.2)) !important;
+        @media (hover: hover) {
+            &:hover{
+                background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.2)) !important;
+            }
         }
     }
 }

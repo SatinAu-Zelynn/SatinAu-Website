@@ -37,25 +37,55 @@
   <style>
     .auth-container {
       max-width: 400px;
-      width: 60%;
+      width: 100%;
+      box-sizing: border-box;
       padding: 30px;
-      /* 进场动画 */
       animation: blurFadeUp 0.8s ease forwards;
-      
       background: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
       backdrop-filter: blur(24px) saturate(180%);
       -webkit-backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255,255,255,0.12));
+      border: 1px solid light-dark(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.12));
       border-radius: var(--border-radius-lg);
-      box-shadow: 0 12px 32px rgba(0,0,0,0.12), inset 0 0 20px rgba(255,255,255,0.08);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), inset 0 0 20px rgba(255, 255, 255, 0.08);
     }
 
-    .back-btn-wrapper {
-      margin-top: 20px;
-      position: absolute;
-      bottom: 40px;
+    /* 新增：表单高度平滑过渡容器 */
+    .auth-forms-viewport {
+      position: relative;
+      overflow: hidden;
+      transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    
+
+    .auth-form {
+      width: 100%;
+      transition: opacity 0.28s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.28s ease;
+    }
+
+    .auth-form:not(.is-active) {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #loginForm:not(.is-active) {
+      transform: translateX(-16px);
+    }
+
+    #registerForm:not(.is-active) {
+      transform: translateX(16px);
+    }
+
+    .auth-form.is-active {
+      position: relative;
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
     .form-group {
       margin-bottom: 16px;
     }
@@ -101,50 +131,34 @@
       cursor: not-allowed;
     }
 
-    /* 禁止页面滚动 */
+    /* 允许超出视口时正常纵向滚动 */
     html, body {
-      overflow: hidden !important; /* 强制隐藏滚动条 */
-      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      min-height: 100%;
       margin: 0;
-      touch-action: none; /* 禁止移动端触摸滚动 */
     }
 
     .page {
       display: flex;
-      flex-direction: column;  /* 垂直排列登录框和返回按钮 */
-      justify-content: center; /* 垂直方向居中 */
-      align-items: center;     /* 水平方向居中 */
-      height: 100vh;           /* 占据全屏高度 */
-      width: 100vw;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      width: 100%;
+      padding: 32px 16px;
+      box-sizing: border-box;
+    }
+
+    .auth-page-inner {
+      width: 100%;
+      max-width: 400px;
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
   </style>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const tabContainer = document.getElementById('authTabControl');
-      const loginForm = document.getElementById('loginForm');
-      const registerForm = document.getElementById('registerForm');
-
-      // 利用事件委托监听点击
-      if(tabContainer) {
-          tabContainer.addEventListener('click', (e) => {
-            // 找到被点击的 button
-            const btn = e.target.closest('button');
-            if (!btn) return;
-        
-            const targetTab = btn.getAttribute('data-tab');
-        
-            // 切换表单显示逻辑
-            if (targetTab === 'login') {
-              loginForm.style.display = 'block';
-              registerForm.style.display = 'none';
-            } else if (targetTab === 'register') {
-              loginForm.style.display = 'none';
-              registerForm.style.display = 'block';
-            }
-          });
-      }
-    });
-  </script>
 </head>
 <body id="login-page">
   <div class="color-bg color-bg-1"></div>
@@ -153,51 +167,55 @@
   <div class="color-bg color-bg-4"></div>
   
   <main class="page">
-    <div class="auth-container">
-      <div class="segmented-control large" id="authTabControl">
-        <button class="active" data-tab="login">登录</button>
-        <button data-tab="register">注册</button>
+    <div class="auth-page-inner">
+      <div class="auth-container">
+        <div class="segmented-control large" id="authTabControl">
+          <button class="active" data-tab="login">登录</button>
+          <button data-tab="register">注册</button>
+        </div>
+
+        <div class="auth-forms-viewport" id="authFormsViewport">
+          <!-- 登录表单 -->
+          <form id="loginForm" class="auth-form is-active">
+            <div class="form-group">
+              <input type="email" class="form-input" placeholder="电子邮箱" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <input type="password" class="form-input" placeholder="密码" required autocomplete="current-password">
+            </div>
+            <div class="form-group" style="display: flex; justify-content: center;">
+              <div class="cf-turnstile" data-sitekey="0x4AAAAAACdhW6Gdnaxealh5" data-theme="auto"></div>
+            </div>
+            <button type="submit" class="submit-btn">立即登录</button>
+          </form>
+
+          <!-- 注册表单 -->
+          <form id="registerForm" class="auth-form">
+            <div class="form-group">
+              <input type="text" id="reg-nickname" class="form-input" placeholder="昵称" required maxlength="12">
+            </div>
+            <div class="form-group">
+              <input type="email" id="reg-email" class="form-input" placeholder="电子邮箱" required autocomplete="username">
+            </div>
+            <div class="form-group">
+              <input type="password" id="reg-pwd" class="form-input" placeholder="密码 (至少6位)" required autocomplete="new-password" minlength="6">
+            </div>
+            <div class="form-group">
+              <input type="password" id="reg-pwd-confirm" class="form-input" placeholder="确认密码" required autocomplete="new-password">
+            </div>
+            <div class="form-group" style="display: flex; justify-content: center;">
+              <div class="cf-turnstile" data-sitekey="0x4AAAAAACdhW6Gdnaxealh5" data-theme="auto"></div>
+            </div>
+            <button type="submit" class="submit-btn">注册账号</button>
+          </form>
+        </div>
       </div>
 
-      <!-- 登录表单 -->
-      <form id="loginForm">
-        <div class="form-group">
-          <input type="email" class="form-input" placeholder="电子邮箱" required autocomplete="email">
-        </div>
-        <div class="form-group">
-          <input type="password" class="form-input" placeholder="密码" required autocomplete="current-password">
-        </div>
-        <div class="form-group" style="display: flex; justify-content: center;">
-          <div class="cf-turnstile" data-sitekey="0x4AAAAAACdhW6Gdnaxealh5" data-theme="auto"></div>
-        </div>
-        <button type="submit" class="submit-btn">立即登录</button>
-      </form>
-
-      <!-- 注册表单 -->
-      <form id="registerForm" style="display: none;">
-        <div class="form-group">
-          <input type="text" id="reg-nickname" class="form-input" placeholder="昵称" required maxlength="12">
-        </div>
-        <div class="form-group">
-          <input type="email" id="reg-email" class="form-input" placeholder="电子邮箱" required autocomplete="username">
-        </div>
-        <div class="form-group">
-          <input type="password" id="reg-pwd" class="form-input" placeholder="密码 (至少6位)" required autocomplete="new-password" minlength="6">
-        </div>
-        <div class="form-group">
-          <input type="password" id="reg-pwd-confirm" class="form-input" placeholder="确认密码" required autocomplete="new-password">
-        </div>
-        <div class="form-group" style="display: flex; justify-content: center;">
-          <div class="cf-turnstile" data-sitekey="0x4AAAAAACdhW6Gdnaxealh5" data-theme="auto"></div>
-        </div>
-        <button type="submit" class="submit-btn">注册账号</button>
-      </form>
-    </div>
-
-    <div style="text-align: center; margin-top: 20px;">
-      <a href="javascript:void(0);" class="back-button" style="text-decoration: none;" onclick="window.history.back();">
-        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
-      </a>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="javascript:void(0);" class="back-button" style="text-decoration: none;" onclick="window.history.back();">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
+        </a>
+      </div>
     </div>
   </main>
 

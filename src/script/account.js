@@ -66,20 +66,53 @@ function initLoginPage() {
         });
     }
 
+    const viewport = document.getElementById('authFormsViewport');
+    let heightTransitionTimer = null;
+
+    function switchAuthTab(targetTab) {
+        const showLogin = targetTab === 'login';
+        const nextForm = showLogin ? loginForm : registerForm;
+        const prevForm = showLogin ? registerForm : loginForm;
+
+        if (nextForm.classList.contains('is-active')) return;
+
+        if (viewport) {
+            clearTimeout(heightTransitionTimer);
+            // 1. 锁定当前高度
+            viewport.style.height = `${viewport.offsetHeight}px`;
+            void viewport.offsetHeight; // 强制回流
+
+            // 2. 切换表单激活态
+            prevForm.classList.remove('is-active');
+            nextForm.classList.add('is-active');
+
+            // 3. 过渡到目标表单高度
+            viewport.style.height = `${nextForm.scrollHeight}px`;
+
+            // 4. 动画完成后恢复 auto，兼容 Turnstile 延迟加载与窗口缩放
+            const onEnd = (e) => {
+                if (e.propertyName !== 'height') return;
+                viewport.style.height = 'auto';
+                viewport.removeEventListener('transitionend', onEnd);
+            };
+            viewport.addEventListener('transitionend', onEnd);
+            heightTransitionTimer = setTimeout(() => {
+                viewport.style.height = 'auto';
+                viewport.removeEventListener('transitionend', onEnd);
+            }, 420);
+        } else {
+            prevForm.classList.remove('is-active');
+            nextForm.classList.add('is-active');
+        }
+    }
+
     // 切换 Tab
     tabs.forEach(tab => {
         if (tab.dataset.bound) return;
         tab.addEventListener('click', () => {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-
-            if (tab.dataset.tab === 'login') {
-                loginForm.style.display = 'block';
-                registerForm.style.display = 'none';
-            } else {
-                loginForm.style.display = 'none';
-                registerForm.style.display = 'block';
-            }
+            switchAuthTab(tab.dataset.tab);
         });
         tab.dataset.bound = "true";
     });

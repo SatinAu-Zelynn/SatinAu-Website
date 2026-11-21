@@ -173,8 +173,10 @@ class NavigateBar extends HTMLElement {
           box-sizing: border-box;
         }
         
-        .nav-user-card:hover {
-          background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.15));
+        @media (hover: hover) {
+          .nav-user-card:hover {
+            background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.15));
+          }
         }
 
         .nav-user-card:active {

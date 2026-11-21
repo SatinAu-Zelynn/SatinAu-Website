@@ -109,8 +109,10 @@
       font-weight: 500;
     }
 
-    .avatar-wrapper:hover .avatar-overlay {
-      opacity: 1;
+    @media (hover: hover) {
+      .avatar-wrapper:hover .avatar-overlay {
+        opacity: 1;
+      }
     }
 
     .info-row {
@@ -140,8 +142,10 @@
       transition: all 0.2s ease;
     }
 
-    .logout-btn:hover {
-      background: light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.25));
+    @media (hover: hover) {
+      .logout-btn:hover {
+        background: light-dark(rgba(255, 59, 48, 0.2), rgba(255, 69, 58, 0.25));
+      }
     }
 
     .logout-btn:active {
