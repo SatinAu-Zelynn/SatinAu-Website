@@ -4269,6 +4269,22 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   box-sizing: border-box;
 }
 
+/* 加载中采用紧凑尺寸，生成完成后平滑展开至分享卡片尺寸 */
+.modal.share-modal.is-loading {
+  width: min(84vw, 240px);
+}
+
+/* 动态尺寸过渡状态 */
+.modal.share-modal.is-morphing {
+  overflow: hidden;
+  transition:
+    width 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1.4, 0.36, 1),
+    opacity 0.4s ease;
+  will-change: width, height, transform, opacity;
+}
+
 .modal.share-modal .modal-content-wrapper {
   display: flex;
   flex-direction: column;
@@ -4278,6 +4294,31 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   max-height: calc(88dvh - 40px);
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.modal.share-modal.is-morphing .modal-content-wrapper {
+  overflow: hidden;
+}
+
+.modal.share-modal .modal-content-wrapper.share-content-entering {
+  opacity: 0;
+  transform: translateY(6px) scale(0.985);
+  transition: none;
+}
+
+.modal.share-modal .modal-content-wrapper.share-content-entered {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 0.28s ease 0.12s,
+    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.08s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal.share-modal.is-morphing,
+  .modal.share-modal .modal-content-wrapper.share-content-entered {
+    transition: none !important;
+  }
 }
 
 .share-loading-state {

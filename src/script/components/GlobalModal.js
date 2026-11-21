@@ -1249,12 +1249,120 @@ class GlobalModal extends HTMLElement {
   }
 
   // ==========================================
+  // 分享弹窗动态尺寸过渡（平滑过渡加载态与结果态尺寸差异）
+  // ==========================================
+  _transitionShareModalContent(layer, nextHtml, { isLoading = false, onAfterRender = null } = {}) {
+    if (!layer || layer.isClosing || !layer.modal || !layer.modal.isConnected) return;
+
+    const modal = layer.modal;
+    const content = layer.content;
+
+    if (typeof layer._cleanupMorph === 'function') {
+      layer._cleanupMorph();
+    }
+
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      modal.classList.toggle('is-loading', isLoading);
+      content.innerHTML = nextHtml;
+      if (typeof onAfterRender === 'function') onAfterRender();
+      return;
+    }
+
+    // 1. 记录当前未缩放布局尺寸（offsetWidth/Height 不受入场 transform: scale 影响）
+    const startWidth = modal.offsetWidth;
+    const startHeight = modal.offsetHeight;
+
+    // 2. 同步切换内容并测量目标自然尺寸（同一帧内完成，避免视觉闪烁）
+    modal.style.transition = 'none';
+    modal.style.width = '';
+    modal.style.height = '';
+    modal.classList.remove('is-morphing');
+    modal.classList.toggle('is-loading', isLoading);
+    content.innerHTML = nextHtml;
+    if (typeof onAfterRender === 'function') onAfterRender();
+
+    const targetWidth = modal.offsetWidth;
+    const targetHeight = modal.offsetHeight;
+
+    if (Math.abs(targetWidth - startWidth) < 1 && Math.abs(targetHeight - startHeight) < 1) {
+      modal.style.transition = '';
+      content.classList.add('share-content-entering');
+      void content.offsetHeight;
+      requestAnimationFrame(() => {
+        if (layer.isClosing) return;
+        content.classList.remove('share-content-entering');
+        content.classList.add('share-content-entered');
+        setTimeout(() => {
+          content.classList.remove('share-content-entered');
+        }, 320);
+      });
+      return;
+    }
+
+    // 3. 锁定起始尺寸并设置内容初始淡入状态
+    modal.style.width = `${startWidth}px`;
+    modal.style.height = `${startHeight}px`;
+    modal.classList.add('is-morphing');
+    content.classList.remove('share-content-entered');
+    content.classList.add('share-content-entering');
+
+    // 强制回流，确保浏览器记录起始尺寸
+    void modal.offsetHeight;
+
+    let cleaned = false;
+    let fallbackTimer = null;
+    let rafId = null;
+
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      clearTimeout(fallbackTimer);
+      modal.removeEventListener('transitionend', onTransitionEnd);
+      layer._cleanupMorph = null;
+      if (!layer.isClosing) {
+        modal.classList.remove('is-morphing');
+        modal.style.width = '';
+        modal.style.height = '';
+        modal.style.transition = '';
+        content.classList.remove('share-content-entering', 'share-content-entered');
+      }
+    };
+
+    const onTransitionEnd = (e) => {
+      if (e.target !== modal) return;
+      if (e.propertyName === 'width' || e.propertyName === 'height') {
+        cleanup();
+      }
+    };
+
+    layer._cleanupMorph = cleanup;
+    modal.addEventListener('transitionend', onTransitionEnd);
+
+    // 4. 下一帧恢复 CSS 过渡并平滑动画至目标宽高，同时淡入新内容
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      if (layer.isClosing) {
+        cleanup();
+        return;
+      }
+      modal.style.transition = '';
+      modal.style.width = `${targetWidth}px`;
+      modal.style.height = `${targetHeight}px`;
+      content.classList.remove('share-content-entering');
+      content.classList.add('share-content-entered');
+      fallbackTimer = setTimeout(cleanup, 520);
+    });
+  }
+
+  // ==========================================
   // 分享文章卡片
   // ==========================================
   async share(title, excerpt, url, date) {
-    // 1. 显示加载中
+    // 1. 显示加载中（初始采用紧凑尺寸，生成完成后通过动态尺寸动画平滑展开）
     const layer = this.open({
-      className: 'modal share-modal',
+      className: 'modal share-modal is-loading',
       content: `
         <div class="share-loading-state">
           <div class="ai-loading-spinner"></div>
@@ -1334,8 +1442,13 @@ class GlobalModal extends HTMLElement {
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       const imgUrl = blob ? URL.createObjectURL(blob) : canvas.toDataURL('image/png');
 
-      if (blob && typeof layer.onDestroy === 'function') {
-        layer.onDestroy(() => URL.revokeObjectURL(imgUrl));
+      if (typeof layer.onDestroy === 'function') {
+        layer.onDestroy(() => {
+          if (typeof layer._cleanupMorph === 'function') {
+            layer._cleanupMorph();
+          }
+          if (blob) URL.revokeObjectURL(imgUrl);
+        });
       }
 
       // 预解码生成的图片，确保插入弹窗时尺寸一步到位
@@ -1350,38 +1463,51 @@ class GlobalModal extends HTMLElement {
 
       const fileSafeTitle = safeTitle.replace(/[\\/:*?"<>|]/g, '_').slice(0, 50) || '文章分享';
       const downloadFileName = `缎金SatinAu-${fileSafeTitle}.png`;
+      const logicalWidth = Math.max(1, Math.round(canvas.width / 2));
+      const logicalHeight = Math.max(1, Math.round(canvas.height / 2));
 
-      // 5. 更新弹窗内容
-      layer.content.innerHTML = `
-        <img src="${imgUrl}" class="generated-share-img" alt="Share Card" data-download-name="${downloadFileName}">
-        <p class="share-tip-text">右键或长按图片可保存，也可使用下方按钮</p>
-        <div class="share-actions">
-          <button id="shareDownloadImg" class="primary-btn" type="button">保存图片</button>
-          <button id="shareCopyLink" class="secondary-btn" type="button">复制链接</button>
-          <button id="shareClose" class="cancel-btn" type="button">关闭</button>
-        </div>
-      `;
-
-      // 绑定按钮事件
-      layer.modal.querySelector('#shareClose').onclick = layer.close;
-      layer.modal.querySelector('#shareCopyLink').onclick = () => {
-        this.copyToClipboard(fullUrl);
-      };
-      layer.modal.querySelector('#shareDownloadImg').onclick = () => {
-        const a = document.createElement('a');
-        a.href = imgUrl;
-        a.download = downloadFileName;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        this.showToast('💾 已开始下载分享卡片');
-      };
+      // 5. 动态尺寸平滑过渡至生成后的分享卡片内容
+      this._transitionShareModalContent(
+        layer,
+        `
+          <img src="${imgUrl}" width="${logicalWidth}" height="${logicalHeight}" class="generated-share-img" alt="Share Card" data-download-name="${downloadFileName}">
+          <p class="share-tip-text">右键或长按图片可保存，也可使用下方按钮</p>
+          <div class="share-actions">
+            <button id="shareDownloadImg" class="primary-btn" type="button">保存图片</button>
+            <button id="shareCopyLink" class="secondary-btn" type="button">复制链接</button>
+            <button id="shareClose" class="cancel-btn" type="button">关闭</button>
+          </div>
+        `,
+        {
+          isLoading: false,
+          onAfterRender: () => {
+            // 绑定按钮事件
+            layer.modal.querySelector('#shareClose').onclick = layer.close;
+            layer.modal.querySelector('#shareCopyLink').onclick = () => {
+              this.copyToClipboard(fullUrl);
+            };
+            layer.modal.querySelector('#shareDownloadImg').onclick = () => {
+              const a = document.createElement('a');
+              a.href = imgUrl;
+              a.download = downloadFileName;
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              this.showToast('💾 已开始下载分享卡片');
+            };
+          }
+        }
+      );
 
     } catch (err) {
       console.error("生成分享图失败:", err);
       if (!layer.isClosing) {
-        layer.content.innerHTML = `<p style="padding:20px; margin:0;">生成失败，请刷新重试</p>`;
+        this._transitionShareModalContent(
+          layer,
+          `<p style="padding:20px; margin:0;">生成失败，请刷新重试</p>`,
+          { isLoading: false }
+        );
         setTimeout(layer.close, 2000);
       }
     } finally {

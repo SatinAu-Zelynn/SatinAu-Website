@@ -30,15 +30,16 @@
   animation: none !important; /* 禁用背景流光 */
 }
 
+/* ========== 禁用所有动画中的模糊效果 ========== */
 @keyframes blurScaleIn {
   from {
     opacity: 0;
-    filter: blur(0) !important; /* 禁用模糊 */
+    filter: none !important;
     transform: scale(0.9); /* 初始缩小 */
   }
   to {
     opacity: 1;
-    filter: blur(0);
+    filter: none !important;
     transform: scale(1); /* 结束时原大小 */
   }
 }
@@ -46,12 +47,12 @@
 @keyframes blurFadeUp {
   from {
     opacity: 0;
-    filter: blur(0) !important; /* 禁用模糊 */
+    filter: none !important;
     transform: translateY(20px); /* 初始位置靠下 */
   }
   to {
     opacity: 1;
-    filter: blur(0);
+    filter: none !important;
     transform: translateY(0); /* 结束时原位置 */
   }
 }
@@ -60,19 +61,95 @@
   0% {
     opacity: 0;
     transform: translateY(30px) scale(0.8);
-    filter: blur(0px) !important; /* 禁用模糊 */
+    filter: none !important;
   }
   60% {
     opacity: 0.8;
     transform: translateY(-2px) scale(1.015); /* 轻微上冲 */
+    filter: none !important;
   }
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
+    filter: none !important;
   }
 }
 
-.scroll-anim-item.is-scroll-animating {
+@keyframes geminiChunkIn {
+  from {
+    opacity: 0;
+    filter: none !important;
+  }
+  to {
+    opacity: 1;
+    filter: none !important;
+  }
+}
+
+@keyframes activity-carousel-enter-from-right {
+  from {
+    opacity: 0;
+    filter: none !important;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    filter: none !important;
+    transform: translateX(0);
+  }
+}
+
+@keyframes activity-carousel-enter-from-left {
+  from {
+    opacity: 0;
+    filter: none !important;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    filter: none !important;
+    transform: translateX(0);
+  }
+}
+
+@keyframes activity-carousel-exit-to-left {
+  from {
+    opacity: 1;
+    filter: none !important;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    filter: none !important;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes activity-carousel-exit-to-right {
+  from {
+    opacity: 1;
+    filter: none !important;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    filter: none !important;
+    transform: translateX(24px);
+  }
+}
+
+.scroll-anim-item.is-scroll-animating,
+.gemini-chunk,
+#momentsCard,
+body.search-active #momentsCard,
+.bottom-nav .nav-task-item,
+.bottom-nav .nav-task-empty,
+.bottom-nav .nav-task-item.is-removing,
+.bottom-nav.more-open .nav-main-links > a,
+.mobile-task-list .notify-empty-tip,
+.mobile-task-list .notify-empty-tip.is-entering,
+.mobile-nav-task-item,
+.mobile-nav-task-item.is-removing {
   filter: none !important;
 }
 
@@ -83,7 +160,6 @@
   -webkit-backdrop-filter: none !important;
 }
 
-.settings-modal-header::before,
 .md-article .post-meta::after {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
 }
@@ -101,6 +177,12 @@
 .live2d-menu,
 .help-card {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
+}
+
+/* 设置弹窗背景在浅色模式下改为浅灰色，与内部白色卡片区分层次 */
+.modal.settings-modal,
+.settings-modal-header::before {
+  background: light-dark(#f2f2f7, rgba(30, 30, 30)) !important;
 }
 
 @media (min-width: 768px) {
