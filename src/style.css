@@ -23,6 +23,7 @@
 /* ========== 全局基础 ========== */
 :root{
   --nav-height: 68px; /* 底栏高度，用于预留滚动空间 */
+  --nav-desktop-max-width: 600px; /* 桌面端导航栏最大宽度 */
   --primary-color: light-dark(#007aff, #0a84ff); /* 主色调 */
   --word-color: light-dark(#111, #f5f5f5); /* 文字颜色 */
   --filter-blur:blur(22px) saturate(180%); /* 背景模糊 */
@@ -979,7 +980,10 @@ body#index-page {
     position: fixed;
     align-items: center;
     /* 调整宽度和内边距 */
-    width: min(90vw, 600px);
+    width: min(92vw, var(--nav-desktop-max-width));
+    transition:
+      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     padding: 8px 20px;
     /* 由 ::before 承载毛玻璃材质，避免创建 Backdrop Root 阻断子菜单 .more-dropdown / .notify-dropdown 的背景模糊 */
     background: transparent;
@@ -2179,7 +2183,7 @@ html:has(body#blog-page) {
 
   @media (min-width: 768px) {
     top: 24px;
-    left: max(12px, calc(50% - var(--scrollbar-compensate, 0px) / 2 - min(90vw, 600px) / 2 - 56px));
+    left: max(12px, calc(50% - var(--scrollbar-compensate, 0px) / 2 - min(92vw, var(--nav-desktop-max-width)) / 2 - 56px));
   }
 }
 
@@ -2199,12 +2203,12 @@ html:has(body#blog-page) {
 
   @media (min-width: 768px) and (max-width: 899px) {
     top: 24px;
-    right: max(12px, calc(50% + var(--scrollbar-compensate, 0px) / 2 - min(90vw, 600px) / 2 - 56px));
+    right: max(12px, calc(50% + var(--scrollbar-compensate, 0px) / 2 - min(92vw, var(--nav-desktop-max-width)) / 2 - 56px));
   }
 
   @media (min-width: 900px) {
     top: 24px;
-    left: calc(50% - var(--scrollbar-compensate, 0px) / 2 + min(90vw, 600px) / 2 + 12px);
+    left: calc(50% - var(--scrollbar-compensate, 0px) / 2 + min(92vw, var(--nav-desktop-max-width)) / 2 + 12px);
     right: auto;
     width: auto;
     padding: 4px;
@@ -7253,4 +7257,289 @@ iframe#webFrame {
 .cdn-modal .actions button:active {
   transform: scale(0.96);
   filter: brightness(0.9);
+}
+
+
+/* ==========================================================================
+   游戏控制器 UI 系统（Xbox 风格按键提示、动态 HUD、焦点高亮环）
+   ========================================================================== */
+
+/* 1. 游戏风格焦点高亮框（仅在手柄激活态下生效） */
+html.gamepad-active .gamepad-focus {
+  outline: 2.5px solid var(--primary-color) !important;
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--primary-color) 22%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.16) !important;
+  transform: translateY(-1px) scale(1.015);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, outline-color 0.18s ease !important;
+  position: relative;
+  z-index: 3;
+}
+
+/* 顶栏多任务项位于 overflow: hidden 容器内，使用内嵌高亮环防止边缘被裁切 */
+html.gamepad-active .nav-task-item.gamepad-focus,
+html.gamepad-active .nav-task-item .nav-task-close.gamepad-focus {
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary-color) 35%, transparent) !important;
+  transform: none;
+}
+
+/* 2. Xbox 按键徽章基础样式 */
+.gp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  letter-spacing: 0.02em;
+}
+
+.gp-badge--sm {
+  font-size: 11px;
+  min-width: 20px;
+  height: 20px;
+}
+
+.gp-badge--md {
+  font-size: 12px;
+  min-width: 22px;
+  height: 22px;
+}
+
+/* 圆形 ABXY 键 */
+.gp-badge--circle {
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.22);
+}
+
+.gp-xbox-a {
+  background: linear-gradient(180deg, #22c55e, #15803d);
+  color: #ffffff;
+}
+
+.gp-xbox-b {
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+  color: #ffffff;
+}
+
+.gp-xbox-x {
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  color: #ffffff;
+}
+
+.gp-xbox-y {
+  background: linear-gradient(180deg, #facc15, #ca8a04);
+  color: #1c1917;
+}
+
+/* 肩键 LB / RB 胶囊样式 */
+.gp-badge--bumper {
+  padding: 0 7px;
+  border-radius: 7px 7px 4px 4px;
+  background: light-dark(rgba(20, 20, 24, 0.86), rgba(245, 245, 247, 0.92));
+  color: light-dark(#ffffff, #141416);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.15));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+/* 扳机键 LT / RT & 系统键 Menu / View / RS */
+.gp-badge--trigger,
+.gp-badge--system,
+.gp-badge--stick {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.14));
+  color: var(--word-color);
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.14), rgba(255, 255, 255, 0.2));
+}
+
+.gp-badge--stick {
+  border-radius: 999px;
+}
+
+/* 超小号角标尺寸（用于大型弹窗纯图标关闭按钮） */
+.gp-badge--xs {
+  font-size: 9.5px;
+  min-width: 15px;
+  height: 15px;
+  line-height: 1;
+}
+
+/* 3. 导航栏 LB / RB 肩键提示 & 手柄模式加宽适配 */
+html.gamepad-active {
+  --nav-desktop-max-width: 690px;
+}
+
+html.gamepad-active .bottom-nav {
+  width: min(94vw, 390px);
+}
+
+@media (min-width: 768px) {
+  html.gamepad-active .bottom-nav {
+    width: min(94vw, var(--nav-desktop-max-width));
+  }
+
+  html.gamepad-active .bottom-nav .nav-main-links > a {
+    padding: 8px 12px;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  html.gamepad-active .bottom-nav .nav-cn,
+  html.gamepad-active .bottom-nav .nav-en {
+    white-space: nowrap;
+  }
+}
+
+.gamepad-bumper-hint {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 2px;
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+}
+
+html.gamepad-active .gamepad-bumper-hint {
+  display: inline-flex;
+  animation: gpFadeIn 0.22s ease;
+}
+
+.gamepad-bumper-hint.is-pressed {
+  transform: scale(0.86);
+}
+
+/* 4. 弹窗内部按钮 A / B 按键徽章（文字按钮内联前置 + 纯图标按钮右下角角标） */
+.gamepad-btn-hint {
+  display: none;
+  align-items: center;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+html.gamepad-active .gamepad-btn-hint {
+  display: inline-flex;
+}
+
+/* 大型弹窗（设置 / 网页 / 博客浮窗）纯图标关闭按钮：保留原 X SVG，B 键作为右下角角标 */
+.has-gamepad-corner-badge {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.gamepad-btn-hint.gamepad-btn-hint--corner {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  margin: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.gamepad-btn-hint.gamepad-btn-hint--corner .gp-badge {
+  box-shadow:
+    0 0 0 1.5px light-dark(#ffffff, #1e1e1e),
+    0 2px 5px rgba(0, 0, 0, 0.28);
+}
+
+/* 纯展示弹窗（如微信二维码）底部的 [B] 关闭提示栏 */
+.gamepad-modal-footer-hint {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: var(--border-radius-md);
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+  color: var(--word-color);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+html.gamepad-active .gamepad-modal-footer-hint {
+  display: flex;
+}
+
+/* 5. 全局底部游戏风格 HUD 操作提示条 */
+.gamepad-hud {
+  position: fixed;
+  right: 20px;
+  bottom: 22px;
+  z-index: 10040;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: light-dark(rgba(255, 255, 255, 0.72), rgba(24, 24, 28, 0.76));
+  -webkit-backdrop-filter: var(--filter-blur);
+  backdrop-filter: var(--filter-blur);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.14));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  color: var(--word-color);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+  transition: opacity 0.24s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.gamepad-active .gamepad-hud {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.gamepad-hud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gamepad-hud-label {
+  opacity: 0.9;
+}
+
+/* 窄屏时移至导航栏上方居中，避免与底部导航重叠 */
+@media (max-width: 1080px) {
+  .gamepad-hud {
+    right: 50%;
+    bottom: calc(var(--nav-height, 68px) + 18px);
+    transform: translate(50%, 14px) scale(0.96);
+    max-width: calc(100vw - 24px);
+    justify-content: center;
+  }
+  html.gamepad-active .gamepad-hud {
+    transform: translate(50%, 0) scale(1);
+  }
+}
+
+@keyframes gpFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.gamepad-active .gamepad-focus,
+  .gamepad-hud,
+  .gamepad-bumper-hint {
+    transition: none !important;
+    animation: none !important;
+  }
 }

@@ -243,6 +243,10 @@ class GlobalModal extends HTMLElement {
       if (layer.isClosing) return;
       layer.isClosing = true;
 
+      window.dispatchEvent(new CustomEvent('satin-modal-close', {
+        detail: { modal, layer }
+      }));
+
       clearTimeout(minimizeTimer);
 
       if (audioInstance) {
@@ -574,6 +578,12 @@ class GlobalModal extends HTMLElement {
       onMount(layer);
     }
 
+    if (!startMinimized) {
+      window.dispatchEvent(new CustomEvent('satin-modal-open', {
+        detail: { modal, layer, className }
+      }));
+    }
+
     return layer;
   }
 
@@ -583,6 +593,22 @@ class GlobalModal extends HTMLElement {
     if (activeLayer) {
       activeLayer.close();
     }
+  }
+
+  // 供游戏控制器 B 键调用的分级退出方法，返回 true 表示已消费本次返回事件
+  handleGamepadBack() {
+    const activeLayers = this.layers.filter(l => !l.isClosing && !l.isMinimized);
+    if (activeLayers.length === 0) return false;
+    const topLayer = activeLayers[activeLayers.length - 1];
+    if (topLayer.modal && topLayer.modal.classList.contains('fullscreen-mode')) {
+      const zoomBtn = topLayer.modal.querySelector('#docZoomBtn');
+      if (zoomBtn) {
+        zoomBtn.click();
+        return true;
+      }
+    }
+    topLayer.close();
+    return true;
   }
 
   // 关闭所有已打开的弹窗图层（默认保留已最小化任务）

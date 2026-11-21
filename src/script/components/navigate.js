@@ -243,6 +243,7 @@ class NavigateBar extends HTMLElement {
         </div>
         <div class="nav-center-stage">
           <div class="nav-main-links">
+            <span class="gamepad-bumper-hint" data-bumper="lb" aria-hidden="true"></span>
             ${navItems.map(item => `
               <a
                 href="/${item.href}.html"
@@ -252,6 +253,7 @@ class NavigateBar extends HTMLElement {
                 <span class="nav-en">${item.en}</span>
               </a>
             `).join('')}
+            <span class="gamepad-bumper-hint" data-bumper="rb" aria-hidden="true"></span>
           </div>
           <div class="nav-task-bar" id="desktopTaskBar" aria-hidden="true">
             <div class="nav-task-empty">暂无后台任务</div>

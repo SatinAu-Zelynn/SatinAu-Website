@@ -1254,6 +1254,10 @@ function ensureLoadingOverlay() {
           requestAnimationFrame(() => hashEl.scrollIntoView({ behavior: 'smooth' }));
         }
       }
+
+      if (window.SatinGamepad && typeof window.SatinGamepad.onPageNavigated === 'function') {
+        window.SatinGamepad.onPageNavigated();
+      }
     } catch (err) {
       console.error('SPA Navigation failed, falling back to full load:', err);
       window.location.href = targetUrl.href;
@@ -1334,6 +1338,7 @@ function closeMoreMenu() {
     if (taskBar) taskBar.setAttribute('aria-hidden', 'true');
   }
   moreMenuVisible = false;
+  window.dispatchEvent(new CustomEvent('satin-menu-state-changed', { detail: { menu: 'more', open: false } }));
 }
 
 function closeNotifyMenu() {
@@ -1343,6 +1348,7 @@ function closeNotifyMenu() {
   if (btn) btn.classList.remove('active');
   const hadUnread = document.querySelector('.notify-dropdown .nav-notice-item.unread');
   notifyMenuVisible = false;
+  window.dispatchEvent(new CustomEvent('satin-menu-state-changed', { detail: { menu: 'notify', open: false } }));
   if (hadUnread && typeof window.renderNoticeCenter === 'function') {
     setTimeout(() => {
       if (!notifyMenuVisible) window.renderNoticeCenter();
@@ -1358,6 +1364,7 @@ function toggleMoreMenu() {
       if (typeof window.closePostTopActionsMenu === 'function') window.closePostTopActionsMenu();
     }
     moreMenuVisible = !moreMenuVisible;
+    window.dispatchEvent(new CustomEvent('satin-menu-state-changed', { detail: { menu: 'more', open: moreMenuVisible } }));
     dropdown.classList.toggle('show', moreMenuVisible);
     const nav = document.querySelector('.bottom-nav');
     if (nav) {
@@ -1380,6 +1387,7 @@ function toggleNotifyMenu() {
       if (typeof window.closePostTopActionsMenu === 'function') window.closePostTopActionsMenu();
     }
     notifyMenuVisible = !notifyMenuVisible;
+    window.dispatchEvent(new CustomEvent('satin-menu-state-changed', { detail: { menu: 'notify', open: notifyMenuVisible } }));
     dropdown.classList.toggle('show', notifyMenuVisible);
     if (btn) btn.classList.toggle('active', notifyMenuVisible);
     if (notifyMenuVisible && typeof window.markAllNoticesRead === 'function') {
@@ -1394,6 +1402,8 @@ function toggleNotifyMenu() {
 
 window.closeMoreMenu = closeMoreMenu;
 window.closeNotifyMenu = closeNotifyMenu;
+window.toggleMoreMenu = toggleMoreMenu;
+window.toggleNotifyMenu = toggleNotifyMenu;
 
 // 点击其他区域关闭菜单
 document.addEventListener('click', function(e) {
@@ -2225,142 +2235,15 @@ function initThemeColorSelector(wrapper, currentKey) {
   }
 }
 
-// 游戏控制器适配逻辑
-class GamepadHandler {
-  constructor() {
-    this.isConnected = false;
-    this.lastUsedGamepad = null;
-    this.deadzone = 0.2;        // 左右摇杆死区
-    this.sensitivity = 1.5;     // 灵敏度（值越大响应越快）
-    this.scrollSpeed = 40;      // 右摇杆滚动速度
-    this.lastSelectedElement = document.body;
-    this.selectionCooldown = 0; // 控制摇杆导航频率
-    this.init();
-  }
-
-  init() {
-    window.addEventListener('gamepadconnected', (e) => this.handleConnect(e));
-    window.addEventListener('gamepaddisconnected', (e) => this.handleDisconnect(e));
-    requestAnimationFrame(() => this.pollGamepads());
-  }
-
-  handleConnect(e) {
-    this.isConnected = true;
-    this.lastUsedGamepad = e.gamepad;
-    showToast(`🎮 游戏控制器已连接：${e.gamepad.id}`);
-  }
-
-  handleDisconnect(e) {
-    this.isConnected = false;
-    showToast(`🔌 游戏控制器已断开：${e.gamepad.id}`);
-  }
-
-  pollGamepads() {
-    const gamepads = navigator.getGamepads();
-    const activeGamepad = Array.from(gamepads).find(g => g && g.connected);
-
-    if (activeGamepad) {
-      this.lastUsedGamepad = activeGamepad;
-      this.handleInput(activeGamepad);
-    }
-
-    requestAnimationFrame(() => this.pollGamepads());
-  }
-
-  applyDeadzone(value) {
-    // 将摇杆输入值调整为灵敏度映射值
-    if (Math.abs(value) < this.deadzone) return 0;
-    const sign = Math.sign(value);
-    const normalized = (Math.abs(value) - this.deadzone) / (1 - this.deadzone);
-    return normalized * this.sensitivity * sign;
-  }
-
-  handleInput(gamepad) {
-    // === 左摇杆处理 ===
-    const leftX = this.applyDeadzone(gamepad.axes[0]);
-    const leftY = this.applyDeadzone(gamepad.axes[1]);
-
-    if (Date.now() - this.selectionCooldown > 200) { // 限制移动频率
-      if (Math.abs(leftX) > 0.5 || Math.abs(leftY) > 0.5) {
-        this.navigateElements(leftX, leftY);
-        this.selectionCooldown = Date.now();
-      }
-    }
-
-    // === 右摇杆处理 ===
-    const rightY = this.applyDeadzone(gamepad.axes[3]);
-    if (Math.abs(rightY) > 0) {
-      window.scrollBy({
-        top: rightY * this.scrollSpeed,
-        behavior: 'smooth'
-      });
-    }
-
-    // === A 键选中 ===（通常 index 0）
-    if (gamepad.buttons[0].pressed) {
-      this.selectElement();
-    }
-
-    // === 右扳机打开右键菜单 ===（通常 index 7）
-    if (gamepad.buttons[7].pressed) {
-      this.openContextMenu();
-    }
-  }
-
-  navigateElements(x, y) {
-    const focusable = document.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable.length === 0) return;
-
-    let currentIndex = Array.from(focusable).indexOf(this.lastSelectedElement);
-    if (currentIndex === -1) currentIndex = 0;
-
-    if (Math.abs(x) > Math.abs(y)) {
-      currentIndex = x > 0
-        ? (currentIndex + 1) % focusable.length
-        : (currentIndex - 1 + focusable.length) % focusable.length;
-    } else {
-      const step = Math.ceil(focusable.length / 10);
-      currentIndex = y > 0
-        ? (currentIndex + step) % focusable.length
-        : (currentIndex - step + focusable.length) % focusable.length;
-    }
-
-    this.lastSelectedElement = focusable[currentIndex];
-    this.lastSelectedElement.focus();
-    this.lastSelectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  selectElement() {
-    if (!this.lastSelectedElement) return;
-    // 模拟点击事件
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
-    this.lastSelectedElement.dispatchEvent(event);
-  }
-
-  openContextMenu() {
-    if (!this.lastSelectedElement) return;
-    const rect = this.lastSelectedElement.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-
-    const event = new MouseEvent('contextmenu', {
-      bubbles: true,
-      cancelable: true,
-      clientX: x,
-      clientY: y,
-      view: window
-    });
-
-    this.lastSelectedElement.dispatchEvent(event);
-  }
-}
-
-// 初始化游戏控制器支持
-document.addEventListener('DOMContentLoaded', () => {
-  new GamepadHandler();
-});
+// 游戏控制器模块引导加载（Xbox 适配，预留 PlayStation 扩展）
+(function loadGamepadManager() {
+  if (window.SatinGamepad || document.getElementById('satin-gamepad-script')) return;
+  const script = document.createElement('script');
+  script.id = 'satin-gamepad-script';
+  script.src = '/src/script/components/GamepadManager.js';
+  script.defer = true;
+  document.head.appendChild(script);
+})();
 
 /* ========== 浏览器兼容性检测逻辑 ========== */
 

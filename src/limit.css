@@ -268,3 +268,15 @@ html:has(body.viewer-open)::-webkit-scrollbar {
 .viewer-tooltip {
   background-color: light-dark(rgba(255,255,255), rgba(30,30,30)) !important;
 }
+
+
+/* 游戏控制器 HUD 性能模式适配 */
+.gamepad-hud {
+  background: light-dark(rgba(255, 255, 255, 0.96), rgba(30, 30, 30, 0.96)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.gamepad-modal-footer-hint {
+  background: light-dark(rgba(240, 240, 245, 1), rgba(45, 45, 48, 1)) !important;
+}
