@@ -1,0 +1,5 @@
+/pages/account/login       https://account.satinau.cn/login.html?app=satinau-main&redirect=https://satinau.cn/  302
+/pages/account/login.html  https://account.satinau.cn/login.html?app=satinau-main&redirect=https://satinau.cn/  302
+/pages/account             https://account.satinau.cn/?app=satinau-main&return_to=https://satinau.cn/           302
+/pages/account/            https://account.satinau.cn/?app=satinau-main&return_to=https://satinau.cn/           302
+/pages/account/index.html  https://account.satinau.cn/?app=satinau-main&return_to=https://satinau.cn/           302

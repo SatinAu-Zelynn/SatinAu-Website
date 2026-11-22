@@ -367,7 +367,7 @@ class NavigateBar extends HTMLElement {
   getUserHtml(user) {
     const avatarUrl = user.avatar || '/public/guest.png';
     return `
-      <div class="nav-user-card" onclick="window.navigateTo ? window.navigateTo('/pages/account/index.html') : window.location.href='/pages/account/index.html'">
+      <div class="nav-user-card" onclick="window.openAccountCenter ? window.openAccountCenter() : (window.location.href='https://account.satinau.cn/')">
         <img src="${avatarUrl}" class="nav-user-avatar-small" alt="Avatar">
         <div class="nav-user-info">
           <span class="nav-user-name">${user.nickname}</span>
@@ -376,11 +376,11 @@ class NavigateBar extends HTMLElement {
       </div>
     `;
   }
-  
+
   // 辅助方法：生成未登录HTML
   getLoginHtml() {
     return `
-      <div class="nav-user-card nav-login-btn" onclick="window.navigateTo ? window.navigateTo('/pages/account/login.html') : window.location.href='/pages/account/login.html'">
+      <div class="nav-user-card nav-login-btn" onclick="window.openAccountLogin ? window.openAccountLogin() : (window.location.href='https://account.satinau.cn/login.html?app=satinau-main&redirect=' + encodeURIComponent(window.location.href))">
         <span>登录 / 注册</span>
       </div>
     `;

@@ -979,10 +979,6 @@ function ensureLoadingOverlay() {
       if (typeof window.initMomentsPage === 'function') window.initMomentsPage();
     } else if (bodyId === 'playlist-page') {
       if (typeof window.initPlaylistPage === 'function') window.initPlaylistPage();
-    } else if (bodyId === 'login-page') {
-      if (typeof window.initLoginPage === 'function') window.initLoginPage();
-    } else if (bodyId === 'account-page') {
-      if (typeof window.initProfilePage === 'function') window.initProfilePage();
     } else if (bodyId === 'error-page') {
       const pathEl = document.getElementById('error-path');
       if (pathEl) pathEl.textContent = window.location.pathname;
@@ -3492,10 +3488,101 @@ window.openSettingsModal = function(anchorId = null, triggerEl = null) {
   }
 };
 
-/* ========== 全局登录状态与用户同步 ========== */
+/* ========== 全局登录状态、SSO 回调与用户同步 ========== */
+window.ACCOUNT_CENTER_URL = 'https://account.satinau.cn';
+window.AUTH_APP_ID = 'satinau-main';
+
+// 跳转到统一账号中心登录
+window.openAccountLogin = function(redirectUrl = window.location.href) {
+  const state = (crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  sessionStorage.setItem('satinau_sso_state', state);
+
+  // 清除目标地址中可能残留的 sso hash
+  const cleanRedirect = new URL(redirectUrl, window.location.origin);
+  cleanRedirect.hash = '';
+
+  const loginUrl = new URL('/login.html', window.ACCOUNT_CENTER_URL);
+  loginUrl.searchParams.set('app', window.AUTH_APP_ID);
+  loginUrl.searchParams.set('redirect', cleanRedirect.href);
+  loginUrl.searchParams.set('state', state);
+  window.location.href = loginUrl.href;
+};
+
+// 跳转到统一账号中心个人主页
+window.openAccountCenter = function(returnUrl = window.location.href) {
+  const cleanReturn = new URL(returnUrl, window.location.origin);
+  cleanReturn.hash = '';
+
+  const centerUrl = new URL('/', window.ACCOUNT_CENTER_URL);
+  centerUrl.searchParams.set('app', window.AUTH_APP_ID);
+  centerUrl.searchParams.set('return_to', cleanReturn.href);
+  window.location.href = centerUrl.href;
+};
+
+// 全局登出（syncCenter=true 时同步清除账号中心登录态）
+window.logoutGlobalAccount = function(options = {}) {
+  const { syncCenter = false, redirectUrl = window.location.href } = options;
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_info');
+  window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
+
+  if (syncCenter) {
+    const cleanRedirect = new URL(redirectUrl, window.location.origin);
+    cleanRedirect.hash = '';
+    const logoutUrl = new URL('/login.html', window.ACCOUNT_CENTER_URL);
+    logoutUrl.searchParams.set('action', 'logout');
+    logoutUrl.searchParams.set('app', window.AUTH_APP_ID);
+    logoutUrl.searchParams.set('redirect', cleanRedirect.href);
+    window.location.href = logoutUrl.href;
+  }
+};
+
+// 接收并处理来自 account.satinau.cn 的 Hash 回调
+function handleSsoCallback() {
+  const rawHash = window.location.hash || '';
+  if (!rawHash.includes('sso_token=') && !rawHash.includes('sso_logout=')) {
+    return false;
+  }
+
+  const hashParams = new URLSearchParams(rawHash.replace(/^#/, ''));
+  const cleanUrl = `${window.location.pathname}${window.location.search}`;
+
+  // 1. 处理账号中心发起的同步登出
+  if (hashParams.get('sso_logout') === '1') {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    history.replaceState(history.state, '', cleanUrl);
+    window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
+    if (typeof showToast === 'function') showToast('已退出登录');
+    return true;
+  }
+
+  // 2. 处理登录回传 Token
+  const ssoToken = hashParams.get('sso_token');
+  const ssoState = hashParams.get('sso_state');
+  const expectedState = sessionStorage.getItem('satinau_sso_state');
+
+  // 立即清理地址栏中的 Token，避免泄露
+  history.replaceState(history.state, '', cleanUrl);
+
+  if (!ssoToken) return false;
+  if (expectedState && ssoState !== expectedState) {
+    console.warn('[SSO] state 校验不匹配，已忽略本次回调');
+    return false;
+  }
+
+  sessionStorage.removeItem('satinau_sso_state');
+  localStorage.setItem('auth_token', ssoToken);
+  if (typeof showToast === 'function') showToast('登录成功，正在同步用户信息...');
+  return true;
+}
+
 window.checkGlobalAuthStatus = checkGlobalAuthStatus;
 function checkGlobalAuthStatus() {
-  if (document.getElementById('account-page')) return;
+  // 优先消费 URL 中的 SSO 回调参数
+  handleSsoCallback();
 
   const token = localStorage.getItem('auth_token');
   if (!token) {
@@ -3507,21 +3594,12 @@ function checkGlobalAuthStatus() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_info');
     window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
-    if (document.getElementById('account-page')) {
-      if (typeof showToast === 'function') {
-        showToast(reason || '登录已过期，请重新登录');
-      }
-      setTimeout(() => {
-        if (typeof window.navigateTo === 'function') {
-          window.navigateTo('/pages/account/login.html', { replace: true });
-        } else {
-          window.location.href = '/pages/account/login.html';
-        }
-      }, 1000);
+    if (reason && typeof showToast === 'function') {
+      showToast(reason);
     }
   };
 
-  // 本地预检 Token 是否已过期
+  // 本地预检 Token 是否过期
   try {
     const payload = JSON.parse(atob(token));
     if (payload.exp && payload.exp < Date.now()) {
@@ -3533,7 +3611,7 @@ function checkGlobalAuthStatus() {
     return;
   }
 
-  // 向后端静默校验 Token 并同步最新用户信息
+  // 保留原逻辑：向 db.satinau.cn 静默校验 Token 并同步最新用户信息
   fetch('https://db.satinau.cn/api/user/me', {
     headers: { 'Authorization': `Bearer ${token}` }
   })

@@ -240,29 +240,31 @@ function renderCommentItem(comment) {
 
 // 事件绑定
 function bindEvents(pageId) {
-    // 登录按钮
+    // 登录按钮：跳转至新账号中心并自动携带当前页作为回跳地址
     const loginBtn = document.getElementById('goToLoginBtn');
     if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            if (typeof window.navigateTo === 'function') {
-                window.navigateTo('/pages/account/login.html');
-            } else {
-                window.location.href = '/pages/account/login.html';
-            }
-        });
+      loginBtn.addEventListener('click', () => {
+        if (typeof window.openAccountLogin === 'function') {
+          window.openAccountLogin(window.location.href);
+        } else {
+          window.location.href = `https://account.satinau.cn/login.html?app=satinau-main&redirect=${encodeURIComponent(window.location.href)}`;
+        }
+      });
     }
 
-    // 退出按钮
+    // 退出按钮：同步清理本地登录态
     const logoutLink = document.getElementById('logoutLink');
     if (logoutLink) {
-        logoutLink.addEventListener('click', () => {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user_info');
-            checkLoginState();
-            if (typeof window.checkGlobalAuthStatus === 'function') {
-                window.checkGlobalAuthStatus();
-            }
-        });
+      logoutLink.addEventListener('click', () => {
+        if (typeof window.logoutGlobalAccount === 'function') {
+          window.logoutGlobalAccount({ syncCenter: false });
+        } else {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_info');
+          window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
+        }
+        checkLoginState();
+      });
     }
 
     // 提交主评论
@@ -379,15 +381,15 @@ window.deleteComment = function(commentId) {
 window.openReplyBox = function(commentId, nickname) {
     // 检查登录
     if (!localStorage.getItem('auth_token')) {
-        showToast('请先登录');
-        setTimeout(() => {
-            if (typeof window.navigateTo === 'function') {
-                window.navigateTo('/pages/account/login.html');
-            } else {
-                window.location.href = '/pages/account/login.html';
-            }
-        }, 1000);
-        return;
+      showToast('请先登录');
+      setTimeout(() => {
+        if (typeof window.openAccountLogin === 'function') {
+          window.openAccountLogin(window.location.href);
+        } else {
+          window.location.href = `https://account.satinau.cn/login.html?app=satinau-main&redirect=${encodeURIComponent(window.location.href)}`;
+        }
+      }, 1000);
+      return;
     }
 
     // 关闭其他回复框
