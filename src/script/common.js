@@ -3539,6 +3539,32 @@ window.logoutGlobalAccount = function(options = {}) {
   }
 };
 
+// 读取指定 Cookie
+function getCookieValue(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// 检查账号中心是否已通过 .satinau.cn 共享 Cookie 退出登录
+function syncSharedLogoutCookie() {
+  const logoutAtRaw = getCookieValue('satinau_logout_at');
+  if (!logoutAtRaw) return false;
+  const logoutAt = Number(logoutAtRaw);
+  const loginAt = Number(localStorage.getItem('auth_login_at') || '0');
+
+  if (Number.isFinite(logoutAt) && logoutAt > loginAt) {
+    const hadAuth = Boolean(localStorage.getItem('auth_token') || localStorage.getItem('user_info'));
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    localStorage.removeItem('auth_login_at');
+    if (hadAuth) {
+      window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
+    }
+    return true;
+  }
+  return false;
+}
+
 // 接收并处理来自 account.satinau.cn 的 Hash 回调
 function handleSsoCallback() {
   const rawHash = window.location.hash || '';
@@ -3575,6 +3601,7 @@ function handleSsoCallback() {
 
   sessionStorage.removeItem('satinau_sso_state');
   localStorage.setItem('auth_token', ssoToken);
+  localStorage.setItem('auth_login_at', String(Date.now()));
   if (typeof showToast === 'function') showToast('登录成功，正在同步用户信息...');
   return true;
 }
@@ -3583,6 +3610,10 @@ window.checkGlobalAuthStatus = checkGlobalAuthStatus;
 function checkGlobalAuthStatus() {
   // 优先消费 URL 中的 SSO 回调参数
   handleSsoCallback();
+
+  if (syncSharedLogoutCookie()) {
+    return;
+  }
 
   const token = localStorage.getItem('auth_token');
   if (!token) {
@@ -3635,6 +3666,14 @@ function checkGlobalAuthStatus() {
 }
 
 document.addEventListener('DOMContentLoaded', checkGlobalAuthStatus);
+window.addEventListener('pageshow', () => {
+  syncSharedLogoutCookie();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    syncSharedLogoutCookie();
+  }
+});
 
 function extractViewerImageInfo(viewerInst) {
   if (!viewerInst) return null;
