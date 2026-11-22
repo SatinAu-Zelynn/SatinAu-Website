@@ -171,7 +171,7 @@ body.search-active #momentsCard,
 .toast,
 .setting-item, .setting-item-group, .mobile-more-menu,
 .more-dropdown, .notify-dropdown,
-#loginBtn, #logoutBtn, .back-button, .post-top-actions-toggle, .post-actions .back-button,
+.back-button, .post-top-actions-toggle, .post-actions .back-button,
 .satin-notify-card,
 .hero-surface,
 .live2d-menu,
@@ -214,13 +214,7 @@ body.search-active #momentsCard,
 .email-item,
 .actions .cancel,
 .share-actions button.secondary-btn,
-.share-actions button.cancel-btn,
-#authModal .tab-btn,
-#emailLoginBtn,
-#signupBtn,
-#githubLoginBtn,
-#googleLoginBtn,
-#closeAuthModal {
+.share-actions button.cancel-btn {
   background: light-dark(rgba(240, 240, 240), rgba(50, 50, 50)) !important;
 }
 

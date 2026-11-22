@@ -473,7 +473,6 @@ function showToast(msg) {
     'main.page .gallery-item',
     'main.page .filter-container',
     'main.page .search-container',
-    'main.page .profile-container',
     'main.page .ai-summary-card',
     'main.page .post-actions-panel',
     'main.page .comments-title',
