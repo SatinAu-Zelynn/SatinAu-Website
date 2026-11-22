@@ -3520,17 +3520,18 @@ window.openAccountCenter = function(returnUrl = window.location.href) {
   window.location.href = centerUrl.href;
 };
 
-// 全局登出（syncCenter=true 时同步清除账号中心登录态）
+// 全局登出（默认 syncCenter=true，同步清除 account.satinau.cn 登录态并跳回当前页）
 window.logoutGlobalAccount = function(options = {}) {
-  const { syncCenter = false, redirectUrl = window.location.href } = options;
+  const { syncCenter = true, redirectUrl = window.location.href } = options;
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_info');
+  localStorage.removeItem('auth_login_at');
   window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
 
   if (syncCenter) {
     const cleanRedirect = new URL(redirectUrl, window.location.origin);
     cleanRedirect.hash = '';
-    const logoutUrl = new URL('/login.html', window.ACCOUNT_CENTER_URL);
+    const logoutUrl = new URL('/login', window.ACCOUNT_CENTER_URL);
     logoutUrl.searchParams.set('action', 'logout');
     logoutUrl.searchParams.set('app', window.AUTH_APP_ID);
     logoutUrl.searchParams.set('redirect', cleanRedirect.href);

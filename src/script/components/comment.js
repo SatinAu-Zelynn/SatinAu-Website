@@ -252,20 +252,40 @@ function bindEvents(pageId) {
       });
     }
 
-    // 退出按钮：同步清理本地登录态
-    const logoutLink = document.getElementById('logoutLink');
-    if (logoutLink) {
-      logoutLink.addEventListener('click', () => {
+  // 退出按钮：同步退出原站与账号中心
+  const logoutLink = document.getElementById('logoutLink');
+  if (logoutLink && !logoutLink.dataset.bound) {
+    logoutLink.addEventListener('click', () => {
+      const doLogout = () => {
         if (typeof window.logoutGlobalAccount === 'function') {
-          window.logoutGlobalAccount({ syncCenter: false });
+          window.logoutGlobalAccount({
+            syncCenter: true,
+            redirectUrl: window.location.href
+          });
         } else {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user_info');
+          localStorage.removeItem('auth_login_at');
           window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: null }));
+          const cleanRedirect = new URL(window.location.href);
+          cleanRedirect.hash = '';
+          window.location.href = `https://account.satinau.cn/login?action=logout&app=satinau-main&redirect=${encodeURIComponent(cleanRedirect.href)}`;
         }
-        checkLoginState();
-      });
-    }
+      };
+
+      const modal = document.getElementById('globalModal') || document.querySelector('global-modal');
+      if (modal && typeof modal.confirmAction === 'function') {
+        if (typeof modal.with === 'function') {
+          modal.with(logoutLink).confirmAction('确定要退出登录吗？', doLogout, '退出登录');
+        } else {
+          modal.confirmAction('确定要退出登录吗？', doLogout, '退出登录');
+        }
+      } else if (confirm('确定要退出登录吗？')) {
+        doLogout();
+      }
+    });
+    logoutLink.dataset.bound = 'true';
+  }
 
     // 提交主评论
     const submitBtn = document.getElementById('submitCommentBtn');
