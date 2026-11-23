@@ -227,27 +227,29 @@
     panel.className = "l2d-chat-panel";
     panel.setAttribute("aria-hidden", "true");
     panel.innerHTML = `
-      <div class="l2d-chat-header">
-        <div class="l2d-chat-persona">
-          <span class="l2d-chat-dot"></span>
-          <div class="l2d-chat-title-group">
-            <span class="l2d-chat-name">泽凌 Zelynn</span>
-            <span class="ai-chat-status-text">在线 · 与泽凌对话中</span>
+      <div class="l2d-chat-surface">
+        <div class="l2d-chat-header">
+          <div class="l2d-chat-persona">
+            <span class="l2d-chat-dot"></span>
+            <div class="l2d-chat-title-group">
+              <span class="l2d-chat-name">泽凌 Zelynn</span>
+              <span class="ai-chat-status-text">在线 · 与泽凌对话中</span>
+            </div>
+          </div>
+          <div class="l2d-chat-header-actions">
+            <button type="button" class="l2d-chat-icon-btn" data-chat-clear title="清空对话">↺</button>
+            <button type="button" class="l2d-chat-icon-btn" data-chat-close title="收起对话">✕</button>
           </div>
         </div>
-        <div class="l2d-chat-header-actions">
-          <button type="button" class="l2d-chat-icon-btn" data-chat-clear title="清空对话">↺</button>
-          <button type="button" class="l2d-chat-icon-btn" data-chat-close title="收起对话">✕</button>
+        <div class="l2d-chat-messages" id="l2dChatMessages"></div>
+        <div class="ai-chat-quick-row">
+          ${QUICK_PROMPTS.map((q) => `<button type="button" class="ai-quick-chip">${escapeHtml(q)}</button>`).join("")}
         </div>
+        <form class="l2d-chat-input-bar" id="l2dChatForm">
+          <input type="text" id="l2dChatInput" placeholder="和泽凌聊点什么，或让我带你逛逛…" autocomplete="off" maxlength="600" />
+          <button type="submit" class="ai-chat-send-btn" aria-label="发送">↑</button>
+        </form>
       </div>
-      <div class="l2d-chat-messages" id="l2dChatMessages"></div>
-      <div class="ai-chat-quick-row">
-        ${QUICK_PROMPTS.map((q) => `<button type="button" class="ai-quick-chip">${escapeHtml(q)}</button>`).join("")}
-      </div>
-      <form class="l2d-chat-input-bar" id="l2dChatForm">
-        <input type="text" id="l2dChatInput" placeholder="和泽凌聊点什么，或让我带你逛逛…" autocomplete="off" maxlength="600" />
-        <button type="submit" class="ai-chat-send-btn" aria-label="发送">↑</button>
-      </form>
     `;
 
     wrapper.appendChild(panel);
