@@ -1569,6 +1569,7 @@ window.initMobileMoreMenu = function() {
     bottomNav.addEventListener('touchstart', function(e) {
       if (e.touches.length !== 1) return;
       // 菜单未展开时，释放按钮原生交互
+      if (e.target.closest('.mobile-ai-input-trigger')) return;
       if (!isMenuOpen && (e.target.closest('.dropdown-item') || e.target.closest('button'))) return;
 
       startX = e.touches[0].clientX;
@@ -2141,6 +2142,15 @@ function initThemeColorSelector(wrapper, currentKey) {
     wrapper.appendChild(swatch);
   }
 }
+
+// AI 对话核心组件引导加载
+(function loadAiChatWidget() {
+  if (document.querySelector('script[src*="/AiChatWidget.js"]')) return;
+  const script = document.createElement('script');
+  script.src = '/src/script/components/AiChatWidget.js';
+  script.defer = true;
+  document.head.appendChild(script);
+})();
 
 // 游戏控制器模块引导加载（Xbox 适配，预留 PlayStation 扩展）
 (function loadGamepadManager() {
@@ -3244,6 +3254,8 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       const menu = document.createElement('div');
       menu.className = 'live2d-menu';
       menu.innerHTML = `
+        <div class="live2d-menu-btn live2d-chat-trigger" data-action="open-chat">💬 对话</div>
+        <div class="live2d-menu-divider"></div>
         <div class="live2d-menu-btn" data-exp="love">🥰 爱心</div>
         <div class="live2d-menu-btn" data-exp="star">✨ 星星</div>
         <div class="live2d-menu-btn" data-exp="mad mouth">😕撇嘴</div>
@@ -3266,7 +3278,11 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
         menu.classList.add('show');
       };
       const hideMenu = () => {
-        hoverTimer = setTimeout(() => menu.classList.remove('show'), 400); // 400ms后消失
+        hoverTimer = setTimeout(() => {
+          if (!wrapper.classList.contains('chat-open')) {
+            menu.classList.remove('show');
+          }
+        }, 400);
       };
 
       if (window.matchMedia('(hover: hover)').matches) {
@@ -3343,9 +3359,25 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       };
       window.addEventListener('keydown', keydownHandler);
 
+      // 暴露给 AiChatWidget.js 的表情与动作联动接口
+      window.__live2dTriggerExpression = (expName) => {
+        try { if (expName) model.expression(expName); } catch (err) {}
+      };
+      window.__live2dTapMotion = () => {
+        try { model.motion('TapBody'); } catch (err) {}
+      };
+
       // 监听菜单按钮点击事件 (委托)
       menu.addEventListener('click', (e) => {
-        const expName = e.target.getAttribute('data-exp');
+        const btn = e.target.closest('.live2d-menu-btn');
+        if (!btn) return;
+        if (btn.getAttribute('data-action') === 'open-chat') {
+          if (window.SatinAiChat && typeof window.SatinAiChat.openDesktopChat === 'function') {
+            window.SatinAiChat.openDesktopChat();
+          }
+          return;
+        }
+        const expName = btn.getAttribute('data-exp');
         if (expName) {
           try { model.expression(expName); } catch (err) {}
         }

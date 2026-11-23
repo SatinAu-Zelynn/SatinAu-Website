@@ -255,6 +255,11 @@ class NavigateBar extends HTMLElement {
             `).join('')}
             <span class="gamepad-bumper-hint" data-bumper="rb" aria-hidden="true"></span>
           </div>
+          <div class="mobile-ai-input-trigger" id="mobileAiInputTrigger" role="button" tabindex="0" aria-label="向泽凌 AI 提问">
+            <span class="mobile-ai-sparkle" aria-hidden="true">✦</span>
+            <span class="mobile-ai-placeholder">问问泽凌关于小站的一切…</span>
+            <span class="mobile-ai-send-pill">对话</span>
+          </div>
           <div class="nav-task-bar" id="desktopTaskBar" aria-hidden="true">
             <div class="nav-task-empty">暂无后台任务</div>
           </div>

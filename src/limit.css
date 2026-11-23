@@ -175,6 +175,9 @@ body.search-active #momentsCard,
 .satin-notify-card,
 .hero-surface,
 .live2d-menu,
+.l2d-chat-panel,
+.mobile-ai-chat-sheet,
+.mobile-ai-input-trigger,
 .help-card {
   background: light-dark(rgba(255, 255, 255), rgba(30, 30, 30)) !important;
 }
