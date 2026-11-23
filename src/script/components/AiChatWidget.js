@@ -49,6 +49,21 @@
       .replace(/"/g, "&quot;");
   }
 
+  function buildAnimatedTextHtml(text) {
+    const tokens = String(text).match(/(\n|[\u4e00-\u9fa5]{1,2}|[A-Za-z0-9_]+|\s+|.)/g) || [];
+    const stepMs = Math.min(26, Math.max(12, Math.floor(900 / Math.max(tokens.length, 1))));
+    let idx = 0;
+    const html = tokens
+      .map((token) => {
+        if (token === "\n") return "<br>";
+        const delay = idx * stepMs;
+        idx += 1;
+        return `<span class="ai-chat-chunk" style="animation-delay:${delay}ms">${escapeHtml(token)}</span>`;
+      })
+      .join("");
+    return { html, totalDuration: idx * stepMs + 260 };
+  }
+
   async function executeSiteAction(action) {
     if (!action) return;
 
@@ -97,14 +112,25 @@
     container.innerHTML = messages
       .map((msg, idx) => {
         const isUser = msg.role === "user";
+        const shouldAnimateBubble = Boolean(msg.isNew);
+        let textHtml = escapeHtml(msg.text).replace(/\n/g, "<br>");
+        let actionDelay = 0;
+
+        if (!isUser && msg.animateText) {
+          const animated = buildAnimatedTextHtml(msg.text);
+          textHtml = animated.html;
+          actionDelay = Math.min(animated.totalDuration, 1100);
+        }
+
         const actionBtn =
           !isUser && msg.action
-            ? `<button type="button" class="ai-chat-action-pill" data-msg-idx="${idx}">🧭 ${escapeHtml(msg.action.label || "前往查看")}</button>`
+            ? `<button type="button" class="ai-chat-action-pill${msg.animateText ? " is-entering" : ""}" style="${msg.animateText ? `animation-delay:${actionDelay}ms` : ""}" data-msg-idx="${idx}">🧭 ${escapeHtml(msg.action.label || "前往查看")}</button>`
             : "";
+
         return `
-          <div class="ai-chat-msg ${isUser ? "is-user" : "is-model"}">
+          <div class="ai-chat-msg ${isUser ? "is-user" : "is-model"}${shouldAnimateBubble ? " is-entering" : ""}">
             <div class="ai-chat-bubble">
-              <div class="ai-chat-text">${escapeHtml(msg.text).replace(/\n/g, "<br>")}</div>
+              <div class="ai-chat-text">${textHtml}</div>
               ${actionBtn}
             </div>
           </div>
@@ -116,7 +142,7 @@
       container.insertAdjacentHTML(
         "beforeend",
         `
-        <div class="ai-chat-msg is-model is-thinking">
+        <div class="ai-chat-msg is-model is-thinking is-entering">
           <div class="ai-chat-bubble">
             <span class="ai-typing-dots"><i></i><i></i><i></i></span>
           </div>
@@ -140,6 +166,11 @@
     renderMessageList(document.getElementById("l2dChatMessages"));
     renderMessageList(document.getElementById("mobileAiChatMessages"));
 
+    messages.forEach((m) => {
+      if (m.isNew) delete m.isNew;
+      if (m.animateText) delete m.animateText;
+    });
+
     document.querySelectorAll(".ai-chat-status-text").forEach((el) => {
       el.textContent = isSending ? "正在思考…" : "在线 · 与泽凌对话中";
     });
@@ -157,7 +188,7 @@
       .slice(-16)
       .map((m) => ({ role: m.role, text: m.text }));
 
-    messages.push({ role: "user", text, action: null });
+    messages.push({ role: "user", text, action: null, isNew: true });
     saveHistory();
     isSending = true;
     syncAllViews();
@@ -182,6 +213,8 @@
         role: "model",
         text: data.reply || "收到啦！",
         action: data.action || null,
+        isNew: true,
+        animateText: true,
       };
       messages.push(replyMsg);
       saveHistory();
@@ -202,6 +235,8 @@
         role: "model",
         text: "暂时连不上 AI 引擎，请稍后再试一下～",
         action: null,
+        isNew: true,
+        animateText: true,
       });
     } finally {
       isSending = false;
@@ -209,10 +244,37 @@
     }
   }
 
+  let isClearing = false;
+
   function clearHistory() {
-    sessionStorage.removeItem(STORAGE_KEY);
-    loadHistory();
-    syncAllViews();
+    if (isClearing || isSending) return;
+    isClearing = true;
+
+    const lists = [
+      document.getElementById("l2dChatMessages"),
+      document.getElementById("mobileAiChatMessages"),
+    ].filter(Boolean);
+
+    document.querySelectorAll(".l2d-chat-icon-btn.is-refresh").forEach((btn) => {
+      btn.classList.remove("is-spinning");
+      void btn.offsetWidth;
+      btn.classList.add("is-spinning");
+      setTimeout(() => btn.classList.remove("is-spinning"), 460);
+    });
+
+    lists.forEach((el) => el.classList.add("is-clearing"));
+
+    setTimeout(() => {
+      sessionStorage.removeItem(STORAGE_KEY);
+      loadHistory();
+      if (messages[0]) {
+        messages[0].isNew = true;
+        messages[0].animateText = true;
+      }
+      lists.forEach((el) => el.classList.remove("is-clearing"));
+      syncAllViews();
+      isClearing = false;
+    }, 220);
   }
 
   /* ========== 桌面端：挂载于 Live2D 上方的气泡对话框 ========== */
@@ -237,8 +299,17 @@
             </div>
           </div>
           <div class="l2d-chat-header-actions">
-            <button type="button" class="l2d-chat-icon-btn" data-chat-clear title="清空对话">↺</button>
-            <button type="button" class="l2d-chat-icon-btn" data-chat-close title="收起对话">✕</button>
+            <button type="button" class="l2d-chat-icon-btn is-refresh" data-chat-clear title="清空对话" aria-label="清空对话">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            </button>
+            <button type="button" class="l2d-chat-icon-btn is-close" data-chat-close title="收起对话" aria-label="收起对话">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
         <div class="l2d-chat-messages" id="l2dChatMessages"></div>
@@ -247,7 +318,12 @@
         </div>
         <form class="l2d-chat-input-bar" id="l2dChatForm">
           <input type="text" id="l2dChatInput" placeholder="和泽凌聊点什么，或让我带你逛逛…" autocomplete="off" maxlength="600" />
-          <button type="submit" class="ai-chat-send-btn" aria-label="发送">↑</button>
+          <button type="submit" class="ai-chat-send-btn" aria-label="发送">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 19V5" />
+            <path d="M5 12l7-7 7 7" />
+          </svg>
+        </button>
         </form>
       </div>
     `;
@@ -279,6 +355,9 @@
     const panel = ensureDesktopPanel();
     if (!panel) return;
 
+    const menu = wrapper.querySelector(".live2d-menu");
+    if (menu) menu.classList.remove("show");
+
     desktopOpen = true;
     wrapper.classList.add("chat-open");
     panel.setAttribute("aria-hidden", "false");
@@ -294,6 +373,10 @@
     desktopOpen = false;
     const wrapper = document.getElementById("live2d-wrapper");
     if (!wrapper) return;
+
+    const menu = wrapper.querySelector(".live2d-menu");
+    if (menu) menu.classList.remove("show");
+
     wrapper.classList.remove("chat-open");
     const panel = wrapper.querySelector(".l2d-chat-panel");
     if (panel) panel.setAttribute("aria-hidden", "true");
@@ -310,18 +393,29 @@
     overlay.setAttribute("aria-hidden", "true");
     overlay.innerHTML = `
       <div class="mobile-ai-chat-sheet" role="dialog" aria-label="与泽凌 AI 对话">
-        <div class="mobile-ai-chat-handle"></div>
-        <div class="l2d-chat-header">
-          <div class="l2d-chat-persona">
-            <span class="l2d-chat-dot"></span>
-            <div class="l2d-chat-title-group">
-              <span class="l2d-chat-name">泽凌 Zelynn · AI</span>
-              <span class="ai-chat-status-text">在线 · 与泽凌对话中</span>
+        <div class="mobile-ai-chat-drag-zone">
+          <div class="mobile-ai-chat-handle"></div>
+          <div class="l2d-chat-header">
+            <div class="l2d-chat-persona">
+              <span class="l2d-chat-dot"></span>
+              <div class="l2d-chat-title-group">
+                <span class="l2d-chat-name">泽凌 Zelynn · AI</span>
+                <span class="ai-chat-status-text">在线 · 与泽凌对话中</span>
+              </div>
             </div>
-          </div>
-          <div class="l2d-chat-header-actions">
-            <button type="button" class="l2d-chat-icon-btn" data-mobile-clear title="清空对话">↺</button>
-            <button type="button" class="l2d-chat-icon-btn" data-mobile-close title="关闭">✕</button>
+            <div class="l2d-chat-header-actions">
+              <button type="button" class="l2d-chat-icon-btn is-refresh" data-mobile-clear title="清空对话" aria-label="清空对话">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+              </button>
+              <button type="button" class="l2d-chat-icon-btn is-close" data-mobile-close title="关闭" aria-label="关闭">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
         <div class="mobile-ai-chat-messages" id="mobileAiChatMessages"></div>
@@ -330,7 +424,12 @@
         </div>
         <form class="l2d-chat-input-bar mobile-ai-chat-form" id="mobileAiChatForm">
           <input type="text" id="mobileAiChatInput" placeholder="问问泽凌关于小站的一切…" autocomplete="off" maxlength="600" />
-          <button type="submit" class="ai-chat-send-btn" aria-label="发送">↑</button>
+          <button type="submit" class="ai-chat-send-btn" aria-label="发送">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 19V5" />
+            <path d="M5 12l7-7 7 7" />
+          </svg>
+        </button>
         </form>
       </div>
     `;
@@ -354,6 +453,49 @@
       input.value = "";
       sendMessage(val);
     });
+
+    const sheet = overlay.querySelector(".mobile-ai-chat-sheet");
+    const dragZone = overlay.querySelector(".mobile-ai-chat-drag-zone");
+    if (sheet && dragZone) {
+      let startY = 0;
+      let deltaY = 0;
+      let startTime = 0;
+      let isDraggingSheet = false;
+
+      dragZone.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 1 || e.target.closest("button")) return;
+        startY = e.touches[0].clientY;
+        deltaY = 0;
+        startTime = Date.now();
+        isDraggingSheet = true;
+        sheet.style.transition = "none";
+      }, { passive: true });
+
+      dragZone.addEventListener("touchmove", (e) => {
+        if (!isDraggingSheet || e.touches.length !== 1) return;
+        const diff = e.touches[0].clientY - startY;
+        deltaY = diff > 0 ? diff : diff * 0.18;
+        if (diff > 0) e.preventDefault();
+        sheet.style.transform = `translateY(${deltaY}px)`;
+      }, { passive: false });
+
+      const endSheetDrag = () => {
+        if (!isDraggingSheet) return;
+        isDraggingSheet = false;
+        const duration = Math.max(Date.now() - startTime, 1);
+        const velocity = deltaY / duration;
+        sheet.style.transition = "";
+        if (deltaY > 80 || velocity > 0.45) {
+          sheet.style.transform = "";
+          closeMobileChat();
+        } else {
+          sheet.style.transform = "";
+        }
+      };
+
+      dragZone.addEventListener("touchend", endSheetDrag);
+      dragZone.addEventListener("touchcancel", endSheetDrag);
+    }
 
     syncAllViews();
     return overlay;
@@ -380,6 +522,11 @@
     mobileOpen = false;
     const overlay = document.getElementById("mobileAiChatOverlay");
     if (overlay) {
+      const sheet = overlay.querySelector(".mobile-ai-chat-sheet");
+      if (sheet) {
+        sheet.style.transition = "";
+        sheet.style.transform = "";
+      }
       overlay.classList.remove("open");
       overlay.setAttribute("aria-hidden", "true");
     }

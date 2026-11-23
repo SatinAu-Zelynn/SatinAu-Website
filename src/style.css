@@ -6504,8 +6504,8 @@ iframe#webFrame {
 /* 悬浮菜单 (使用 JS 控制 .show 类) */
 .live2d-menu {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: -8px;
+  right: -8px;
   left: auto;
   background: light-dark(rgba(255, 255, 255, 0.65), rgba(40, 40, 40, 0.65));
   backdrop-filter: blur(16px) saturate(180%);
@@ -6528,7 +6528,7 @@ iframe#webFrame {
 
 #live2d-wrapper.pos-right .live2d-menu {
   right: auto;
-  left: 10px;
+  left: -8px;
   transform-origin: top left;
 }
 
@@ -7596,10 +7596,6 @@ html.gamepad-active .gamepad-hud {
 }
 
 /* ========== AI 对话功能：桌面端 Live2D 菜单过渡与形象上方气泡对话框 ========== */
-.live2d-chat-trigger {
-  color: var(--primary-color);
-}
-
 #live2d-wrapper.chat-open .live2d-menu {
   opacity: 0 !important;
   transform: translateY(-10px) scale(0.88) !important;
@@ -7614,29 +7610,24 @@ html.gamepad-active .gamepad-hud {
   width: 350px;
   max-width: calc(100vw - 340px);
   height: min(460px, calc(100vh - 110px));
-  opacity: 0;
-  transform: translateX(-14px) scale(0.94);
-  transform-origin: bottom left;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: visibility 0s linear 0.34s;
   z-index: 1002;
 }
 
 #live2d-wrapper.pos-right .l2d-chat-panel {
   left: auto;
   right: calc(100% + 12px);
-  transform: translateX(14px) scale(0.94);
-  transform-origin: bottom right;
 }
 
 #live2d-wrapper.chat-open .l2d-chat-panel {
-  opacity: 1;
-  transform: translateX(0) scale(1);
+  visibility: visible;
   pointer-events: auto;
+  transition: visibility 0s linear 0s;
 }
 
-/* 内层玻璃表面：负责圆角裁切与全站一致的毛玻璃模糊，杜绝子元素溢出 */
+/* 将 opacity + transform 与 backdrop-filter 合并在同一层，避免动画期间模糊失效 */
 .l2d-chat-surface {
   position: relative;
   width: 100%;
@@ -7652,31 +7643,58 @@ html.gamepad-active .gamepad-hud {
   box-shadow: 0 16px 40px light-dark(rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.42)),
               inset 0 0 20px rgba(255, 255, 255, 0.12);
   box-sizing: border-box;
+  opacity: 0;
+  transform: translateX(-14px) scale(0.94);
+  transform-origin: bottom left;
+  transition: opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
 }
 
-/* 指向左侧 Live2D 形象的对话气泡尖角 */
+#live2d-wrapper.pos-right .l2d-chat-surface {
+  transform: translateX(14px) scale(0.94);
+  transform-origin: bottom right;
+}
+
+#live2d-wrapper.chat-open .l2d-chat-surface {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+/* 指向 Live2D 形象的无缝毛玻璃曲线尖角（同步动画与模糊） */
 .l2d-chat-panel::after {
   content: "";
   position: absolute;
-  left: -7px;
+  left: -9px;
   bottom: 92px;
-  width: 14px;
-  height: 14px;
-  background: light-dark(rgba(255, 255, 255, 0.72), rgba(36, 36, 40, 0.78));
-  border-left: 1px solid light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.14));
-  border-bottom: 1px solid light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.14));
-  transform: rotate(45deg);
+  width: 10px;
+  height: 20px;
+  background: light-dark(rgba(255, 255, 255, 0.58), rgba(30, 30, 34, 0.58));
+  -webkit-backdrop-filter: var(--filter-blur, blur(20px) saturate(180%));
+  backdrop-filter: var(--filter-blur, blur(20px) saturate(180%));
+  clip-path: path("M 10 0 C 9 5 2 8 0 10 C 2 12 9 15 10 20 Z");
   pointer-events: none;
-  z-index: -1;
+  z-index: 2;
+  opacity: 0;
+  transform: translateX(-14px) scale(0.94);
+  transition: opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 #live2d-wrapper.pos-right .l2d-chat-panel::after {
   left: auto;
-  right: -7px;
-  border-left: none;
-  border-bottom: none;
-  border-right: 1px solid light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.14));
-  border-top: 1px solid light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.14));
+  right: -9px;
+  transform: translateX(14px) scaleX(-1) scale(0.94);
+}
+
+#live2d-wrapper.chat-open .l2d-chat-panel::after {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+#live2d-wrapper.pos-right.chat-open .l2d-chat-panel::after {
+  opacity: 1;
+  transform: translateX(0) scaleX(-1) scale(1);
 }
 
 .l2d-chat-header {
@@ -7686,6 +7704,171 @@ html.gamepad-active .gamepad-hud {
   justify-content: space-between;
   padding: 12px 14px 10px;
   border-bottom: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+}
+
+.l2d-chat-persona {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.l2d-chat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34c759;
+  box-shadow: 0 0 8px rgba(52, 199, 89, 0.6);
+  flex-shrink: 0;
+}
+
+.l2d-chat-title-group {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.l2d-chat-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--word-color);
+}
+
+.ai-chat-status-text {
+  font-size: 11px;
+  opacity: 0.62;
+  color: var(--word-color);
+}
+
+.l2d-chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.l2d-chat-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.1));
+  background: light-dark(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08));
+  color: var(--word-color);
+  cursor: var(--custom-cursor, pointer);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              background 0.2s ease,
+              color 0.2s ease,
+              border-color 0.2s ease;
+}
+
+.l2d-chat-icon-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) {
+  .l2d-chat-icon-btn:hover {
+    background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.16));
+  }
+
+  .l2d-chat-icon-btn.is-refresh:hover svg {
+    transform: rotate(-45deg);
+  }
+
+  .l2d-chat-icon-btn.is-close:hover {
+    background: light-dark(rgba(255, 59, 48, 0.14), rgba(255, 69, 58, 0.24));
+    border-color: transparent;
+    color: light-dark(#ff3b30, #ff453a);
+  }
+}
+
+.l2d-chat-icon-btn:active {
+  transform: scale(0.9);
+}
+
+.ai-chat-msg {
+  display: flex;
+  width: 100%;
+}
+
+.ai-chat-msg.is-user {
+  justify-content: flex-end;
+}
+
+.ai-chat-msg.is-model {
+  justify-content: flex-start;
+}
+
+.ai-chat-bubble {
+  max-width: 84%;
+  padding: 9px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: left;
+  word-break: break-word;
+}
+
+.ai-chat-msg.is-user .ai-chat-bubble {
+  background: var(--primary-color);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-chat-msg.is-model .ai-chat-bubble {
+  background: light-dark(rgba(0, 0, 0, 0.055), rgba(255, 255, 255, 0.1));
+  color: var(--word-color);
+  border-bottom-left-radius: 4px;
+}
+
+.ai-chat-action-pill {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.16));
+  background: light-dark(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.12));
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.ai-chat-action-pill:active {
+  transform: scale(0.96);
+}
+
+.ai-quick-chip {
+  flex-shrink: 0;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.14));
+  background: light-dark(rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08));
+  color: var(--word-color);
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .ai-quick-chip:hover {
+    background: light-dark(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.16));
+    border-color: var(--primary-color);
+  }
+}
+
+.ai-quick-chip:active {
+  transform: scale(0.96);
 }
 
 .l2d-chat-messages {
@@ -7732,14 +7915,39 @@ html.gamepad-active .gamepad-hud {
 .ai-chat-send-btn {
   width: 34px;
   height: 34px;
+  padding: 0;
   border-radius: 50%;
   border: none;
   background: var(--primary-color);
   color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
+  cursor: var(--custom-cursor, pointer);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 35%, transparent);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.2s ease,
+              box-shadow 0.2s ease,
+              opacity 0.2s ease;
+}
+
+.ai-chat-send-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+@media (hover: hover) {
+  .ai-chat-send-btn:not(:disabled):hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px) scale(1.04);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--primary-color) 45%, transparent);
+  }
+}
+
+.ai-chat-send-btn:not(:disabled):active {
+  transform: scale(0.92);
 }
 
 .ai-chat-send-btn:disabled {
@@ -7776,9 +7984,14 @@ html.gamepad-active .gamepad-hud {
   position: fixed;
   inset: 0;
   z-index: 3000;
-  background: rgba(0, 0, 0, 0.38);
+  background: rgba(0, 0, 0, 0.34);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: flex-end;
+  justify-content: center;
+  padding: 0 10px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.28s ease;
@@ -7791,34 +8004,64 @@ html.gamepad-active .gamepad-hud {
 
 .mobile-ai-chat-sheet {
   width: 100%;
-  max-height: 82vh;
+  max-width: 520px;
+  max-height: 82dvh;
   display: flex;
   flex-direction: column;
-  background: light-dark(rgba(255, 255, 255, 0.92), rgba(26, 26, 30, 0.94));
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  padding-bottom: env(safe-area-inset-bottom, 8px);
-  transform: translateY(100%);
+  overflow: hidden;
+  background: light-dark(rgba(255, 255, 255, 0.68), rgba(28, 28, 32, 0.72));
+  -webkit-backdrop-filter: var(--filter-blur, blur(22px) saturate(180%));
+  backdrop-filter: var(--filter-blur, blur(22px) saturate(180%));
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.14));
+  border-radius: 24px;
+  transform: translateY(calc(100% + 20px));
   transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), inset 0 0 20px rgba(255, 255, 255, 0.12);
+  box-sizing: border-box;
+  will-change: transform;
 }
 
 .mobile-ai-chat-overlay.open .mobile-ai-chat-sheet {
   transform: translateY(0);
 }
 
+.mobile-ai-chat-drag-zone {
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+}
+
 .mobile-ai-chat-handle {
-  width: 36px;
+  width: 38px;
   height: 4px;
   border-radius: 2px;
-  background: light-dark(rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.22));
+  background: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.25));
   margin: 10px auto 2px;
 }
 
+.mobile-ai-chat-sheet .l2d-chat-header {
+  padding: 10px 16px 12px;
+}
+
 .mobile-ai-chat-messages {
-  max-height: 48vh;
+  flex: 1 1 auto;
+  min-height: 180px;
+  max-height: 50dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.mobile-ai-chat-sheet .ai-chat-quick-row {
+  padding: 6px 16px 10px;
+}
+
+.mobile-ai-chat-sheet .l2d-chat-input-bar {
+  padding: 10px 14px 12px;
 }
 
 /* AI 站内导航定位高亮反馈 */
@@ -7827,4 +8070,79 @@ html.gamepad-active .gamepad-hud {
   outline-offset: 6px;
   border-radius: var(--border-radius-lg, 16px);
   transition: outline-color 0.4s ease;
+}
+
+
+/* 刷新按钮点击旋转反馈 */
+.l2d-chat-icon-btn.is-refresh.is-spinning svg {
+  animation: aiRefreshSpin 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes aiRefreshSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+/* 清空对话时消息列表平滑收起退场 */
+.l2d-chat-messages,
+.mobile-ai-chat-messages {
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.l2d-chat-messages.is-clearing,
+.mobile-ai-chat-messages.is-clearing {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+}
+
+/* 新消息气泡进场动画 */
+.ai-chat-msg.is-entering {
+  animation: aiMsgIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes aiMsgIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* AI 回复流式逐块渐显动画 */
+.ai-chat-chunk {
+  display: inline;
+  opacity: 0;
+  filter: blur(2.5px);
+  animation: aiChunkIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes aiChunkIn {
+  from {
+    opacity: 0;
+    filter: blur(2.5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* 导航胶囊在文本输出后淡入 */
+.ai-chat-action-pill.is-entering {
+  opacity: 0;
+  animation: aiMsgIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-chat-msg.is-entering,
+  .ai-chat-chunk,
+  .ai-chat-action-pill.is-entering,
+  .l2d-chat-icon-btn.is-refresh.is-spinning svg {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
 }

@@ -3274,6 +3274,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
       // 防抖定时器控制菜单，解决鼠标跨越空隙时菜单闪烁消失的问题
       let hoverTimer;
       const showMenu = () => {
+        if (wrapper.classList.contains('chat-open')) return;
         clearTimeout(hoverTimer);
         menu.classList.add('show');
       };
