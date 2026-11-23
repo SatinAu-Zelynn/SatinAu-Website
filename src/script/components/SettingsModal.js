@@ -20,7 +20,17 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
   // 渲染设置窗口结构（头部固定 + 内部可滚动）
   modalInstance.content.innerHTML = `
     <div class="settings-modal-header">
-      <div class="settings-modal-title">网站设置</div>
+      <div class="settings-modal-title">
+        <span>网站设置</span>
+        <span class="settings-build-info-trigger" tabindex="0" aria-label="构建信息">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span class="tooltip tooltip-bottom settings-build-tooltip" id="settingsBuildTooltip"></span>
+        </span>
+      </div>
       <div class="settings-modal-actions">
         <button class="reset-btn" id="modalSettingsResetBtn">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -202,25 +212,6 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
           </div>
         </div>
 
-        <div class="setting-item">
-          <label for="chimeToggle">
-            整点报时
-            <span class="tooltip">整点自动弹窗并播放 Westminster 钟声（需保持网页开启）</span>
-          </label>
-          
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="more-btn" 
-                    onclick="triggerChime(new Date().getHours()); showToast('🔊 正在测试报时效果...')" 
-                    style="width:auto; height:auto; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight:600; text-decoration:none; background:rgba(128,128,128,0.2); margin:0;">
-              测试
-            </button>
-            
-            <div class="toggle-switch">
-              <input type="checkbox" id="chimeToggle" onchange="toggleHourlyChime()">
-              <label for="chimeToggle" class="switch-slider"></label>
-            </div>
-          </div>
-        </div>
 
         <div class="setting-item" id="route-switching">
           <label>
@@ -335,7 +326,24 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
   initToggle('multitaskToggle', () => typeof isMultitaskEnabled === 'function' ? isMultitaskEnabled() : true);
   initToggle('customRightClickMenuToggle', () => typeof getCustomMenuSetting === 'function' ? getCustomMenuSetting() : true);
   initToggle('nativeNotificationToggle', () => typeof isNativeNotificationEnabled === 'function' ? isNativeNotificationEnabled() : false);
-  initToggle('chimeToggle', () => typeof isChimeEnabled === 'function' ? isChimeEnabled() : true);
+
+  // 0. 初始化标题旁构建信息提示
+  const buildTooltipEl = modalInstance.querySelector('#settingsBuildTooltip');
+  if (buildTooltipEl) {
+    const meta = window.BUILD_META || {};
+    const rows = [
+      `版本：${meta.version || '未知'}`,
+      `分支：${meta.branch || '本地开发'}`,
+      `构建时间：${meta.buildTime || '未知'}`
+    ];
+    buildTooltipEl.replaceChildren(
+      ...rows.map(text => {
+        const line = document.createElement('div');
+        line.textContent = text;
+        return line;
+      })
+    );
+  }
 
   // 2. 初始化字体选择下拉
   const fontWrapper = modalInstance.querySelector('#fontSelectComponent');

@@ -40,12 +40,14 @@ SVG_VERCEL='<svg class="footer-icon-a" role="img" viewBox="0 0 24 24" xmlns="htt
 # ==========================================
 
 FINAL_INFO=""
+COMMIT_HASH=""
+BRANCH=""
+BRANCH_LABEL=""
+BUILD_TIME=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')
 
 if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "true" ]; then
     # --- Cloudflare Pages 环境 ---
     echo "Detected Environment: Cloudflare Pages"
-    
-    # 获取提交哈希：优先使用 CF 变量，若无则尝试 git 命令
     if [ -n "$CF_PAGES_COMMIT_SHA" ]; then
         COMMIT_HASH=${CF_PAGES_COMMIT_SHA:0:7}
     elif command -v git &> /dev/null; then
@@ -53,52 +55,52 @@ if [ -n "$CF_PAGES" ] || [ -n "$CF_PAGES_COMMIT_SHA" ] || [ "$CF_PAGES_LTS" = "t
     else
         COMMIT_HASH="cf-build"
     fi
-    
-    # 获取分支名
     BRANCH=${CF_PAGES_BRANCH:-"unknown"}
-    
-    # 构建版本后缀
-    VERSION_SUFFIX=""
-    if [ "$BRANCH" == "test" ]; then
-        VERSION_SUFFIX="（测试版）"
-    elif [ "$BRANCH" == "main" ]; then
-        VERSION_SUFFIX="（正式版）"
+    if [ "$BRANCH" = "main" ]; then
+        BRANCH_LABEL="正式版"
+    elif [ "$BRANCH" = "test" ]; then
+        BRANCH_LABEL="测试版"
+    else
+        BRANCH_LABEL="$BRANCH"
     fi
-
-    # 拼接 Cloudflare 专用 HTML
-    FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
+    FINAL_INFO="${SVG_CF} Cloudflare ${SVG_CF_PAGES} ${SVG_CF_WORKERS} 提供静态部署服务"
 
 elif [ -n "$VERCEL" ]; then
     # --- Vercel 环境 ---
     echo "Detected Environment: Vercel"
     COMMIT_HASH=${VERCEL_GIT_COMMIT_SHA:0:7}
-    BRANCH=$VERCEL_GIT_COMMIT_REF
-    
-    # 构建版本后缀
-    VERSION_SUFFIX=""
-    if [ "$BRANCH" == "main" ]; then
-        VERSION_SUFFIX="（正式版）"
+    BRANCH=${VERCEL_GIT_COMMIT_REF:-"unknown"}
+    if [ "$BRANCH" = "main" ]; then
+        BRANCH_LABEL="正式版"
+    elif [ "$BRANCH" = "test" ]; then
+        BRANCH_LABEL="测试版"
+    else
+        BRANCH_LABEL="$BRANCH"
     fi
-
-    # 拼接 Vercel 专用 HTML
-    FINAL_INFO="${SVG_VERCEL} Vercel 提供静态部署服务 版本: ${COMMIT_HASH}${VERSION_SUFFIX}"
+    FINAL_INFO="${SVG_VERCEL} Vercel 提供静态部署服务"
 
 else
     # --- 其他环境 (回退方案) ---
     echo "Detected Environment: Local/Generic"
-    
-    # 尝试获取 Git 信息
     if command -v git &> /dev/null && [ -d .git ]; then
         COMMIT_HASH=$(git rev-parse --short HEAD)
+        BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "local")
     else
         COMMIT_HASH="local-dev"
+        BRANCH="local"
     fi
-    
-    FINAL_INFO="版本: ${COMMIT_HASH}"
+    if [ "$BRANCH" = "main" ]; then
+        BRANCH_LABEL="正式版"
+    elif [ "$BRANCH" = "test" ]; then
+        BRANCH_LABEL="测试版"
+    else
+        BRANCH_LABEL="本地开发"
+    fi
+    FINAL_INFO="本地环境构建"
 fi
 
-echo "[BUILD] 版本信息预览:"
-echo -e "$FINAL_INFO"
+echo "[BUILD] 页脚信息预览: $FINAL_INFO"
+echo "[BUILD] 版本: $COMMIT_HASH | 分支: $BRANCH_LABEL | 构建时间: $BUILD_TIME"
 
 # ==========================================
 # 写入配置文件
@@ -106,9 +108,13 @@ echo -e "$FINAL_INFO"
 
 printf "%b" "$FINAL_INFO" | \
 sed -e "/__BUILD_INFO__/{
-        r /dev/stdin
-        d
-    }" src/script/config.template.js > src/script/config.js
+    r /dev/stdin
+    d
+}" src/script/config.template.js | \
+sed -e "s|__BUILD_VERSION__|${COMMIT_HASH}|g" \
+    -e "s|__BUILD_BRANCH__|${BRANCH_LABEL}|g" \
+    -e "s|__BUILD_TIME__|${BUILD_TIME}|g" \
+> src/script/config.js
 
 echo "[BUILD] 配置文件 src/script/config.js 生成成功"
 

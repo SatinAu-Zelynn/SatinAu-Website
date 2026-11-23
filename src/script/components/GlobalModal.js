@@ -210,7 +210,6 @@ class GlobalModal extends HTMLElement {
 
     let cleanupTimer = null;
     let minimizeTimer = null;
-    let audioInstance = null;
     let destroyCallback = null;
     let hasBeenMinimized = false;
 
@@ -249,10 +248,6 @@ class GlobalModal extends HTMLElement {
 
       clearTimeout(minimizeTimer);
 
-      if (audioInstance) {
-        audioInstance.pause();
-        audioInstance = null;
-      }
 
       // 清除可能存在的旧定时器
       if (cleanupTimer) clearTimeout(cleanupTimer);
@@ -438,10 +433,6 @@ class GlobalModal extends HTMLElement {
 
     const forceDestroyLayer = () => {
       layer.isClosing = true;
-      if (audioInstance) {
-        audioInstance.pause();
-        audioInstance = null;
-      }
       if (trigger && trigger.classList.contains('hero-hidden')) {
         trigger.style.opacity = '';
         trigger.classList.remove('hero-hidden');
@@ -471,7 +462,6 @@ class GlobalModal extends HTMLElement {
       minimize: minimizeLayer,
       restore: restoreLayer,
       _forceDestroy: forceDestroyLayer,
-      setAudio: (audio) => { audioInstance = audio; },
       onDestroy: (fn) => { destroyCallback = fn; },
       _onUpdateTask: null,
       _onMinimize: null,
@@ -1148,47 +1138,6 @@ class GlobalModal extends HTMLElement {
     });
   }
 
-  // ==========================================
-  // 整点报时
-  // ==========================================
-  showChime(hour) {
-    // 格式化时间显示
-    const displayHour = hour < 10 ? `0${hour}` : hour;
-
-    this.open({
-      className: 'modal ios-alert chime-modal',
-      content: `
-        <div style="padding: 10px 0;">
-          <div style="font-size: 48px; margin-bottom: 10px;">🕰️</div>
-          <h2 style="margin: 0 0 10px; font-size: 24px;">整点报时</h2>
-          <p style="font-size: 18px; font-weight: bold; color: var(--primary-color);">
-            现在是 ${displayHour}:00
-          </p>
-          <p style="font-size: 14px; opacity: 0.7; margin-top:10px;">Westminster Quarters</p>
-        </div>
-        <div class="actions">
-          <button class="cancel" id="modalClose">关闭</button>
-        </div>
-      `,
-      onMount: ({ modal, close, setAudio }) => {
-        // 绑定关闭按钮
-        modal.querySelector('#modalClose').onclick = close;
-        
-        // 初始化音频
-        try {
-          const audio = new Audio('/public/Westminster.ogg');
-          setAudio(audio);
-          audio.addEventListener('ended', close);
-          audio.play().catch(e => {
-            console.warn("自动播放被浏览器拦截，用户需先与页面交互:", e);
-            this.showToast("未能播放报时音效（需先点击页面）");
-          });
-        } catch (err) {
-          console.error("音频加载失败", err);
-        }
-      }
-    });
-  }
 
   // ==========================================
   // CDN 线路优选与选择弹窗

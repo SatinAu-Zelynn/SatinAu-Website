@@ -295,86 +295,6 @@ window.toggleLive2D = function() {
   }
 };
 
-/* ========== 整点报时逻辑 ========== */
-const CHIME_KEY = 'setting_hourly_chime_enabled';
-let serverTimeOffset = 0; // 服务器时间与本地时间的差值 (ms)
-let lastChimeHour = -1;   // 记录上一次报时的小时，防止一分钟内重复报时
-
-// 获取报时设置（默认开启，即 null 时返回 true，或者根据需求默认 false）
-function isChimeEnabled() {
-  const setting = localStorage.getItem(CHIME_KEY);
-  // 这里设为默认为 true (开启)，如果用户没设置过
-  return setting === null ? true : setting === 'true';
-}
-
-// 切换开关（供 settings.html 调用）
-window.toggleHourlyChime = function() {
-  const checkbox = document.getElementById('chimeToggle');
-  const enabled = checkbox.checked;
-  localStorage.setItem(CHIME_KEY, enabled);
-  showToast(enabled ? "整点报时：已启用" : "整点报时：已禁用");
-};
-
-// 时间校准与定时检查
-function initTimeSync() {
-  const localStart = Date.now();
-  
-  // 请求头部信息获取时间
-  fetch(window.location.href, { method: 'HEAD', cache: 'no-cache' })
-    .then(response => {
-      const dateHeader = response.headers.get('date');
-      if (dateHeader) {
-        const serverTime = new Date(dateHeader).getTime();
-        const localEnd = Date.now();
-        // 粗略计算网络延迟的一半
-        const latency = (localEnd - localStart) / 2;
-        // 计算偏移量：服务器时间 = 本地时间 + offset
-        serverTimeOffset = serverTime - localEnd + latency;
-        console.log(`%c时间已同步，偏差: ${Math.round(serverTimeOffset)}ms`, "color: #00FFCC;");
-        
-        // 更新页脚年份（复用原有逻辑，但利用计算出的 offset 确保更准）
-        const yearElement = document.getElementById('current-year');
-        if (yearElement) {
-            yearElement.textContent = new Date(Date.now() + serverTimeOffset).getFullYear();
-        }
-      }
-    })
-    .catch(err => console.warn('时间同步失败，使用本地时间', err));
-
-  // 启动定时器，每秒检查一次
-  setInterval(checkTimeAndChime, 1000);
-}
-
-// 核心检查逻辑
-function checkTimeAndChime() {
-  if (!isChimeEnabled()) return;
-
-  // 当前准确时间
-  const now = new Date(Date.now() + serverTimeOffset);
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-  const currentHour = now.getHours();
-
-  // 触发条件：分钟为0，秒数在 0-2 之间（留出一点缓冲），且当前小时还没报过
-  if (minutes === 0 && seconds < 3 && currentHour !== lastChimeHour) {
-    lastChimeHour = currentHour;
-    triggerChime(currentHour);
-  }
-}
-
-// 触发弹窗和声音
-function triggerChime(hour) {
-  // 查找或创建 GlobalModal 实例
-  let modal = document.querySelector('global-modal');
-  if (!modal) {
-    modal = document.createElement('global-modal');
-    document.body.appendChild(modal);
-  }
-  
-  if (modal.showChime) {
-    modal.showChime(hour);
-  }
-}
 
 /* 通用工具函数 */
 function toggleModal(id, show = true) {
@@ -1971,18 +1891,10 @@ window.toggleCustomRightClickMenu = function() {
 document.addEventListener('DOMContentLoaded', function() {
     // 初始化自定义右键菜单（所有页面）
     initCustomRightClickMenu();
-    // 初始化时间同步和报时检查
-    initTimeSync();
     
     // 如果在设置页面，加载设置状态
     if (document.title.includes('设置')) {
         loadCustomRightClickMenuSetting();
-    }
-
-    // 如果在设置页，初始化开关状态
-    const chimeToggle = document.getElementById('chimeToggle');
-    if (chimeToggle) {
-      chimeToggle.checked = isChimeEnabled();
     }
 });
 
@@ -3098,7 +3010,6 @@ window.restoreDefaultSettings = function(triggerElement) {
       'setting_autohide_nav_enabled',       // 导航栏隐藏
       'setting_multitask_enabled',          // 多任务管理
       'setting_native_notifications_enabled', // 系统通知
-      'setting_hourly_chime_enabled',       // 整点报时
       'setting_custom_context_menu_enabled', // 右键菜单
       'enableHDR',                           // HDR 模式
       'setting_cdn_source',                  // 重置 CDN 设置

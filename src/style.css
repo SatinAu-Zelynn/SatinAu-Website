@@ -2662,11 +2662,36 @@ input:checked + .switch-slider {
 }
 
 /* ========== 主题色选择器 ========== */
+.setting-item:has(.theme-selector-wrapper) {
+  container-type: inline-size;
+  gap: 16px;
+}
+
+.setting-item:has(.theme-selector-wrapper) > label {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .theme-selector-wrapper {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, auto);
   gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end; /* 靠右对齐，与Toggle Switch保持一致 */
+  justify-content: end; /* 靠右对齐，与Toggle Switch保持一致 */
+  justify-items: center;
+}
+
+/* 宽度不足以单行容纳 6 个色块时，直接等分为 2 行 × 3 个 */
+@container (max-width: 340px) {
+  .theme-selector-wrapper {
+    grid-template-columns: repeat(3, auto);
+  }
+}
+
+/* 极窄视口下等分为 3 行 × 2 个 */
+@container (max-width: 220px) {
+  .theme-selector-wrapper {
+    grid-template-columns: repeat(2, auto);
+  }
 }
 
 .color-swatch {
@@ -4118,12 +4143,6 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   color: white;
 }
 
-.chime-modal h2 {
-  background: linear-gradient(90deg, #FF9999, #FFE92C);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 
 /* 分享图片生成的临时容器 (移出屏幕) */
 #share-card-container {
@@ -6687,9 +6706,75 @@ iframe#webFrame {
 }
 
 .settings-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--word-color);
+}
+
+/* 网站设置标题旁构建信息小 i 图标 */
+.settings-build-info-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--word-color);
+  opacity: 0.6;
+  cursor: default;
+  outline: none;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.settings-build-info-trigger:focus-visible {
+  opacity: 1;
+  background-color: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.14));
+}
+
+/* 复用 .tooltip 样式并改为向下展开 */
+.tooltip.tooltip-bottom {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: 8px;
+  left: -12px;
+  transform: scale(0.9);
+  transform-origin: 22px top;
+  z-index: 30;
+}
+
+.tooltip.tooltip-bottom::after {
+  top: auto;
+  bottom: 100%;
+  left: 22px;
+  transform: translateX(-50%);
+  border-color: transparent transparent light-dark(#f5f5f5, #111) transparent;
+}
+
+/* 构建信息气泡：三行居左对齐 */
+.settings-build-tooltip {
+  text-align: left;
+  line-height: 1.6;
+  padding: 8px 12px;
+}
+
+@media (hover: hover) {
+  .settings-build-info-trigger:hover {
+    opacity: 1;
+  }
+  .settings-build-info-trigger:hover .tooltip.tooltip-bottom {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.settings-build-info-trigger:focus-visible .tooltip.tooltip-bottom {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .settings-modal-body section h2,
