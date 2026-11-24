@@ -17,15 +17,15 @@
 (function() {
 const API_BASE = '';
 
-let pollingInterval = null;
+let pollingTimer = null;
 let pollingCount = 0;
 let currentComments = [];
 let loadSeq = 0;
 
 window.cleanupPageComments = function() {
-    if (pollingInterval) {
-        clearInterval(pollingInterval);
-        pollingInterval = null;
+    if (pollingTimer) {
+        clearTimeout(pollingTimer);
+        pollingTimer = null;
     }
     pollingCount = 0;
 };
@@ -124,22 +124,21 @@ function renderCommentList(comments, pageId) {
     );
 
     if (hasRealPending) {
-        if (!pollingInterval) {
-            pollingCount = 0;
-            pollingInterval = setInterval(() => {
-                pollingCount += 1;
-                if (pollingCount > 30) {
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
+        if (!pollingTimer && pollingCount < 20) {
+            const delay = pollingCount === 0 ? 1500 : 2500;
+            pollingTimer = setTimeout(async () => {
+                pollingTimer = null;
+                // 若已退出文章或切换文章，自动停止轮询
+                if (!document.getElementById('commentList') || window.currentPageId !== pageId) {
+                    window.cleanupPageComments();
                     return;
                 }
-                loadComments(pageId, { silent: true, fresh: true });
-            }, 1000);
+                pollingCount += 1;
+                await loadComments(pageId, { silent: true, fresh: true });
+            }, delay);
         }
-    } else if (pollingInterval) {
-        clearInterval(pollingInterval);
-        pollingInterval = null;
-        pollingCount = 0;
+    } else {
+        window.cleanupPageComments();
     }
 
     if (currentComments.length === 0) {
@@ -382,8 +381,8 @@ async function submitComment(pageId, content, parentId) {
         };
 
         const nextList = currentComments.map(c => (c.id === tempId ? realComment : c));
+        pollingCount = 0;
         renderCommentList(nextList, pageId);
-        setTimeout(() => loadComments(pageId, { silent: true, fresh: true }), 800);
     } catch (err) {
         showToast(err.message || '评论提交失败');
         const rollbackList = currentComments.filter(c => c.id !== tempId);
