@@ -4,6 +4,7 @@
   const CHAT_API_URL = "https://ai-engine.satinau.cn/v1/chat";
   const STORAGE_KEY = "satin_ai_chat_history";
   const MAX_STORED_MESSAGES = 24;
+  const DEFAULT_STATUS_TEXT = "内容由AI生成，请谨慎甄别";
 
   const QUICK_PROMPTS = [
     "介绍一下站长和泽凌",
@@ -16,6 +17,33 @@
   let isSending = false;
   let desktopOpen = false;
   let mobileOpen = false;
+  let thinkingEnabled = false;
+
+  function syncThinkingButtons() {
+    document.querySelectorAll(".l2d-chat-icon-btn.is-thinking-toggle").forEach((btn) => {
+      btn.classList.toggle("is-active", thinkingEnabled);
+      btn.setAttribute("aria-pressed", thinkingEnabled ? "true" : "false");
+      const tip = thinkingEnabled ? "深度思考已开启（点击切换极速模式）" : "开启深度思考";
+      btn.title = tip;
+      btn.setAttribute("aria-label", tip);
+    });
+  }
+
+  function toggleThinkingMode() {
+    thinkingEnabled = !thinkingEnabled;
+    syncThinkingButtons();
+  }
+
+  const activeStreamTimers = new WeakMap();
+
+  function cancelContainerStream(container) {
+    if (!container) return;
+    const timerId = activeStreamTimers.get(container);
+    if (timerId) {
+      clearTimeout(timerId);
+      activeStreamTimers.delete(container);
+    }
+  }
 
   function loadHistory() {
     try {
@@ -49,19 +77,89 @@
       .replace(/"/g, "&quot;");
   }
 
-  function buildAnimatedTextHtml(text) {
-    const tokens = String(text).match(/(\n|[\u4e00-\u9fa5]{1,2}|[A-Za-z0-9_]+|\s+|.)/g) || [];
-    const stepMs = Math.min(26, Math.max(12, Math.floor(900 / Math.max(tokens.length, 1))));
+  function tokenizeText(text) {
+    return String(text).match(/(\n|[\u4e00-\u9fa5]{1,2}|[A-Za-z0-9_]+|\s+|.)/g) || [];
+  }
+
+  function prefersReducedMotion() {
+    return Boolean(
+      window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  function createActionPillButton(action, msgIdx, entering = false) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `ai-chat-action-pill${entering ? " is-entering" : ""}`;
+    btn.dataset.msgIdx = String(msgIdx);
+    btn.textContent = `🧭 ${action.label || "前往查看"}`;
+    btn.addEventListener("click", () => {
+      const msg = messages[msgIdx];
+      if (msg?.action) executeSiteAction(msg.action);
+    });
+    return btn;
+  }
+
+  function streamTextIntoElement({ container, textEl, bubbleEl, text, action, msgIdx }) {
+    const tokens = tokenizeText(text);
+    const stepMs = Math.min(28, Math.max(14, Math.floor(1100 / Math.max(tokens.length, 1))));
     let idx = 0;
-    const html = tokens
-      .map((token) => {
-        if (token === "\n") return "<br>";
-        const delay = idx * stepMs;
+
+    const scrollIfNearBottom = () => {
+      const distanceToBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceToBottom < 64) {
+        container.scrollTop = container.scrollHeight;
+      }
+    };
+
+    const appendToken = (token) => {
+      if (token === "\n") {
+        textEl.appendChild(document.createElement("br"));
+      } else {
+        const span = document.createElement("span");
+        span.className = "ai-chat-chunk";
+        span.textContent = token;
+        textEl.appendChild(span);
+      }
+    };
+
+    const step = () => {
+      if (!container.contains(textEl)) {
+        cancelContainerStream(container);
+        return;
+      }
+
+      if (idx < tokens.length) {
+        appendToken(tokens[idx]);
         idx += 1;
-        return `<span class="ai-chat-chunk" style="animation-delay:${delay}ms">${escapeHtml(token)}</span>`;
-      })
-      .join("");
-    return { html, totalDuration: idx * stepMs + 260 };
+        scrollIfNearBottom();
+        const timerId = setTimeout(step, stepMs);
+        activeStreamTimers.set(container, timerId);
+        return;
+      }
+
+      activeStreamTimers.delete(container);
+      if (action && bubbleEl) {
+        bubbleEl.appendChild(createActionPillButton(action, msgIdx, true));
+        scrollIfNearBottom();
+      }
+    };
+
+    // 立即输出首块，避免首帧气泡塌陷
+    if (tokens.length > 0) {
+      appendToken(tokens[0]);
+      idx = 1;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    if (idx < tokens.length) {
+      const timerId = setTimeout(step, stepMs);
+      activeStreamTimers.set(container, timerId);
+    } else if (action && bubbleEl) {
+      bubbleEl.appendChild(createActionPillButton(action, msgIdx, true));
+      container.scrollTop = container.scrollHeight;
+    }
   }
 
   async function executeSiteAction(action) {
@@ -109,27 +207,33 @@
 
   function renderMessageList(container) {
     if (!container) return;
+    cancelContainerStream(container);
+
+    const reducedMotion = prefersReducedMotion();
+    const pendingStreams = [];
+
     container.innerHTML = messages
       .map((msg, idx) => {
         const isUser = msg.role === "user";
         const shouldAnimateBubble = Boolean(msg.isNew);
-        let textHtml = escapeHtml(msg.text).replace(/\n/g, "<br>");
-        let actionDelay = 0;
+        const shouldStream = !isUser && Boolean(msg.animateText) && !reducedMotion;
 
-        if (!isUser && msg.animateText) {
-          const animated = buildAnimatedTextHtml(msg.text);
-          textHtml = animated.html;
-          actionDelay = Math.min(animated.totalDuration, 1100);
+        if (shouldStream) {
+          pendingStreams.push({ idx, text: msg.text, action: msg.action || null });
         }
 
+        const textHtml = shouldStream
+          ? ""
+          : escapeHtml(msg.text).replace(/\n/g, "<br>");
+
         const actionBtn =
-          !isUser && msg.action
-            ? `<button type="button" class="ai-chat-action-pill${msg.animateText ? " is-entering" : ""}" style="${msg.animateText ? `animation-delay:${actionDelay}ms` : ""}" data-msg-idx="${idx}">🧭 ${escapeHtml(msg.action.label || "前往查看")}</button>`
+          !isUser && msg.action && !shouldStream
+            ? `<button type="button" class="ai-chat-action-pill" data-msg-idx="${idx}">🧭 ${escapeHtml(msg.action.label || "前往查看")}</button>`
             : "";
 
         return `
           <div class="ai-chat-msg ${isUser ? "is-user" : "is-model"}${shouldAnimateBubble ? " is-entering" : ""}">
-            <div class="ai-chat-bubble">
+            <div class="ai-chat-bubble"${shouldStream ? ` data-stream-idx="${idx}"` : ""}>
               <div class="ai-chat-text">${textHtml}</div>
               ${actionBtn}
             </div>
@@ -160,6 +264,25 @@
     });
 
     container.scrollTop = container.scrollHeight;
+
+    // 逐块追加最新一条待流式展示的 AI 回复
+    const lastStream = pendingStreams[pendingStreams.length - 1];
+    if (lastStream) {
+      const bubbleEl = container.querySelector(
+        `.ai-chat-bubble[data-stream-idx="${lastStream.idx}"]`
+      );
+      const textEl = bubbleEl?.querySelector(".ai-chat-text");
+      if (bubbleEl && textEl) {
+        streamTextIntoElement({
+          container,
+          textEl,
+          bubbleEl,
+          text: lastStream.text,
+          action: lastStream.action,
+          msgIdx: lastStream.idx,
+        });
+      }
+    }
   }
 
   function syncAllViews() {
@@ -172,11 +295,14 @@
     });
 
     document.querySelectorAll(".ai-chat-status-text").forEach((el) => {
-      el.textContent = isSending ? "正在思考…" : "在线 · 与泽凌对话中";
+      el.textContent = isSending
+        ? (thinkingEnabled ? "正在深度思考…" : "正在思考…")
+        : DEFAULT_STATUS_TEXT;
     });
     document.querySelectorAll(".ai-chat-send-btn").forEach((btn) => {
       btn.disabled = isSending;
     });
+    syncThinkingButtons();
   }
 
   async function sendMessage(rawText) {
@@ -201,6 +327,7 @@
           message: text,
           history: historyForApi,
           currentPath: window.location.pathname,
+          thinking: thinkingEnabled,
         }),
       });
 
@@ -262,7 +389,10 @@
       setTimeout(() => btn.classList.remove("is-spinning"), 460);
     });
 
-    lists.forEach((el) => el.classList.add("is-clearing"));
+    lists.forEach((el) => {
+      cancelContainerStream(el);
+      el.classList.add("is-clearing");
+    });
 
     setTimeout(() => {
       sessionStorage.removeItem(STORAGE_KEY);
@@ -278,6 +408,101 @@
   }
 
   /* ========== 桌面端：挂载于 Live2D 上方的气泡对话框 ========== */
+  function setupDesktopQuickRowAutoScroll(row) {
+    if (!row || row.dataset.autoScrollBound === "1") return;
+    row.dataset.autoScrollBound = "1";
+
+    let velocity = 0; // px / 秒，负值向左，正值向右
+    let rafId = null;
+    let lastTs = 0;
+
+    const stop = () => {
+      velocity = 0;
+      lastTs = 0;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    };
+
+    const tick = (ts) => {
+      if (!desktopOpen || !row.isConnected || velocity === 0) {
+        stop();
+        return;
+      }
+
+      const dt = lastTs ? Math.min((ts - lastTs) / 1000, 0.05) : 1 / 60;
+      lastTs = ts;
+
+      const maxScroll = row.scrollWidth - row.clientWidth;
+      if (maxScroll <= 0) {
+        stop();
+        return;
+      }
+
+      const nextScroll = Math.max(0, Math.min(maxScroll, row.scrollLeft + velocity * dt));
+      row.scrollLeft = nextScroll;
+
+      if ((velocity < 0 && nextScroll <= 0) || (velocity > 0 && nextScroll >= maxScroll)) {
+        stop();
+        return;
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    row.addEventListener("pointermove", (e) => {
+      if (e.pointerType && e.pointerType !== "mouse") return;
+      if (row.scrollWidth <= row.clientWidth) {
+        stop();
+        return;
+      }
+
+      const rect = row.getBoundingClientRect();
+      const edgeZone = Math.min(56, rect.width * 0.22);
+      const offsetX = e.clientX - rect.left;
+      const distRight = rect.width - offsetX;
+      const maxSpeed = 280; // 最大滚动速度（px/秒）
+      const minSpeed = 55;  // 刚进入边缘区时的起步速度
+
+      if (offsetX >= 0 && offsetX < edgeZone && row.scrollLeft > 0) {
+        const ratio = (edgeZone - offsetX) / edgeZone;
+        velocity = -(minSpeed + ratio * ratio * (maxSpeed - minSpeed));
+      } else if (
+        distRight >= 0 &&
+        distRight < edgeZone &&
+        row.scrollLeft < row.scrollWidth - row.clientWidth - 1
+      ) {
+        const ratio = (edgeZone - distRight) / edgeZone;
+        velocity = minSpeed + ratio * ratio * (maxSpeed - minSpeed);
+      } else {
+        stop();
+        return;
+      }
+
+      if (rafId === null) {
+        lastTs = 0;
+        rafId = requestAnimationFrame(tick);
+      }
+    });
+
+    row.addEventListener("pointerleave", stop);
+    row.addEventListener("pointerdown", stop);
+
+    // 鼠标滚轮直接横向滚动提示词行
+    row.addEventListener(
+      "wheel",
+      (e) => {
+        if (row.scrollWidth <= row.clientWidth) return;
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          e.preventDefault();
+          row.scrollLeft += e.deltaY;
+        }
+      },
+      { passive: false }
+    );
+  }
+
   function ensureDesktopPanel() {
     const wrapper = document.getElementById("live2d-wrapper");
     if (!wrapper) return null;
@@ -292,13 +517,13 @@
       <div class="l2d-chat-surface">
         <div class="l2d-chat-header">
           <div class="l2d-chat-persona">
-            <span class="l2d-chat-dot"></span>
             <div class="l2d-chat-title-group">
               <span class="l2d-chat-name">泽凌 Zelynn</span>
-              <span class="ai-chat-status-text">在线 · 与泽凌对话中</span>
+              <span class="ai-chat-status-text">${DEFAULT_STATUS_TEXT}</span>
             </div>
           </div>
           <div class="l2d-chat-header-actions">
+            <button type="button" class="l2d-chat-icon-btn is-thinking-toggle" data-chat-thinking aria-pressed="false" title="开启深度思考" aria-label="开启深度思考">思考</button>
             <button type="button" class="l2d-chat-icon-btn is-refresh" data-chat-clear title="清空对话" aria-label="清空对话">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
@@ -330,11 +555,13 @@
 
     wrapper.appendChild(panel);
 
+    panel.querySelector("[data-chat-thinking]").addEventListener("click", toggleThinkingMode);
     panel.querySelector("[data-chat-close]").addEventListener("click", closeDesktopChat);
     panel.querySelector("[data-chat-clear]").addEventListener("click", clearHistory);
     panel.querySelectorAll(".ai-quick-chip").forEach((chip) => {
       chip.addEventListener("click", () => sendMessage(chip.textContent));
     });
+    setupDesktopQuickRowAutoScroll(panel.querySelector(".ai-chat-quick-row"));
 
     const form = panel.querySelector("#l2dChatForm");
     const input = panel.querySelector("#l2dChatInput");
@@ -397,13 +624,13 @@
           <div class="mobile-ai-chat-handle"></div>
           <div class="l2d-chat-header">
             <div class="l2d-chat-persona">
-              <span class="l2d-chat-dot"></span>
               <div class="l2d-chat-title-group">
                 <span class="l2d-chat-name">泽凌 Zelynn · AI</span>
-                <span class="ai-chat-status-text">在线 · 与泽凌对话中</span>
+                <span class="ai-chat-status-text">${DEFAULT_STATUS_TEXT}</span>
               </div>
             </div>
             <div class="l2d-chat-header-actions">
+              <button type="button" class="l2d-chat-icon-btn is-thinking-toggle" data-mobile-thinking aria-pressed="false" title="开启深度思考" aria-label="开启深度思考">思考</button>
               <button type="button" class="l2d-chat-icon-btn is-refresh" data-mobile-clear title="清空对话" aria-label="清空对话">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
@@ -439,6 +666,7 @@
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeMobileChat();
     });
+    overlay.querySelector("[data-mobile-thinking]").addEventListener("click", toggleThinkingMode);
     overlay.querySelector("[data-mobile-close]").addEventListener("click", closeMobileChat);
     overlay.querySelector("[data-mobile-clear]").addEventListener("click", clearHistory);
     overlay.querySelectorAll(".ai-quick-chip").forEach((chip) => {

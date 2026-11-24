@@ -7712,14 +7712,6 @@ html.gamepad-active .gamepad-hud {
   gap: 8px;
 }
 
-.l2d-chat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #34c759;
-  box-shadow: 0 0 8px rgba(52, 199, 89, 0.6);
-  flex-shrink: 0;
-}
 
 .l2d-chat-title-group {
   display: flex;
@@ -7785,10 +7777,38 @@ html.gamepad-active .gamepad-hud {
     border-color: transparent;
     color: light-dark(#ff3b30, #ff453a);
   }
+
+  .l2d-chat-icon-btn.is-thinking-toggle:hover {
+    color: var(--primary-color);
+    border-color: color-mix(in srgb, var(--primary-color) 35%, transparent);
+  }
+
+  .l2d-chat-icon-btn.is-thinking-toggle.is-active:hover {
+    filter: brightness(1.08);
+    background: var(--primary-color);
+    color: #fff;
+  }
 }
 
 .l2d-chat-icon-btn:active {
   transform: scale(0.9);
+}
+
+.l2d-chat-icon-btn.is-thinking-toggle {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.l2d-chat-icon-btn.is-thinking-toggle.is-active {
+  background: var(--primary-color);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 38%, transparent);
 }
 
 .ai-chat-msg {
@@ -7812,6 +7832,10 @@ html.gamepad-active .gamepad-hud {
   line-height: 1.55;
   text-align: left;
   word-break: break-word;
+}
+
+.ai-chat-text {
+  min-height: 1.55em;
 }
 
 .ai-chat-msg.is-user .ai-chat-bubble {
@@ -7888,6 +7912,10 @@ html.gamepad-active .gamepad-hud {
   padding: 6px 12px 8px;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+.ai-chat-quick-row::-webkit-scrollbar {
+  display: none;
 }
 
 .l2d-chat-input-bar {

@@ -2271,9 +2271,89 @@ class GlobalModal extends HTMLElement {
           }
         };
 
+        let stopTabsAutoScroll = () => {};
+
         if (tabsEl) {
+          let velocity = 0; // px / 秒，负值向左，正值向右
+          let rafId = null;
+          let lastTs = 0;
+
+          stopTabsAutoScroll = () => {
+            velocity = 0;
+            lastTs = 0;
+            if (rafId !== null) {
+              cancelAnimationFrame(rafId);
+              rafId = null;
+            }
+          };
+
+          const tickTabsScroll = (ts) => {
+            if (layer.isClosing || layer.isMinimized || !tabsEl.isConnected || velocity === 0) {
+              stopTabsAutoScroll();
+              return;
+            }
+
+            const dt = lastTs ? Math.min((ts - lastTs) / 1000, 0.05) : 1 / 60;
+            lastTs = ts;
+
+            const maxScroll = tabsEl.scrollWidth - tabsEl.clientWidth;
+            if (maxScroll <= 0) {
+              stopTabsAutoScroll();
+              return;
+            }
+
+            const nextScroll = Math.max(0, Math.min(maxScroll, tabsEl.scrollLeft + velocity * dt));
+            tabsEl.scrollLeft = nextScroll;
+
+            if ((velocity < 0 && nextScroll <= 0) || (velocity > 0 && nextScroll >= maxScroll)) {
+              stopTabsAutoScroll();
+              return;
+            }
+
+            rafId = requestAnimationFrame(tickTabsScroll);
+          };
+
+          tabsEl.addEventListener('pointermove', (e) => {
+            if (e.pointerType && e.pointerType !== 'mouse') return;
+            if (layer.isClosing || layer.isMinimized || tabsEl.scrollWidth <= tabsEl.clientWidth) {
+              stopTabsAutoScroll();
+              return;
+            }
+
+            const rect = tabsEl.getBoundingClientRect();
+            const edgeZone = Math.min(72, rect.width * 0.14);
+            const offsetX = e.clientX - rect.left;
+            const distRight = rect.width - offsetX;
+            const maxSpeed = 320;
+            const minSpeed = 65;
+
+            if (offsetX >= 0 && offsetX < edgeZone && tabsEl.scrollLeft > 0) {
+              const ratio = (edgeZone - offsetX) / edgeZone;
+              velocity = -(minSpeed + ratio * ratio * (maxSpeed - minSpeed));
+            } else if (
+              distRight >= 0 &&
+              distRight < edgeZone &&
+              tabsEl.scrollLeft < tabsEl.scrollWidth - tabsEl.clientWidth - 1
+            ) {
+              const ratio = (edgeZone - distRight) / edgeZone;
+              velocity = minSpeed + ratio * ratio * (maxSpeed - minSpeed);
+            } else {
+              stopTabsAutoScroll();
+              return;
+            }
+
+            if (rafId === null) {
+              lastTs = 0;
+              rafId = requestAnimationFrame(tickTabsScroll);
+            }
+          });
+
+          tabsEl.addEventListener('pointerleave', stopTabsAutoScroll);
+          tabsEl.addEventListener('pointerdown', stopTabsAutoScroll);
+
           tabsEl.addEventListener('wheel', (e) => {
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+              stopTabsAutoScroll();
               tabsEl.scrollLeft += e.deltaY;
               e.preventDefault();
             }
@@ -2281,6 +2361,7 @@ class GlobalModal extends HTMLElement {
         }
 
         layer.onDestroy(() => {
+          stopTabsAutoScroll();
           cleanupImgSync();
           destroyViewer();
         });
@@ -2293,6 +2374,7 @@ class GlobalModal extends HTMLElement {
         };
 
         layer._onMinimize = () => {
+          stopTabsAutoScroll();
           activeItem.readingProgress = captureModalReadingProgress();
           activeItem.lastActiveAt = Date.now();
           userInteractedInModal = false;
