@@ -3196,11 +3196,9 @@ html:has(body.viewer-open)::-webkit-scrollbar {
   position: relative;
 
   /* 悬停时显示提示气泡 */
-  @media (hover: hover) {
-    &:hover .tooltip {
-      opacity: 1;
-      transform: translateX(-50%) scale(1);
-    }
+  &:hover .tooltip {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
   }
 }
 
@@ -6769,14 +6767,13 @@ iframe#webFrame {
   padding: 8px 12px;
 }
 
-@media (hover: hover) {
-  .settings-build-info-trigger:hover {
-    opacity: 1;
-  }
-  .settings-build-info-trigger:hover .tooltip.tooltip-bottom {
-    opacity: 1;
-    transform: scale(1);
-  }
+.settings-build-info-trigger:hover {
+  opacity: 1;
+}
+
+.settings-build-info-trigger:hover .tooltip.tooltip-bottom {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .settings-build-info-trigger:focus-visible .tooltip.tooltip-bottom {
@@ -7547,10 +7544,11 @@ html.gamepad-active .gamepad-hud {
   .mobile-ai-input-trigger {
     position: absolute;
     inset: 0;
+    container-type: size;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 8px 0 14px;
+    padding: 0 0 0 14px;
     border-radius: 999px;
     background: light-dark(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.12));
     border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.16));
@@ -7592,9 +7590,15 @@ html.gamepad-active .gamepad-hud {
   }
 
   .mobile-ai-send-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    margin-right: max(6px, calc((100cqh - 28px) / 2));
     font-size: 12px;
     font-weight: 600;
-    padding: 5px 12px;
+    line-height: 1;
+    padding: 0 12px;
     border-radius: 999px;
     background: var(--primary-color);
     color: #fff;
