@@ -3586,13 +3586,16 @@ function checkGlobalAuthStatus() {
     return;
   }
 
-  // 保留原逻辑：向 db.satinau.cn 静默校验 Token 并同步最新用户信息
-  fetch('https://db.satinau.cn/api/user/me', {
+  // 向账号中心（account.satinau.cn）静默校验 Token 并同步最新用户信息
+  fetch(`${window.ACCOUNT_CENTER_URL}/api/user/me`, {
     headers: { 'Authorization': `Bearer ${token}` }
   })
   .then(res => {
     if (res.status === 401) {
       throw new Error('EXPIRED');
+    }
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
     }
     return res.json();
   })
