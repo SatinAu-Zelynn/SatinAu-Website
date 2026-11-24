@@ -15,7 +15,7 @@
 */
 
 (function() {
-const API_BASE = 'https://db.satinau.cn';
+const API_BASE = '';
 
 let pollingInterval = null;
 
