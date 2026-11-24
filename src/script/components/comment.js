@@ -18,6 +18,7 @@
 const API_BASE = '';
 
 let pollingInterval = null;
+let currentComments = [];
 
 window.cleanupPageComments = function() {
     if (pollingInterval) {
@@ -108,12 +109,57 @@ function checkLoginState() {
     }
 }
 
-// 加载评论 (使用两次循环确保楼中楼正确归位)
-async function loadComments(pageId) {
+function startPendingPolling(pageId) {
+    if (!pollingInterval) {
+        pollingInterval = setInterval(() => loadComments(pageId, { silent: true }), 1500);
+    }
+}
+
+function renderCommentList(comments, pageId) {
     const listEl = document.getElementById('commentList');
     const countEl = document.getElementById('commentCount');
     if (!listEl || !countEl) return;
-    
+
+    currentComments = Array.isArray(comments) ? comments : [];
+
+    const hasPending = currentComments.some(c => c.status === 'pending');
+    if (hasPending) {
+        startPendingPolling(pageId);
+    } else if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+
+    if (currentComments.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.6;">暂无评论，快来抢沙发吧~</div>';
+        countEl.textContent = '(0)';
+        return;
+    }
+
+    countEl.textContent = `(${currentComments.length})`;
+
+    const commentMap = {};
+    const roots = [];
+    currentComments.forEach(c => {
+        commentMap[c.id] = { ...c, children: [] };
+    });
+    Object.values(commentMap).forEach(c => {
+        if (c.parent_id && commentMap[c.parent_id]) {
+            commentMap[c.parent_id].children.push(c);
+        } else {
+            roots.push(c);
+        }
+    });
+
+    roots.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    listEl.innerHTML = roots.map(c => renderCommentItem(c)).join('');
+}
+
+// 加载评论 (使用两次循环确保楼中楼正确归位)
+async function loadComments(pageId, { silent = false } = {}) {
+    const listEl = document.getElementById('commentList');
+    if (!listEl) return;
+
     try {
         // 构建请求头 (带 Token)
         const token = localStorage.getItem('auth_token');
@@ -121,57 +167,20 @@ async function loadComments(pageId) {
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         const res = await fetch(`${API_BASE}/api/comments?page_id=${encodeURIComponent(pageId)}`, {
-            headers: headers
+            headers,
+            cache: 'no-store'
         });
         
         if (!res.ok) throw new Error('加载失败');
         
         const comments = await res.json();
-        
-        // --- 轮询逻辑：如果有 "pending" 状态的评论，启动自动刷新 ---
-        const hasPending = comments.some(c => c.status === 'pending');
-        
-        if (hasPending) {
-            if (!pollingInterval) {
-                // 每 3 秒刷新一次
-                pollingInterval = setInterval(() => loadComments(pageId), 3000);
-            }
-        } else {
-            // 没有审核中的评论，停止轮询节省流量
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-                pollingInterval = null;
-            }
-        }
-
-        if (comments.length === 0) {
-            listEl.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.6;">暂无评论，快来抢沙发吧~</div>';
-            countEl.textContent = '(0)';
-            return;
-        }
-
-        countEl.textContent = `(${comments.length})`;
-        
-        // 构建评论树
-        const commentMap = {};
-        const roots = [];
-        comments.forEach(c => {
-            c.children = [];
-            commentMap[c.id] = c;
-        });
-        comments.forEach(c => {
-            if (c.parent_id && commentMap[c.parent_id]) {
-                commentMap[c.parent_id].children.push(c);
-            } else {
-                roots.push(c);
-            }
-        });
-
-        listEl.innerHTML = roots.map(c => renderCommentItem(c)).join('');
+        renderCommentList(comments, pageId);
 
     } catch (err) {
         console.error(err);
-        listEl.innerHTML = '<div style="text-align:center; color:#ff4444;">评论加载失败，请稍后重试</div>';
+        if (!silent) {
+            listEl.innerHTML = '<div style="text-align:center; color:#ff4444;">评论加载失败，请稍后重试</div>';
+        }
     }
 }
 
@@ -299,7 +308,6 @@ function bindEvents(pageId) {
             if (!content.trim()) return showToast('请输入评论内容');
             
             await submitComment(pageId, content, null);
-            document.getElementById('mainCommentText').value = ''; 
         });
         
         submitBtn.dataset.bound = "true";
@@ -337,17 +345,24 @@ async function submitComment(pageId, content, parentId) {
             })
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || '提交失败');
+        const newComment = await res.json();
+        if (!res.ok) throw new Error(newComment.error || '提交失败');
 
-        showToast('评论成功');
+        showToast('已发表，正在审核中');
         
         // 成功后如果是回复，关闭回复框
         if(parentId) {
             closeReplyBox(parentId);
+        } else {
+            const mainTextarea = document.getElementById('mainCommentText');
+            if (mainTextarea) mainTextarea.value = '';
         }
 
-        await loadComments(pageId); // 重新加载列表
+        const merged = [
+            newComment,
+            ...currentComments.filter(c => c.id !== newComment.id)
+        ];
+        renderCommentList(merged, pageId);
 
     } catch (err) {
         showToast(err.message);
@@ -373,9 +388,8 @@ window.deleteComment = function(commentId) {
             if (!res.ok) throw new Error('删除失败');
             
             showToast('已删除');
-            // 简单粗暴：移除 DOM (或者调用 loadComments 刷新)
-            const el = document.getElementById(`comment-${commentId}`);
-            if(el) el.remove();
+            currentComments = currentComments.filter(c => c.id !== commentId && c.parent_id !== commentId);
+            renderCommentList(currentComments, window.currentPageId);
 
         } catch (err) {
             showToast(err.message);

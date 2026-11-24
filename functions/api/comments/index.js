@@ -95,6 +95,7 @@ export async function onRequestGet(context) {
   const res = json(cors, finalComments);
   // 标记缓存状态供调试
   res.headers.set("X-Cache-Status", user ? "MIXED" : "PUBLIC_KV"); 
+  res.headers.set("Cache-Control", "no-store");
   return res;
 }
 
@@ -132,5 +133,7 @@ export async function onRequestPost(context) {
     WHERE c.id = ?
   `).bind(commentId).first();
   
-  return json(cors, newComment);
+  const res = json(cors, newComment);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
