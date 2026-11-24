@@ -1,7 +1,7 @@
 (function () {
   if (window.SatinAiChat) return;
 
-  const CHAT_API_URL = "https://ai-engine.satinau.cn/v1/chat";
+  const CHAT_API_URL = "/api/ai/v1/chat";
   const STORAGE_KEY = "satin_ai_chat_history";
   const MAX_STORED_MESSAGES = 24;
   const DEFAULT_STATUS_TEXT = "内容由AI生成，请谨慎甄别";

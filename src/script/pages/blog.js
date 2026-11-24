@@ -2221,7 +2221,7 @@ function renderGenerateButton(container, rawMarkdown, cacheKey) {
                 .replace(/[#*`\[\]()]/g, '')
                 .substring(0, 10000);
 
-            const WORKER_URL = "https://blog-ai-summary.satinau.cn";
+            const WORKER_URL = "/api/ai/v1/blog/summary";
             const response = await fetch(WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
