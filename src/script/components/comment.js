@@ -18,6 +18,7 @@
 const API_BASE = '';
 
 let pollingInterval = null;
+let pollingCount = 0;
 let currentComments = [];
 
 window.cleanupPageComments = function() {
@@ -25,6 +26,7 @@ window.cleanupPageComments = function() {
         clearInterval(pollingInterval);
         pollingInterval = null;
     }
+    pollingCount = 0;
 };
 
 // 监听全局登录状态变动，实时同步评论区登录态显示
@@ -109,12 +111,6 @@ function checkLoginState() {
     }
 }
 
-function startPendingPolling(pageId) {
-    if (!pollingInterval) {
-        pollingInterval = setInterval(() => loadComments(pageId, { silent: true }), 1500);
-    }
-}
-
 function renderCommentList(comments, pageId) {
     const listEl = document.getElementById('commentList');
     const countEl = document.getElementById('commentCount');
@@ -122,12 +118,27 @@ function renderCommentList(comments, pageId) {
 
     currentComments = Array.isArray(comments) ? comments : [];
 
-    const hasPending = currentComments.some(c => c.status === 'pending');
-    if (hasPending) {
-        startPendingPolling(pageId);
+    const hasRealPending = currentComments.some(
+        c => c.status === 'pending' && !String(c.id).startsWith('temp-')
+    );
+
+    if (hasRealPending) {
+        if (!pollingInterval) {
+            pollingCount = 0;
+            pollingInterval = setInterval(() => {
+                pollingCount += 1;
+                if (pollingCount > 30) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                    return;
+                }
+                loadComments(pageId, { silent: true, fresh: true });
+            }, 1000);
+        }
     } else if (pollingInterval) {
         clearInterval(pollingInterval);
         pollingInterval = null;
+        pollingCount = 0;
     }
 
     if (currentComments.length === 0) {
@@ -156,25 +167,25 @@ function renderCommentList(comments, pageId) {
 }
 
 // 加载评论 (使用两次循环确保楼中楼正确归位)
-async function loadComments(pageId, { silent = false } = {}) {
+async function loadComments(pageId, { silent = false, fresh = false } = {}) {
     const listEl = document.getElementById('commentList');
     if (!listEl) return;
 
     try {
-        // 构建请求头 (带 Token)
         const token = localStorage.getItem('auth_token');
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch(`${API_BASE}/api/comments?page_id=${encodeURIComponent(pageId)}`, {
-            headers,
-            cache: 'no-store'
-        });
-        
+        const freshQuery = fresh ? '&fresh=1' : '';
+        const res = await fetch(
+            `${API_BASE}/api/comments?page_id=${encodeURIComponent(pageId)}${freshQuery}`,
+            { headers, cache: 'no-store' }
+        );
         if (!res.ok) throw new Error('加载失败');
-        
-        const comments = await res.json();
-        renderCommentList(comments, pageId);
+
+        const serverComments = await res.json();
+        const pendingTemps = currentComments.filter(c => String(c.id).startsWith('temp-'));
+        renderCommentList([...pendingTemps, ...serverComments], pageId);
 
     } catch (err) {
         console.error(err);
@@ -301,35 +312,45 @@ function bindEvents(pageId) {
     if (submitBtn) {
         if (submitBtn.dataset.bound) return;
         
-        submitBtn.addEventListener('click', async (e) => {
+        submitBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            const content = document.getElementById('mainCommentText').value;
+            const textarea = document.getElementById('mainCommentText');
+            const content = textarea.value;
             if (!content.trim()) return showToast('请输入评论内容');
-            
-            await submitComment(pageId, content, null);
+            submitComment(pageId, content, null);
         });
         
         submitBtn.dataset.bound = "true";
     }
 }
 
-// 提交评论逻辑 (API) - 修复：添加 finally 块确保按钮重置
 async function submitComment(pageId, content, parentId) {
     const token = localStorage.getItem('auth_token');
     if (!token) return showToast('请先登录');
 
-    const btn = parentId 
-        ? document.querySelector(`#reply-box-${parentId} .reply-submit-btn`) 
-        : document.getElementById('submitCommentBtn');
-    
-    // 保存原始按钮文字，以便恢复
-    const originalText = parentId ? '回复' : '发表评论';
-    
-    if(btn) {
-        btn.disabled = true;
-        btn.textContent = '提交中...';
+    const currentUser = JSON.parse(localStorage.getItem('user_info') || '{}');
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+    if (parentId) {
+        closeReplyBox(parentId);
+    } else {
+        const textarea = document.getElementById('mainCommentText');
+        if (textarea) textarea.value = '';
     }
+
+    const optimisticComment = {
+        id: tempId,
+        page_id: pageId,
+        user_id: currentUser.id,
+        parent_id: parentId || null,
+        content,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        nickname: currentUser.nickname || '我',
+        avatar: currentUser.avatar || '/public/guest.png',
+    };
+
+    renderCommentList([optimisticComment, ...currentComments], pageId);
 
     try {
         const res = await fetch(`${API_BASE}/api/comments`, {
@@ -340,37 +361,31 @@ async function submitComment(pageId, content, parentId) {
             },
             body: JSON.stringify({
                 page_id: pageId,
-                content: content,
+                content,
                 parent_id: parentId
             })
         });
 
-        const newComment = await res.json();
-        if (!res.ok) throw new Error(newComment.error || '提交失败');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '提交失败');
 
-        showToast('已发表，正在审核中');
-        
-        // 成功后如果是回复，关闭回复框
-        if(parentId) {
-            closeReplyBox(parentId);
-        } else {
-            const mainTextarea = document.getElementById('mainCommentText');
-            if (mainTextarea) mainTextarea.value = '';
-        }
+        const realComment = {
+            ...optimisticComment,
+            ...data,
+            nickname: data.nickname || optimisticComment.nickname,
+            avatar: data.avatar || optimisticComment.avatar,
+        };
 
-        const merged = [
-            newComment,
-            ...currentComments.filter(c => c.id !== newComment.id)
-        ];
-        renderCommentList(merged, pageId);
-
+        const nextList = currentComments.map(c => (c.id === tempId ? realComment : c));
+        renderCommentList(nextList, pageId);
+        setTimeout(() => loadComments(pageId, { silent: true, fresh: true }), 800);
     } catch (err) {
-        showToast(err.message);
-    } finally {
-        // 无论成功还是失败，都恢复按钮状态
-        if(btn) {
-            btn.disabled = false;
-            btn.textContent = originalText;
+        showToast(err.message || '评论提交失败');
+        const rollbackList = currentComments.filter(c => c.id !== tempId);
+        renderCommentList(rollbackList, pageId);
+        if (!parentId) {
+            const textarea = document.getElementById('mainCommentText');
+            if (textarea && !textarea.value) textarea.value = content;
         }
     }
 }
@@ -388,8 +403,10 @@ window.deleteComment = function(commentId) {
             if (!res.ok) throw new Error('删除失败');
             
             showToast('已删除');
-            currentComments = currentComments.filter(c => c.id !== commentId && c.parent_id !== commentId);
-            renderCommentList(currentComments, window.currentPageId);
+            const nextList = currentComments.filter(
+                c => String(c.id) !== String(commentId) && String(c.parent_id) !== String(commentId)
+            );
+            renderCommentList(nextList, window.currentPageId);
 
         } catch (err) {
             showToast(err.message);
