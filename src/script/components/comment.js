@@ -20,6 +20,7 @@ const API_BASE = '';
 let pollingInterval = null;
 let pollingCount = 0;
 let currentComments = [];
+let loadSeq = 0;
 
 window.cleanupPageComments = function() {
     if (pollingInterval) {
@@ -170,6 +171,8 @@ async function loadComments(pageId, { silent = false, fresh = false } = {}) {
     const listEl = document.getElementById('commentList');
     if (!listEl) return;
 
+    const mySeq = ++loadSeq;
+
     try {
         const token = localStorage.getItem('auth_token');
         const headers = {};
@@ -183,11 +186,13 @@ async function loadComments(pageId, { silent = false, fresh = false } = {}) {
         if (!res.ok) throw new Error('加载失败');
 
         const serverComments = await res.json();
+        if (mySeq !== loadSeq) return;
+
         const pendingTemps = currentComments.filter(c => String(c.id).startsWith('temp-'));
         renderCommentList([...pendingTemps, ...serverComments], pageId);
     } catch (err) {
         console.error(err);
-        if (!silent) {
+        if (!silent && mySeq === loadSeq) {
             listEl.innerHTML = '<div style="text-align:center; color:#ff4444;">评论加载失败，请稍后重试</div>';
         }
     }
@@ -366,6 +371,8 @@ async function submitComment(pageId, content, parentId) {
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '提交失败');
+
+        loadSeq += 1;
 
         const realComment = {
             ...optimisticComment,
