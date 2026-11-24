@@ -4,10 +4,6 @@ async function moderateCommentViaAIEngine(env, commentId, content, pageId) {
   try {
     if (!env.AI_ENGINE || typeof env.AI_ENGINE.fetch !== "function") {
       console.error("AI_ENGINE binding missing, skipping moderation");
-      await env.DB.prepare("UPDATE comments SET status = 'approved' WHERE id = ?")
-        .bind(commentId)
-        .run();
-      await env.KV.delete(`comments:public:${pageId}`);
       return;
     }
 
@@ -34,10 +30,6 @@ async function moderateCommentViaAIEngine(env, commentId, content, pageId) {
     }
   } catch (err) {
     console.error("AI Moderation Error:", err);
-    await env.DB.prepare("UPDATE comments SET status = 'approved' WHERE id = ?")
-      .bind(commentId)
-      .run();
-    await env.KV.delete(`comments:public:${pageId}`);
   }
 }
 
@@ -54,12 +46,11 @@ export async function onRequestGet(context) {
 
   const url = new URL(request.url);
   const pageId = url.searchParams.get("page_id");
-  const forceFresh = url.searchParams.get("fresh") === "1";
   if (!pageId) return error(cors, "Missing page_id");
 
   // 尝试从 KV 获取 "公开且已通过" 的评论缓存
   const cacheKey = `comments:public:${pageId}`;
-  let publicComments = forceFresh ? null : await env.KV.get(cacheKey, { type: "json" });
+  let publicComments = await env.KV.get(cacheKey, { type: "json" });
 
   if (!publicComments) {
     // 缓存未命中，查数据库：只查 status = 'approved'
@@ -103,8 +94,7 @@ export async function onRequestGet(context) {
 
   const res = json(cors, finalComments);
   // 标记缓存状态供调试
-  res.headers.set("X-Cache-Status", forceFresh ? "BYPASS_FRESH" : (user ? "MIXED" : "PUBLIC_KV"));
-  res.headers.set("Cache-Control", "no-store");
+  res.headers.set("X-Cache-Status", user ? "MIXED" : "PUBLIC_KV"); 
   return res;
 }
 
@@ -134,15 +124,13 @@ export async function onRequestPost(context) {
   // 在 onRequestPost 插入评论拿到 commentId 后调用：
   context.waitUntil(moderateCommentViaAIEngine(env, commentId, content, page_id));
 
-  const res = json(cors, {
-    id: commentId,
-    page_id,
-    user_id: user.id,
-    content,
-    parent_id: parent_id || null,
-    status: "pending",
-    created_at: new Date().toISOString(),
-  });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  // 立即返回新评论数据 (状态为 pending)
+  const newComment = await env.DB.prepare(`
+    SELECT c.*, u.nickname, u.avatar 
+    FROM comments c 
+    LEFT JOIN users u ON c.user_id = u.id 
+    WHERE c.id = ?
+  `).bind(commentId).first();
+  
+  return json(cors, newComment);
 }
