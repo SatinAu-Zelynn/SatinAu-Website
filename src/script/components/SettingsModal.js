@@ -84,7 +84,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
         <div class="setting-item">
           <label>
             主题色
-            <span class="tooltip">自定义网站的主色调（如按钮、链接颜色）</span>
+            <span class="tooltip">自定义网站的主色调</span>
           </label>
           
           <div id="themeColorSelector" class="theme-selector-wrapper"></div>
@@ -95,7 +95,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
             HDR 图片模式 (Beta)
             <span class="tooltip">
               开启后泽凌页面部分图片将加载 AVIF 高动态范围图片<br>
-              若显示异常或黑屏，请关闭此项（默认使用 WEBP）
+              若显示异常或黑屏，请关闭此项
             </span>
           </label>
           <div class="toggle-switch">
@@ -109,7 +109,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
           <div class="setting-item" id="live2d-main-setting">
             <label for="live2dToggle">
               虚拟形象 (Live2D)
-              <span class="tooltip">在屏幕边缘显示小雪狐泽凌（默认开启）</span>
+              <span class="tooltip">在屏幕边缘显示小雪狐泽凌</span>
             </label>
             <div class="toggle-switch">
               <input type="checkbox" id="live2dToggle" onchange="toggleLive2D()">
@@ -121,7 +121,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
             <div class="setting-item live2d-sub-setting" id="live2d-pos-setting">
               <label>
                 虚拟形象位置
-                <span class="tooltip">设置小雪狐在屏幕中的停靠位置（默认左下）</span>
+                <span class="tooltip">设置小雪狐在屏幕中的停靠位置</span>
               </label>
               <div class="segmented-control" id="live2dPosControl">
                 <button data-value="left">左下</button>
@@ -132,7 +132,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
             <div class="setting-item live2d-sub-setting" id="live2d-size-setting">
               <label>
                 虚拟形象大小
-                <span class="tooltip">调整虚拟形象的显示尺寸（小: 240px / 中: 300px / 大: 360px）</span>
+                <span class="tooltip">调整虚拟形象的显示尺寸</span>
               </label>
               <div class="segmented-control" id="live2dSizeControl">
                 <button data-value="small">小</button>
@@ -146,7 +146,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
         <div class="setting-item">
           <label for="performanceModeToggle">
             性能模式
-            <span class="tooltip">启用后，限制部分模糊和动画以提升流畅度（默认禁用）</span>
+            <span class="tooltip">启用后，限制部分模糊和动画以提升流畅度</span>
           </label>
           <div class="toggle-switch">
             <input type="checkbox" id="performanceModeToggle" onchange="togglePerformanceMode()">
@@ -162,7 +162,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
         <div class="setting-item" id="multitask-setting-anchor">
           <label for="multitaskToggle">
             多任务管理
-            <span class="tooltip">开启后，可在导航栏多任务中心管理最小化的网页弹窗（默认开启）</span>
+            <span class="tooltip">开启后，可在导航栏多任务中心管理最小化的网页弹窗</span>
           </label>
           <div class="toggle-switch">
             <input type="checkbox" id="multitaskToggle" onchange="toggleMultitask()">
@@ -173,7 +173,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
         <div class="setting-item">
           <label for="autoHideNavToggle">
             自动隐藏导航栏
-            <span class="tooltip">向下滚动时隐藏导航栏，向上滚动时显示（默认禁用）</span>
+            <span class="tooltip">向下滚动时隐藏导航栏，向上滚动时显示</span>
           </label>
           <div class="toggle-switch">
             <input type="checkbox" id="autoHideNavToggle" onchange="toggleAutoHideNav()">
@@ -184,7 +184,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
         <div class="setting-item">
           <label for="customRightClickMenuToggle">
             替换默认右键菜单
-            <span class="tooltip">启用后，将使用自带右键菜单替换浏览器默认菜单（默认启用）</span>
+            <span class="tooltip">启用后，将使用自带右键菜单替换浏览器默认菜单</span>
           </label>
           <div class="toggle-switch">
             <input type="checkbox" id="customRightClickMenuToggle" onchange="toggleCustomRightClickMenu()">
