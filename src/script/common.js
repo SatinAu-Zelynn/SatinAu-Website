@@ -131,21 +131,97 @@ window.addEventListener('error', function(e) {
   }
 }, true);
 
+// 统一在 window.load 完成后利用空闲时间执行非首屏任务
+window.runAfterPageLoad = function(task, delayMs = 0) {
+  if (typeof task !== 'function') return;
+  const schedule = () => {
+    const run = () => {
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(() => task(), { timeout: 2000 });
+      } else {
+        setTimeout(task, 0);
+      }
+    };
+    if (delayMs > 0) setTimeout(run, delayMs);
+    else run();
+  };
+  if (document.readyState === 'complete') {
+    schedule();
+  } else {
+    window.addEventListener('load', schedule, { once: true });
+  }
+};
+
+// 非阻塞异步加载字体样式表
+(function initAsyncFonts() {
+  function appendAsyncStylesheet(href, id) {
+    if (!href || (id && document.getElementById(id))) return;
+    const link = document.createElement('link');
+    if (id) link.id = id;
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.media = 'print';
+    link.onload = () => { link.media = 'all'; };
+    (document.head || document.documentElement).appendChild(link);
+  }
+
+  const loadDomesticFonts = () => {
+    appendAsyncStylesheet(window.getCdnUrl('/fonts/cf.css'), 'font-cf-css');
+    appendAsyncStylesheet(
+      'https://font.sec.miui.com/font/css?family=MiSans:200,300,400,450,500,600,650,700:Chinese_Simplify,Latin&display=swap',
+      'font-misans-css'
+    );
+  };
+
+  const loadGoogleFonts = () => {
+    appendAsyncStylesheet(
+      'https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght,ROND@6..144,1..1000,0..100&display=swap',
+      'font-gs-flex-css'
+    );
+    appendAsyncStylesheet(
+      'https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&display=swap',
+      'font-gs-code-css'
+    );
+    appendAsyncStylesheet(
+      'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&display=swap',
+      'font-noto-serif-css'
+    );
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadDomesticFonts, { once: true });
+  } else {
+    loadDomesticFonts();
+  }
+  window.runAfterPageLoad(loadGoogleFonts, 200);
+})();
+
+// 带超时的 fetch 封装，防止 WebView 下不可达线路长期挂起
+async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // 单源延迟探测
 async function testCdnPing(baseUrl) {
   const testUrl = `${baseUrl}/data/notice.json?_t=${Date.now()}`;
   const start = performance.now();
   try {
-    const res = await fetch(testUrl, { method: 'HEAD', cache: 'no-cache', mode: 'cors' });
+    const res = await fetchWithTimeout(testUrl, { method: 'HEAD', cache: 'no-cache', mode: 'cors' }, 4000);
     if (!res.ok && res.status !== 304) throw new Error('status error');
     return Math.round(performance.now() - start);
   } catch (e) {
     try {
-      const resFallback = await fetch(testUrl, { method: 'GET', cache: 'no-cache', mode: 'cors' });
+      const resFallback = await fetchWithTimeout(testUrl, { method: 'GET', cache: 'no-cache', mode: 'cors' }, 4000);
       if (!resFallback.ok && resFallback.status !== 304) throw new Error('status error');
       return Math.round(performance.now() - start);
     } catch (err) {
-      return -1; // 测速失败或超时
+      return -1;
     }
   }
 }
@@ -175,10 +251,10 @@ window.detectCdnLatencies = async function() {
   localStorage.setItem(CDN_AUTO_PICKED_KEY, best);
 };
 
-// 进入站点后自动触发延迟探测
-document.addEventListener('DOMContentLoaded', () => {
+// 延迟至首屏 load 之后执行 CDN 测速
+window.runAfterPageLoad(() => {
   window.detectCdnLatencies();
-});
+}, 400);
 
 /* ========== 全局 Cookie 权限与 TermsFeed 管理 ========== */
 window.initGlobalCookieConsent = function() {
@@ -191,11 +267,8 @@ window.initGlobalCookieConsent = function() {
   (document.head || document.documentElement).appendChild(script);
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', window.initGlobalCookieConsent);
-} else {
-  window.initGlobalCookieConsent();
-}
+// 延迟至首屏 load 之后加载 CookieConsent.js
+window.runAfterPageLoad(window.initGlobalCookieConsent, 300);
 
 /* ========== Live2D 设置逻辑 ========== */
 const LIVE2D_KEY = 'setting_live2d_enabled';
@@ -2143,24 +2216,24 @@ function initThemeColorSelector(wrapper, currentKey) {
   }
 }
 
-// AI 对话核心组件引导加载
-(function loadAiChatWidget() {
+// AI 对话核心组件引导加载（延后至首屏完成后）
+window.runAfterPageLoad(function loadAiChatWidget() {
   if (document.querySelector('script[src*="/AiChatWidget.js"]')) return;
   const script = document.createElement('script');
   script.src = '/src/script/components/AiChatWidget.js';
-  script.defer = true;
+  script.async = true;
   document.head.appendChild(script);
-})();
+}, 200);
 
-// 游戏控制器模块引导加载（Xbox 适配，预留 PlayStation 扩展）
-(function loadGamepadManager() {
+// 游戏控制器模块引导加载（延后至首屏完成后）
+window.runAfterPageLoad(function loadGamepadManager() {
   if (window.SatinGamepad || document.getElementById('satin-gamepad-script')) return;
   const script = document.createElement('script');
   script.id = 'satin-gamepad-script';
   script.src = '/src/script/components/GamepadManager.js';
-  script.defer = true;
+  script.async = true;
   document.head.appendChild(script);
-})();
+}, 500);
 
 /* ========== 浏览器兼容性检测逻辑 ========== */
 
@@ -3211,6 +3284,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
 
   async function startLive2D() {
     if (!isLive2DEnabled()) return;
+    if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return;
 
     const mySessionId = ++live2dSessionId;
     if (activeState) {
@@ -3409,11 +3483,7 @@ document.addEventListener('DOMContentLoaded', initSegmentedControls);
   window.startLive2D = startLive2D;
 
   if (isLive2DEnabled()) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', startLive2D);
-    } else {
-      startLive2D();
-    }
+    window.runAfterPageLoad(startLive2D, 300);
   }
 })();
 

@@ -38,12 +38,18 @@ function errorResponse(status) {
   });
 }
 
-export async function onRequest({ request, env }) {
+export async function onRequest({ request, env, waitUntil }) {
   if (request.method !== 'GET') return errorResponse(405);
 
   const requestUrl = new URL(request.url);
   let imageUrl = normalizeImageUrl(requestUrl.searchParams.get('src'));
   if (!imageUrl) return errorResponse(400);
+
+  // 优先读取 Cloudflare 边缘缓存
+  const cache = caches.default;
+  const cacheKey = new Request(requestUrl.toString(), { method: 'GET' });
+  const cachedResponse = await cache.match(cacheKey);
+  if (cachedResponse) return cachedResponse;
 
   const uin = /^\d{5,12}$/.test(env.QZONE_UIN || '') ? env.QZONE_UIN : '';
   const referer = uin
@@ -82,7 +88,7 @@ export async function onRequest({ request, env }) {
         return errorResponse(413);
       }
 
-      return new Response(response.body, {
+      const finalResponse = new Response(response.body, {
         headers: {
           'Cache-Control': 'public, max-age=1800, s-maxage=86400',
           'Content-Type': contentType,
@@ -90,6 +96,10 @@ export async function onRequest({ request, env }) {
           'Cross-Origin-Resource-Policy': 'same-origin'
         }
       });
+      if (typeof waitUntil === 'function') {
+        waitUntil(cache.put(cacheKey, finalResponse.clone()));
+      }
+      return finalResponse;
     }
 
     return errorResponse(502);

@@ -41,12 +41,13 @@
   <link rel="canonical" href="https://satinau.cn/">
   <link rel="icon" type="image/x-icon" href="https://satinau.cn/favicon.ico">
   <link rel="stylesheet" href="src/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.15.2/viewer.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.15.2/viewer.min.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.15.2/viewer.min.css"></noscript>
   <script src="src/script/config.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.15.2/viewer.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.15.2/viewer.min.js" defer></script>
   <script src="src/script/common.js" defer></script>
   <script src="src/script/pages/index.js" defer></script>
-  <script src="src/script/components/CRCMenu.js"></script>
+  <script src="src/script/components/CRCMenu.js" defer></script>
   <script src="src/script/components/GlobalModal.js" defer></script>
   
   <script type="application/ld+json">
@@ -288,7 +289,7 @@
         <!-- 兽频道 -->
         <a class="contact-card" href="javascript:void(0);" onclick="document.getElementById('globalModal').with(this).alert('是否跳转到 兽频道？','https://fursuit.tv/@SatinAu')">
           <div class="icon">
-            <img src="https://fursuit.tv/images/logo.png" alt="Fursuit.TV">
+            <img src="https://fursuit.tv/images/logo.png" alt="Fursuit.TV" loading="lazy" decoding="async">
           </div>
           <div class="text">
             <div class="label">兽频道</div>

@@ -75,8 +75,9 @@ function initZelynnCardBg() {
   }
 
   // 切换背景
-  function changeBackground() {
+  function changeBackground(shouldPreloadNext = true) {
     if (images.length === 0 || !zelynnBg.isConnected) return;
+    if (document.hidden && zelynnBg.style.backgroundImage) return;
     
     const imgInfo = images[currentIndex];
     const rawPath = `/zelynn/${imgInfo.filename}${imgExtension}`;
@@ -97,12 +98,13 @@ function initZelynnCardBg() {
 
     // 索引递增
     currentIndex = (currentIndex + 1) % images.length;
-    
-    // 预加载下一张
-    const nextIndex = (currentIndex + 1) % images.length;
-    const nextRawPath = `/zelynn/${images[nextIndex].filename}${imgExtension}`;
-    const nextImgUrl = typeof getCdnUrl === 'function' ? getCdnUrl(nextRawPath) : `${getCdnBaseUrl()}${nextRawPath}`;
-    preloadImage(nextImgUrl);
+
+    if (shouldPreloadNext) {
+      const nextIndex = (currentIndex + 1) % images.length;
+      const nextRawPath = `/zelynn/${images[nextIndex].filename}${imgExtension}`;
+      const nextImgUrl = typeof getCdnUrl === 'function' ? getCdnUrl(nextRawPath) : `${getCdnBaseUrl()}${nextRawPath}`;
+      preloadImage(nextImgUrl);
+    }
   }
 
   // 获取图片列表
@@ -116,8 +118,16 @@ function initZelynnCardBg() {
       images.sort(() => Math.random() - 0.5);
 
       if (images.length > 0) {
-        changeBackground(); // 立即显示
-        indexBgInterval = setInterval(changeBackground, 5000); // 5秒轮播
+        changeBackground(false); // 立即显示第一张，不预加载下一张
+        const startSlideshow = () => {
+          if (!zelynnBg.isConnected || indexBgInterval) return;
+          indexBgInterval = setInterval(() => changeBackground(true), 5000);
+        };
+        if (typeof window.runAfterPageLoad === 'function') {
+          window.runAfterPageLoad(startSlideshow, 500);
+        } else {
+          startSlideshow();
+        }
       }
     })
     .catch(err => {
@@ -468,7 +478,7 @@ async function loadQzonePosts(signal) {
   }
 }
 
-function initActivityCarousel(signal) {
+function initActivityCarousel(signal, { onSlideActivate } = {}) {
   const carousel = document.getElementById('activity-carousel');
   if (!carousel) return;
 
@@ -680,6 +690,7 @@ function initActivityCarousel(signal) {
       transitionTargetIndex = null;
       clearCarouselAnimations();
       activateSlide(nextIndex);
+      if (typeof onSlideActivate === 'function') onSlideActivate(nextIndex);
       startProgress();
       return;
     }
@@ -694,6 +705,7 @@ function initActivityCarousel(signal) {
     transitionTargetIndex = nextIndex;
     clearCarouselAnimations();
     clearProgress();
+    if (typeof onSlideActivate === 'function') onSlideActivate(nextIndex);
 
     const movingRight = nextIndex > previousIndex;
     const exitClass = movingRight
@@ -827,9 +839,19 @@ function initRecentActivities() {
   }
 
   refreshActivityScrollAnimations();
-  initActivityCarousel(signal);
+  let qzoneLoaded = false;
+  const ensureQzoneLoaded = () => {
+    if (qzoneLoaded || !qzoneContainer) return;
+    qzoneLoaded = true;
+    loadQzonePosts(signal);
+  };
+
+  initActivityCarousel(signal, {
+    onSlideActivate: (index) => {
+      if (index === 1) ensureQzoneLoaded();
+    }
+  });
   if (steamContainer) loadSteamGames(signal);
-  if (qzoneContainer) loadQzonePosts(signal);
 }
 
 window.cleanupIndexPage = function() {
