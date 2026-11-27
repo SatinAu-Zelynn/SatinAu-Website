@@ -92,7 +92,7 @@ window.mountSettingsToModal = function(modalInstance, anchorId = null) {
 
         <div class="setting-item" id="hdr-setting-anchor">
           <label for="hdrModeToggle">
-            HDR 图片模式 (Beta)
+            HDR 图片模式
             <span class="tooltip">
               开启后泽凌页面部分图片将加载 AVIF 高动态范围图片<br>
               若显示异常或黑屏，请关闭此项

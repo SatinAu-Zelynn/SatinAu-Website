@@ -1,5 +1,5 @@
 <!--
-  Copyright 2025 缎金SatinAu
+  Copyright 2025-2026 缎金SatinAu
   
   pages/agreement.html - 用户协议与隐私政策
 -->
@@ -12,7 +12,7 @@
   <title>用户协议与隐私说明 - 缎金SatinAu</title>
   <meta name="application-name" content="缎金SatinAuの小站">
   <meta property="og:site_name" content="缎金SatinAuの小站">
-  <meta name="description" content="缎金SatinAu个人网站的用户协议、隐私政策及开源致谢">
+  <meta name="description" content="缎金SatinAu个人网站的用户协议、隐私政策、账号与AI服务声明及开源致谢">
   <meta name="author" content="缎金SatinAu">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
@@ -110,58 +110,73 @@
     <section>
       <div class="agreement-content md-body">
         <h2>1. 服务架构与数据跨境传输声明</h2>
-        <p><strong>特别提示：</strong>本站基于全球化的技术架构构建。在您浏览、注册或互动时，您的相关数据将不可避免地发生跨境传输。继续使用本站服务，即视为您已充分知悉并同意以下数据处理方式：</p>
+        <p><strong>特别提示：</strong>本站（<code>satinau.cn</code> 及其子域名服务）基于全球化的边缘计算与微服务架构构建。在您浏览、登录、使用 AI 功能或参与互动时，您的相关数据将不可避免地发生跨境传输。继续使用本站服务，即视为您已充分知悉并同意以下数据处理方式：</p>
         
-        <h3>1.1 网络加速与分发 (Cloudflare)</h3>
-        <p>本站使用 <strong>Cloudflare</strong> 提供的全球内容分发网络（CDN）及安全防护服务。
-        <br><strong>跨境传输说明：</strong>为了优化连接速度并抵御网络攻击，您的访问流量、IP 地址及必要的请求元数据可能会被路由至 Cloudflare 位于全球各地的边缘节点（包含中国大陆以外的节点）进行处理。</p>
+        <h3>1.1 网络加速、边缘计算与多节点分发 (Cloudflare & EdgeOne)</h3>
+        <p>本站主站及后端服务托管于 <strong>Cloudflare</strong>（Pages / Workers），静态资源与媒体内容通过 <strong>Cloudflare CDN</strong> 及 <strong>EdgeOne</strong> 等多节点内容分发网络进行加速与容灾切换。
+        <br><strong>跨境传输说明：</strong>为了优化连接速度、提供高可用访问并抵御网络攻击，您的访问流量、IP 地址及必要的请求元数据可能会被路由至位于全球各地的边缘节点（包含中国大陆以外的节点）进行处理。</p>
 
-        <h3>1.2 访问体验分析 (Microsoft Clarity)</h3>
+        <h3>1.2 统一账号中心与单点登录 (SatinAu Account)</h3>
+        <p>本站接入统一账号中心（<code>account.satinau.cn</code>），通过单点登录（SSO）为主站及关联子站提供身份认证与个人资料管理服务。
+        <br><strong>数据收集与存储：</strong>当您注册或登录账号时，我们将收集并存储您的电子邮箱、经加密哈希处理后的密码、昵称、头像以及您在站内发表的评论记录。上述数据存储于 <strong>Cloudflare D1</strong> 分布式数据库中。
+        <br><strong>本地存储与扫码登录：</strong>为维持登录状态及防止跨站请求伪造，本站会在您浏览器的 <code>localStorage</code> 与 <code>sessionStorage</code> 中保存认证令牌（Token）、基础用户信息及临时状态标识（State）。当您使用扫码登录（QR）功能时，系统会生成临时会话凭证以完成跨端授权，并在过期或确认后失效。</p>
+
+        <h3>1.3 统一人工智能服务引擎 (SatinAu AI Engine)</h3>
+        <p>本站通过部署在 Cloudflare Workers 上的统一 AI 引擎（<code>ai-engine.satinau.cn</code>）集中调度以下智能化服务：</p>
+        <ul>
+          <li><strong>站内 AI 形象对话与导航助手「泽凌 Zelynn」(Google Gemini)：</strong>当您与页面角落的 AI 助手对话时，您输入的文本消息、近期对话上下文（最多保留 10 轮历史记录）以及您当前所在的页面路径，将被传输至 <strong>Google</strong> 的服务器（主要位于美国或其他数据中心）以生成回复、驱动形象表情及提供站内导航建议。<strong>请勿在对话中输入密码、身份证号、联系方式等任何个人敏感信息。</strong></li>
+          <li><strong>博客文章智能摘要 (Google Gemini)：</strong>用于为博客文章自动生成内容摘要。该过程仅传输文章正文内容至 Google 服务器进行自动化处理，不涉及您的个人身份信息。</li>
+          <li><strong>评论内容安全审核 (Cloudflare Workers AI)：</strong>为了维护社区环境的健康与安全，当您提交评论时，评论文本将通过统一 AI 引擎路由至 <strong>Cloudflare Workers AI</strong> 边缘计算节点，使用大语言模型（如 Meta Llama 系列）进行实时内容安全检测（识别仇恨言论、暴力、垃圾信息等），检测结果将直接决定评论的发布状态。</li>
+        </ul>
+
+        <h3>1.4 访问体验分析 (Microsoft Clarity)</h3>
         <p>为了持续改进网站体验，本站集成了 <strong>Microsoft Clarity</strong> 分析工具。
         <br><strong>隐私与授权说明：</strong>该服务已纳入 GDPR Cookie 管理机制。仅在您通过页面底部的 Cookie 设置横幅同意开启“Tracking”类权限后，该工具才会加载。启用后，它可能会收集匿名的点击、滚动及页面浏览行为数据，这些去标识化的统计数据将被传输至 Microsoft 的全球服务器进行分析。</p>
 
-        <h3>1.3 人工智能服务 (Google Gemini)</h3>
-        <p>本站引入了 <strong>Google Gemini</strong> 生成式 AI 模型，用于生成“文章智能摘要”。
-        <br><strong>跨境传输说明：</strong>为了提供摘要生成服务，文章的正文内容会被传输至 Google 的服务器（主要位于美国或其他数据中心）进行自动化处理。该过程仅用于生成内容摘要，不涉及您的个人身份信息，也不会用于训练公共模型。</p>
-
-        <h3>1.4 评论智能审核 (Cloudflare AI)</h3>
-        <p>为了维护社区环境的健康与安全，本站的评论系统集成了 <strong>Cloudflare Workers AI</strong> 技术。
-        <br><strong>数据处理说明：</strong>当您提交评论时，评论的文本内容将被自动传输至 Cloudflare 的边缘计算节点，使用大语言模型（如 Llama 系列）进行实时内容安全检测（识别仇恨言论、暴力或垃圾信息）。该过程仅用于判断评论是否合规，处理结果将决定评论的发布状态。</p>
-
-        <h2>2. 第三方链接与责任边界</h2>
-        <p>本站（包括“关于我”及首页）提供的社交平台链接（如 QQ、微信、微博、小红书、抖音、酷安等）仅旨在方便您与站长建立联系或查看更多动态。</p>
-        <p>当您点击这些链接跳转至第三方平台时，您将受该平台的用户协议与隐私政策约束。本站无法控制第三方平台的数据收集行为，亦不对您在第三方平台上的活动及产生的个人信息安全负责。</p>
-
-        <h2>3. 嵌入式内容声明</h2>
-        <p>为了丰富内容展示，本站的部分页面（如“歌单分享”、“博客文章”）可能嵌入了来自 <strong>哔哩哔哩 (Bilibili)</strong> 或 <strong>Spotify</strong> 等平台的媒体内容。</p>
+        <h2>2. 用户行为规范与账号安全</h2>
+        <p>在使用本站的账号、评论区及 AI 助手服务时，您应遵守相关法律法规并维护良好的网络环境：</p>
         <ul>
-            <li>这些嵌入式内容仅用于分享站长的喜好与创作。</li>
-            <li>播放器及相关组件由源平台提供技术支持。</li>
-            <li>当您与这些嵌入式内容交互（如播放视频、收听音乐）时，源平台可能会收集您的播放记录或设备信息，此行为受源平台的隐私政策管辖，与本站无关。</li>
+          <li><strong>账号保管：</strong>请妥善保管您的账号密码及登录设备，勿将登录凭证或扫码授权提供给不可信的第三方。</li>
+          <li><strong>内容合规：</strong>禁止在评论区或 AI 对话中发布违法违规、色情暴力、人身攻击、仇恨言论或垃圾广告内容。</li>
+          <li><strong>合理使用：</strong>禁止通过自动化脚本、恶意高频请求或提示词注入（Prompt Injection）等方式攻击、探测或滥用本站的账号接口与 AI 服务引擎。对于违规行为，站长有权限制访问、删除相关内容或封禁账号。</li>
         </ul>
 
-        <h2>4. 开源许可与致谢</h2>
+        <h2>3. 第三方链接与责任边界</h2>
+        <p>本站（包括“关于我”、友情链接及首页）提供的社交平台链接（如 QQ、微信、微博、小红书、抖音、酷安等）及其他外部站点链接，仅旨在方便您与站长建立联系或拓展阅读。</p>
+        <p>当您点击这些链接跳转至第三方平台时，您将受该平台的用户协议与隐私政策约束。本站无法控制第三方平台的数据收集行为，亦不对您在第三方平台上的活动及产生的个人信息安全负责。</p>
+
+        <h2>4. 嵌入式内容声明</h2>
+        <p>为了丰富内容展示，本站的部分页面（如“歌单分享”、“博客文章”）可能嵌入了来自 <strong>哔哩哔哩 (Bilibili)</strong>、<strong>Apple Music</strong> 等平台的媒体内容。</p>
+        <ul>
+          <li>这些嵌入式内容仅用于分享站长的喜好与创作。</li>
+          <li>播放器及相关组件由源平台提供技术支持。</li>
+          <li>当您与这些嵌入式内容交互（如播放视频、收听音乐）时，源平台可能会收集您的播放记录、Cookie 或设备信息，此行为受源平台的隐私政策管辖，与本站无关。</li>
+        </ul>
+
+        <h2>5. 开源许可与致谢</h2>
         <p>本站的构建离不开开源社区的贡献。我们在开发过程中使用了以下优秀的开源项目，并在此致以诚挚的谢意：</p>
         
         <div style="margin: 15px 0;">
-            <span class="tech-stack-badge">Marked.js</span>
-            <span class="tech-stack-badge">Custom Right-Click Menu</span>
-            <span class="tech-stack-badge">Viewer.js</span>
+          <span class="tech-stack-badge">Marked.js</span>
+          <span class="tech-stack-badge">Custom Right-Click Menu</span>
+          <span class="tech-stack-badge">Viewer.js</span>
+          <span class="tech-stack-badge">js-yaml</span>
         </div>
 
         <h3>核心组件</h3>
         <ul>
-            <li><strong>Marked.js</strong> - 用于博客文章的 Markdown 实时渲染。</li>
-            <li><strong>Custom Right-Click Menu</strong> - (By add-qwq) 提供了网站自定义的右键菜单体验。</li>
-            <li><strong>Viewer.js</strong> - (By fengyuanchen) 提供了流畅的图片查看与画廊功能。</li>
+          <li><strong>Marked.js</strong> - 用于博客文章的 Markdown 实时渲染。</li>
+          <li><strong>Custom Right-Click Menu</strong> - (By add-qwq) 提供了网站自定义的右键菜单体验。</li>
+          <li><strong>Viewer.js</strong> - (By fengyuanchen) 提供了流畅的图片查看与画廊功能。</li>
+          <li><strong>js-yaml</strong> - 用于解析友情链接等站内 YAML 配置文件。</li>
         </ul>
         
         <p>本站遵循 <strong>Apache License 2.0</strong> 开源协议，网站源代码已在 GitHub 上开源。您可以点击查看详细的 <a href="https://github.com/SatinAu-Zelynn/SatinAu-Website/blob/main/LICENSE" target="_blank">License 信息</a>。</p>
 
-        <h2>5. 协议的变更</h2>
-        <p>随着网站功能的更新或法律法规的变化，我们可能会适时修订本协议。修订后的协议一经公布即生效，继续使用本站即视为您同意相关变更。</p>
+        <h2>6. 协议的变更</h2>
+        <p>随着网站架构、AI 服务、账号体系的更新或法律法规的变化，我们可能会适时修订本协议。修订后的协议一经公布即生效，继续使用本站即视为您同意相关变更。</p>
         
-        <p style="margin-top: 40px; text-align: right; font-weight: 600;">最后更新日期：2026年02月17日</p>
+        <p style="margin-top: 40px; text-align: right; font-weight: 600;">最后更新日期：2026年11月27日</p>
       </div>
     </section>
   </main>
